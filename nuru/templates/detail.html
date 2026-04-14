@@ -96,7 +96,7 @@
           {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
           {% if item.is_fieldset %}
           {# ── Fieldset: bordered box with legend ──────────────────── #}
-          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden {{ item.css_class }}">
             {% if item.title %}
             <legend class="ml-6 px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>
             {% endif %}
@@ -113,7 +113,7 @@
             </div>
           </fieldset>
           {% elif item.styled %}
-          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden {{ item.css_class }}">
             {% if item.title %}
             <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
               <h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ item.title }}</h3>
@@ -137,7 +137,7 @@
             {% endif %}
           </div>
           {% else %}
-          <div class="{{ _section_span }}">
+          <div class="{{ _section_span }} {{ item.css_class }}">
             {% if item.title %}
             <div class="mb-3">
               <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
@@ -163,8 +163,8 @@
           {% set value = record | field_value(field.key) %}
           {% set in_section = _bare_in_section %}
           {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-          <div class="{{ span_class }}">
-            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+          <div class="{{ span_class }} {{ field.css_class }}">
+            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %>
           </div>
         {% endif %}
 

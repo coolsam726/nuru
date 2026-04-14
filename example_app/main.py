@@ -379,9 +379,13 @@ class UserResource(Resource):
         columns.Boolean("active", "Active"),
     ]
     detail_fields = [
-        fields.Text("name", "Full name"),
-        fields.Email("email", "Email address"),
-        fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
+        fields.Fieldset(
+            fields=[
+                fields.Text("name", "Full name"),
+                fields.Email("email", "Email address"),
+                fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
+            ], title="User Details",
+        )
     ]
     form_fields = [
         fields.Section(
@@ -392,7 +396,7 @@ class UserResource(Resource):
                 fields.Email("email", "Email", required=True),
                 fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
                 fields.Checkbox("active", "Active", help_text="Uncheck to deactivate"),
-            ]
+            ],
         )
     ]
 

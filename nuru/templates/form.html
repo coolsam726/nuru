@@ -92,7 +92,7 @@
           {%- endset -%}
           {% if item.is_fieldset %}
           {# ── Fieldset: <fieldset>/<legend> ───────────────────────── #}
-          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl px-5 pt-2 pb-5">
+          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl px-5 pt-2 pb-5 {{ item.css_class }}">
             {% if item.title %}<legend class="px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>{% endif %}
             {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mb-3 mt-1">{{ item.description }}</p>{% endif %}
             <div class="grid {{ cols_class }} gap-4 mt-3">
@@ -109,7 +109,7 @@
             </div>
           </fieldset>
           {% elif item.styled %}
-          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden {{ item.css_class }}">
             {% if item.title %}
             <div class="px-5 py-4 border-b border-zinc-100 dark:border-zinc-700">
               <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
@@ -135,9 +135,7 @@
             {% endif %}
           </div>
           {% else %}
-          <div class="{{ _section_span }}">
-            {% if item.title %}
-            <div class="mb-4">
+          <div class="{{ _section_span }} {{ item.css_class }}">
               <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
               {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
             </div>
@@ -165,7 +163,7 @@
           {% set has_error = errors and field.key in errors %}
           {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
           {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-          <div class="{{ span_class }}">
+          <div class="{{ span_class }} {{ field.css_class }}">
             {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
           </div>
         {% endif %}

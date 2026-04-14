@@ -15,6 +15,7 @@ class Field:
     input_type: str = "text"
     # Layout hints — used when the field lives inside a Section
     col_span: int | str = 1   # 1 (default) | 2 | 3 | 4 | "full"
+    css_class: str = ""       # extra Tailwind classes applied to the field wrapper
     is_section: bool = False  # discriminator — always False for fields
 
     def __post_init__(self):
@@ -46,6 +47,7 @@ class Section:
     footer: str = ""
     cols: int = 1          # 1 | 2 | 3 | 4  (responsive breakpoints applied automatically)
     col_span: int | str = 1  # 1 | 2 | 3 | 4 | "full"
+    css_class: str = ""    # extra Tailwind classes applied to the outer wrapper
     styled: bool = True    # True = white card with border, shadow, optional header/footer
     is_section: bool = True  # discriminator
     is_fieldset: bool = False
@@ -76,6 +78,7 @@ class Fieldset:
     description: str = ""
     cols: int = 1
     col_span: int | str = 1
+    css_class: str = ""   # extra Tailwind classes applied to the <fieldset> element
     is_section: bool = True   # enters the same template branch as Section
     is_fieldset: bool = True  # selects <fieldset>/<legend> rendering
 
