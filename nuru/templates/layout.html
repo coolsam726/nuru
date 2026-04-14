@@ -214,7 +214,7 @@
 
       {# Page header: title on the left, actions on the right #}
       {% if self.page_heading() or self.header_actions() %}
-      <div class="flex items-center justify-between gap-4 mb-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>{% block page_heading %}{% endblock %}</div>
         <div class="flex items-center gap-2 flex-shrink-0">{% block header_actions %}{% endblock %}</div>
       </div>
