@@ -1,0 +1,11 @@
+{# Form rendering for Fieldset — <fieldset>/<legend> with bordered box #}
+{% from "partials/macros/form_item.html" import render_item with context %}
+{% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
+{% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
+<fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl px-5 pt-2 pb-5 {{ item.css_class }}">
+  {% if item.title %}<legend class="px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>{% endif %}
+  {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mb-3 mt-1">{{ item.description }}</p>{% endif %}
+  <div class="grid {{ cols_class }} gap-4 mt-3">
+    {% for child in item.fields %}{{ render_item(child) }}{% endfor %}
+  </div>
+</fieldset>

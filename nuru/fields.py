@@ -49,8 +49,13 @@ class Section:
     col_span: int | str = 1  # 1 | 2 | 3 | 4 | "full"
     css_class: str = ""    # extra Tailwind classes applied to the outer wrapper
     styled: bool = True    # True = white card with border, shadow, optional header/footer
+    section_type: str = ""  # derived automatically; override to select a custom partial
     is_section: bool = True  # discriminator
     is_fieldset: bool = False
+
+    def __post_init__(self):
+        if not self.section_type:
+            self.section_type = "styled" if self.styled else "flat"
 
 
 @dataclass
@@ -79,6 +84,7 @@ class Fieldset:
     cols: int = 1
     col_span: int | str = 1
     css_class: str = ""   # extra Tailwind classes applied to the <fieldset> element
+    section_type: str = "fieldset"  # override to select a custom partial
     is_section: bool = True   # enters the same template branch as Section
     is_fieldset: bool = True  # selects <fieldset>/<legend> rendering
 
