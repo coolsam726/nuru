@@ -164,7 +164,7 @@
           {% set in_section = _bare_in_section %}
           {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
           <div class="{{ span_class }} {{ field.css_class }}">
-            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %>
+            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
           </div>
         {% endif %}
 
