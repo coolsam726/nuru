@@ -80,12 +80,12 @@
   {# ── Detail description list ────────────────────────────────────── #}
   <div class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
 
-    {% if resource.form_fields %}
-      {% for field in resource.form_fields %}
+    {% set visible_fields = resource.form_fields | selectattr("field_type", "ne", "hidden") | list %}
+    {% if visible_fields %}
+      {% for field in visible_fields %}
         {% set value = record | field_value(field.key) %}
-        {% if field.field_type != 'hidden' %}
-          {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
-        {% endif %}
+        {% set is_last = loop.last %}
+        {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
       {% endfor %}
     {% else %}
       <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
