@@ -42,6 +42,7 @@ class Section:
     title: str = ""
     description: str = ""
     cols: int = 1          # 1 | 2 | 3 | 4  (responsive breakpoints applied automatically)
+    col_span: int | str = 1  # 1 | 2 | 3 | 4 | "full"
     is_section: bool = True  # discriminator — always True for sections
 
 

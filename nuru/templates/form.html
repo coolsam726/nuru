@@ -85,8 +85,9 @@
       {% for item in resource.form_fields %}
 
         {% if item.is_section %}
-          {# ── Section — always spans full width ───────────────────── #}
-          <div class="col-span-full">
+          {# ── Section — respects col_span ────────────────────────── #}
+          {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
+          <div class="{{ _section_span }}">
             {% if item.title %}
             <div class="mb-4">
               <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>

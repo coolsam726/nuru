@@ -90,8 +90,9 @@
       {% for item in resource.form_fields %}
 
         {% if item.is_section %}
-          {# ── Section block ─────────────────────────────────────── #}
-          <div class="col-span-full bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+          {# ── Section block — respects col_span ────────────────── #}
+          {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
+          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
             {% if item.title %}
             <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
               <h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ item.title }}</h3>
