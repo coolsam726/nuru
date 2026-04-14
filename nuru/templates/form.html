@@ -78,13 +78,9 @@
         action="{{ panel_prefix }}/{{ resource.slug }}{% if record_id %}/{{ record_id }}{% endif %}">
 
     {% if resource.form_fields %}
-      {%- set _cols_map = {1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", 4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} %}
-      {%- set _span_map = {"full": "col-span-full", 2: "col-span-2", 3: "col-span-3", 4: "col-span-4"} %}
-      {%- set _top_cols = _cols_map[resource.form_cols] if resource.form_cols in _cols_map else "grid-cols-1" %}
-      {% from "partials/macros/form_item.html" import render_item with context %}
-      <div class="grid {{ _top_cols }} gap-5">
-        {% for item in resource.form_fields %}{{ render_item(item) }}{% endfor %}
-      </div>
+      {%- set _fields = resource.form_fields %}
+      {%- set _form_cols = resource.form_cols %}
+      {% include "partials/form_grid.html" %}
     {% else %}
       <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">
         No form fields defined. Add <code class="font-mono bg-zinc-100 dark:bg-zinc-700 px-1 rounded">form_fields</code>

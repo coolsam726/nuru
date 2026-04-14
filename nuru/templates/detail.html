@@ -80,17 +80,11 @@
   {# ── Detail description list ────────────────────────────────────── #}
   <div>
 
-    {%- set _cols_map = {1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", 4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} %}
-    {%- set _span_map = {"full": "col-span-full", 2: "col-span-2", 3: "col-span-3", 4: "col-span-4"} %}
-    {%- set _top_cols = _cols_map[resource.form_cols] if resource.form_cols in _cols_map else "grid-cols-1" %}
-    {%- set _bare_in_section = resource.form_cols > 1 %}
-
     {%- set _detail_fields = resource.detail_fields if resource.detail_fields else resource.form_fields %}
     {% if _detail_fields %}
-      {% from "partials/macros/detail_item.html" import render_item with context %}
-      <div class="grid {{ _top_cols }} gap-5">
-        {% for item in _detail_fields %}{{ render_item(item) }}{% endfor %}
-      </div>
+      {%- set _fields = _detail_fields %}
+      {%- set _form_cols = resource.form_cols %}
+      {% include "partials/detail_grid.html" %}
     {% else %}
       <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
         No fields configured.

@@ -1,0 +1,28 @@
+{#
+  Reusable detail field grid — renders a list of Field/Section/Fieldset items
+  as a read-only description list grid without any surrounding chrome.
+
+  Required context variables:
+    _fields    — list of Field / Section / Fieldset instances
+    _form_cols — int (1–4): top-level grid column count
+    record     — dict or ORM object to read values from
+
+  Optional context variables:
+    _cols_map, _span_map — set here if not already present
+
+  Usage in a custom page template:
+    {% set _fields    = my_fields %}
+    {% set _form_cols = 2 %}
+    {% set record     = my_record %}
+    {% include "partials/detail_grid.html" %}
+#}
+{%- set _cols_map = {1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", 4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} %}
+{%- set _span_map = {"full": "col-span-full", 2: "col-span-2", 3: "col-span-3", 4: "col-span-4"} %}
+{%- set _top_cols = _cols_map[_form_cols] if _form_cols in _cols_map else "grid-cols-1" %}
+{%- set _bare_in_section = _form_cols > 1 %}
+{% from "partials/macros/detail_item.html" import render_item with context %}
+{% if _fields %}
+<div class="grid {{ _top_cols }} gap-5">
+  {% for item in _fields %}{{ render_item(item) }}{% endfor %}
+</div>
+{% endif %}

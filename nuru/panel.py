@@ -11,6 +11,7 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescap
 
 if TYPE_CHECKING:
     from .auth import AuthBackend
+    from .page import Page
     from .resource import Resource
 
 _PACKAGE_DIR = Path(__file__).parent
@@ -76,6 +77,7 @@ class AdminPanel:
         self._panel_id = self.prefix.strip("/").replace("/", "_") or "admin"
 
         self._resources: list[type[Resource]] = []
+        self._pages: list[type[Page]] = []
         self._router = APIRouter(prefix=self.prefix)
 
         # Build loader: user dirs (highest priority) → built-in package templates
@@ -98,6 +100,10 @@ class AdminPanel:
     def register(self, resource_cls: type[Resource]) -> None:
         """Register a Resource class with this panel."""
         self._resources.append(resource_cls)
+
+    def register_page(self, page_cls: type[Page]) -> None:
+        """Register a Page class with this panel."""
+        self._pages.append(page_cls)
 
     def mount(self, app: FastAPI) -> None:
         """
@@ -122,6 +128,9 @@ class AdminPanel:
         for resource_cls in self._resources:
             resource = resource_cls(panel=self)
             resource._register_routes(self._router)
+        for page_cls in self._pages:
+            page = page_cls(panel=self)
+            page._register_routes(self._router)
 
     def _add_login_routes(self) -> None:
         """Add GET /login, POST /login, and GET /logout routes."""
@@ -256,6 +265,7 @@ class AdminPanel:
             "htmx_local":   _HTMX_LOCAL,
             "per_page":     self.per_page,
             "resources":    self._resources,
+            "pages":         self._pages,
             "auth_enabled": self.auth is not None,
             "current_user": None,   # overridden per-request via _render(user=...)
         }

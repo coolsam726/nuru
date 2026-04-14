@@ -137,6 +137,33 @@
           </a>
         {% endfor %}
       {% endif %}
+
+      {% if pages %}
+        <div class="px-3 pt-5 pb-1">
+          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Pages</p>
+        </div>
+        {% for page_cls in pages %}
+          {% set pg_slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(' ', '-') %}
+          <a href="{{ panel_prefix }}/{{ pg_slug }}"
+             data-nav-link
+             class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
+                    text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white
+                    hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
+             onclick="closeSidebar()">
+            {% if page_cls.icon %}
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ page_cls.icon }}"/>
+            </svg>
+            {% else %}
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            {% endif %}
+            {{ page_cls.label }}
+          </a>
+        {% endfor %}
+      {% endif %}
     </nav>
 
   </aside>
