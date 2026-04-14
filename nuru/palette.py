@@ -253,6 +253,36 @@ def palette_css_vars(name: str, color: str) -> str:
     ``name`` should be one of: primary, secondary, accent, info, success,
     danger, warning.
     """
+    # If the user passed a CSS variable (e.g. "var(--color-indigo-500)")
+    # or a raw property name (e.g. "--color-indigo-500"), prefer to map
+    # the generated stops to that variable family instead of attempting
+    # to parse the variable's computed colour here.
+    v = color.strip()
+
+    # Handle 'var(--foo-500)' or 'var(--foo)'. Extract the inner token and
+    # decide whether it encodes a numeric stop at the end.
+    if v.lower().startswith('var(') and v.endswith(')'):
+        inner = v[v.find('(') + 1 : v.rfind(')')].strip()
+        if inner.startswith('--'):
+            m_end = re.search(r'-(50|100|200|300|400|500|600|700|800|900|950)$', inner)
+            if m_end:
+                base = inner[:m_end.start()]
+                lines = [f"  --color-{name}-{stop}: var({base}-{stop});" for stop, _ in _STOPS]
+            else:
+                lines = [f"  --color-{name}-{stop}: var({inner});" for stop, _ in _STOPS]
+            return "\n".join(lines)
+
+    # Handle raw property names like --color-indigo-500 or --brand
+    if v.startswith('--'):
+        m_end = re.search(r'-(50|100|200|300|400|500|600|700|800|900|950)$', v)
+        if m_end:
+            base = v[:m_end.start()]
+            lines = [f"  --color-{name}-{stop}: var({base}-{stop});" for stop, _ in _STOPS]
+        else:
+            lines = [f"  --color-{name}-{stop}: var({v});" for stop, _ in _STOPS]
+        return "\n".join(lines)
+
+    # Fallback: compute an OKLch palette from the provided colour string
     palette = generate_palette(color)
     lines = [f"  --color-{name}-{stop}: {value};" for stop, value in sorted(palette.items())]
     return "\n".join(lines)
