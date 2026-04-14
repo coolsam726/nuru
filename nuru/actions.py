@@ -15,7 +15,7 @@ _STYLE_CLASSES: dict[str, str] = {
     "secondary": ("border border-zinc-300 dark:border-zinc-600 "
                   "text-zinc-500 dark:text-zinc-400 "
                   "hover:bg-zinc-50 dark:hover:bg-zinc-700"),
-    "primary":   "text-white brand-bg hover:opacity-90",
+    "primary":   "text-white bg-primary hover:bg-primary-600",
     "success":   ("border border-green-200 dark:border-green-700/50 "
                   "text-green-700 dark:text-green-400 "
                   "hover:bg-green-50 dark:hover:bg-green-900/30"),

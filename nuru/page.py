@@ -60,7 +60,7 @@ class Page:
 
     Available template variables in addition to your get_context() return:
         panel_title, panel_prefix, current_user, current_path, resources,
-        pages, brand_color, auth_enabled, htmx_local
+        pages, palette_css, auth_enabled, htmx_local
     """
 
     # ── Override in subclasses ──────────────────────────────────────────

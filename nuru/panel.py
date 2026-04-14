@@ -10,6 +10,7 @@ from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
 from .icons import render_icon, resolve_icon
+from .palette import palette_css_vars
 
 if TYPE_CHECKING:
     from .auth import AuthBackend
@@ -71,7 +72,15 @@ class AdminPanel:
         *,
         title: str = "Admin",
         prefix: str = "/admin",
-        brand_color: str = "#6366f1",
+        primary: str = "#6366f1",
+        secondary: str = "#64748b",
+        accent: str = "#8b5cf6",
+        info: str = "#0ea5e9",
+        success: str = "#22c55e",
+        danger: str = "#ef4444",
+        warning: str = "#f59e0b",
+        # Legacy alias kept for backward compat
+        brand_color: str | None = None,
         logo_url: str | None = None,
         per_page: int = 25,
         auth: AuthBackend | None = None,
@@ -79,7 +88,16 @@ class AdminPanel:
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
-        self.brand_color = brand_color
+        # brand_color is a legacy alias for primary
+        self.primary   = brand_color if brand_color is not None else primary
+        self.secondary = secondary
+        self.accent    = accent
+        self.info      = info
+        self.success   = success
+        self.danger    = danger
+        self.warning   = warning
+        # Back-compat attribute — points to primary
+        self.brand_color = self.primary
         self.logo_url = logo_url
         self.per_page = per_page
         self.auth = auth
@@ -321,11 +339,24 @@ class AdminPanel:
 
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
+        # Build full palette CSS for all semantic colors
+        _colors = {
+            "primary":   self.primary,
+            "secondary": self.secondary,
+            "accent":    self.accent,
+            "info":      self.info,
+            "success":   self.success,
+            "danger":    self.danger,
+            "warning":   self.warning,
+        }
+        palette_css = "\n".join(
+            palette_css_vars(name, color) for name, color in _colors.items()
+        )
         return {
             "render_icon":  render_icon,
             "panel_title":  self.title,
             "panel_prefix": self.prefix,
-            "brand_color":  self.brand_color,
+            "palette_css":  palette_css,
             "logo_url":     self.logo_url,
             "htmx_local":   _HTMX_LOCAL,
             "per_page":     self.per_page,

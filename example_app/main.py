@@ -462,7 +462,7 @@ class OrderResource(Resource):
     label = "Order"
     label_plural = "Orders"
     nav_sort = 10
-    nav_icon = "arrow-turn-right-up"
+    nav_icon = "briefcase"
     model = Order
     session_factory = _get_session
     search_fields = ["order_number", "customer"]
@@ -876,8 +876,8 @@ class ReportsPage(Page):
 admin_panel = AdminPanel(
     title="Acme Admin",
     prefix="/admin",
-    brand_color="rgb(227 160 8)",
-    per_page=5,
+    primary="oklch(54.2% 0.034 322.5)",
+    per_page=10,
     auth=SimpleAuthBackend(
         username="admin",
         password="secret",
@@ -890,11 +890,11 @@ admin_panel.register(OrderResource)
 admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
 
-ops_panel = AdminPanel(title="Ops", prefix="/ops", brand_color="#e11d48")
+ops_panel = AdminPanel(title="Ops", prefix="/ops", primary="#e11d48")
 ops_panel.register(ServerResource)
 ops_panel.mount(app)
 
-db_panel = AdminPanel(title="DB Panel", prefix="/db", brand_color="#0f766e")
+db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="#0f766e")
 db_panel.register(ProductResource)
 db_panel.mount(app)
 

@@ -214,7 +214,7 @@
       {% set end_page   = [total_pages, page + 2] | min %}
       {% for p in range(start_page, end_page + 1) %}
         {% if p == page %}
-          <span class="px-3 py-1.5 text-xs rounded text-white brand-bg font-medium">{{ p }}</span>
+          <span class="px-3 py-1.5 text-xs rounded text-white bg-primary font-medium">{{ p }}</span>
         {% else %}
           <a hx-get="{{ panel_prefix }}/{{ resource.slug }}/table?page={{ p }}&search={{ search }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}"
              hx-target="#list-container"
@@ -258,7 +258,7 @@
   {% else %}
     <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">No {{ resource.label_plural | lower }} yet</p>
     <a href="{{ panel_prefix }}/{{ resource.slug }}/new"
-       class="inline-flex items-center gap-1.5 mt-3 text-xs font-medium brand-text hover:opacity-80 transition-opacity">
+       class="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-primary hover:opacity-80 transition-opacity">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
       </svg>

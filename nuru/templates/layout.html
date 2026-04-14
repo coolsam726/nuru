@@ -43,10 +43,22 @@
   </script>
 
   <style>
-    :root { --brand: {{ brand_color }}; }
-    .brand-bg     { background-color: var(--brand); }
-    .brand-text   { color: var(--brand); }
-    .brand-border { border-color: var(--brand); }
+    :root {
+{{ palette_css }}
+    }
+    .bg-primary     { background-color: var(--color-primary-500); }
+    .bg-primary-600 { background-color: var(--color-primary-600); }
+    .text-primary   { color: var(--color-primary-500); }
+    .border-primary { border-color: var(--color-primary-500); }
+    .ring-primary   { --tw-ring-color: var(--color-primary-500); }
+    .bg-success     { background-color: var(--color-success-500); }
+    .text-success   { color: var(--color-success-600); }
+    .bg-danger      { background-color: var(--color-danger-500); }
+    .text-danger    { color: var(--color-danger-600); }
+    .bg-warning     { background-color: var(--color-warning-500); }
+    .text-warning   { color: var(--color-warning-600); }
+    .bg-info        { background-color: var(--color-info-500); }
+    .text-info      { color: var(--color-info-600); }
     .htmx-indicator { display: none; }
     .htmx-request .htmx-indicator  { display: block; }
     .htmx-request.htmx-indicator   { display: block; }
@@ -83,7 +95,7 @@
         <img src="{{ logo_url }}" alt="{{ panel_title }}" class="h-7">
       {% else %}
         <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg brand-bg flex items-center justify-center flex-shrink-0">
+          <div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -164,7 +176,7 @@
                   class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg
                          hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group"
                   aria-haspopup="true" aria-expanded="false">
-            <div class="w-7 h-7 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
+            <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span class="text-white text-xs font-semibold select-none">{{ current_user.username[0] | upper }}</span>
             </div>
             <span class="hidden sm:block text-sm font-medium text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">{{ current_user.username }}</span>
@@ -181,7 +193,7 @@
             {# Profile header #}
             <div class="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700">
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
+                <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                   <span class="text-white text-sm font-semibold select-none">{{ current_user.username[0] | upper }}</span>
                 </div>
                 <div class="min-w-0">
@@ -344,7 +356,7 @@
           Cancel
         </button>
         <button id="ap-modal-submit" type="submit"
-                class="px-4 py-2 text-sm font-medium text-white rounded-lg brand-bg
+                class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary
                        hover:opacity-90 transition-opacity">
           Execute
         </button>
@@ -411,7 +423,7 @@
         if (spec.placeholder) el.placeholder = spec.placeholder;
         if (spec.required)    el.required = true;
       }
-      el.style.cssText = '--tw-ring-color: var(--brand);';
+      el.style.cssText = '--tw-ring-color: var(--color-primary-500);';
       wrap.appendChild(el);
       if (spec.help_text && spec.field_type !== 'checkbox') {
         var ht = document.createElement('p');

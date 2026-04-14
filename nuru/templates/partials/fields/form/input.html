@@ -13,7 +13,7 @@
     {% if field.max_value is defined and field.max_value is not none %}max="{{ field.max_value }}"{% endif %}
     {% if field.max_length is defined and field.max_length is not none %}maxlength="{{ field.max_length }}"{% endif %}
     class="{{ input_class }}"
-    style="--tw-ring-color: var(--brand);"
+    style="--tw-ring-color: var(--color-primary-500);"
   >
   {% if has_error %}
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>

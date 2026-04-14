@@ -36,7 +36,7 @@
   {% endfor %}
   {% if resource.can_create %}
   <a href="{{ panel_prefix }}/{{ resource.slug }}/new"
-     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white brand-bg hover:opacity-90 transition-opacity">
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:opacity-90 transition-opacity">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
     </svg>
@@ -113,7 +113,7 @@
                rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100
                placeholder-zinc-400 dark:placeholder-zinc-500
                focus:outline-none focus:ring-2 focus:border-transparent"
-        style="--tw-ring-color: var(--brand);"
+        style="--tw-ring-color: var(--color-primary-500);"
         hx-get="{{ panel_prefix }}/{{ resource.slug }}/table"
         hx-trigger="keyup changed delay:300ms, search"
         hx-target="#list-container"

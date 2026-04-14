@@ -9,7 +9,7 @@
     {% if field.required %}required{% endif %}
     {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
     class="{{ input_class }}"
-    style="--tw-ring-color: var(--brand);"
+    style="--tw-ring-color: var(--color-primary-500);"
   >{{ current }}</textarea>
   {% if has_error %}
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
