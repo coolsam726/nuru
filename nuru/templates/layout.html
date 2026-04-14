@@ -127,11 +127,7 @@
                     text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white
                     hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
              onclick="closeSidebar()">
-            {% if nav.icon %}
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ nav.icon }}"/>
-            </svg>
-            {% endif %}
+            {{ render_icon(nav.icon, "w-4 h-4 flex-shrink-0") }}
             {{ nav.label }}
           </a>
         {% endfor %}

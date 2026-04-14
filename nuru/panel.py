@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
-from .icons import resolve_icon
+from .icons import render_icon, resolve_icon
 
 if TYPE_CHECKING:
     from .auth import AuthBackend
@@ -322,6 +322,7 @@ class AdminPanel:
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
         return {
+            "render_icon":  render_icon,
             "panel_title":  self.title,
             "panel_prefix": self.prefix,
             "brand_color":  self.brand_color,

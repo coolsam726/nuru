@@ -307,8 +307,8 @@ class UserResource(Resource):
     label = "User"
     label_plural = "Users"
     nav_sort = 30
-    nav_label="Manage Users"
-    nav_icon="user"
+    nav_label = "Manage Users"
+    nav_icon = "user"
     model = User
     session_factory = _get_session
     search_fields = ["name", "email"]
@@ -462,7 +462,7 @@ class OrderResource(Resource):
     label = "Order"
     label_plural = "Orders"
     nav_sort = 10
-    nav_icon = "briefcase"
+    nav_icon = "arrow-turn-right-up"
     model = Order
     session_factory = _get_session
     search_fields = ["order_number", "customer"]

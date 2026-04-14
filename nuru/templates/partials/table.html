@@ -101,25 +101,19 @@
                 {% if action.key == '__view__' %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
                    class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                  </svg>
+                  {{ render_icon(action.icon) }}
                 </a>
                 {% elif action.key == '__edit__' %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                    class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                  </svg>
+                  {{ render_icon(action.icon) }}
                 </a>
                 {% elif action.key == '__delete__' %}
                 <button class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}"
                         hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                         hx-confirm="Delete this {{ resource.label }}?"
                         hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                  </svg>
+                  {{ render_icon(action.icon) }}
                 </button>
                 {% endif %}
               {% else %}
@@ -133,9 +127,7 @@
                         data-action-submit="{{ action.label }}"
                         class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
                   {% if action.icon %}
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                  </svg>
+                  {{ render_icon(action.icon) }}
                   {% else %}{{ action.label }}{% endif %}
                 </button>
               {% endif %}
@@ -158,25 +150,19 @@
                     {% if action.key == '__view__' %}
                     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
                        class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                      </svg>{{ action.label }}
+                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
                     </a>
                     {% elif action.key == '__edit__' %}
                     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                        class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                      </svg>{{ action.label }}
+                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
                     </a>
                     {% elif action.key == '__delete__' %}
                     <button class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}"
                             hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                             hx-confirm="Delete this {{ resource.label }}?"
                             hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
-                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                      </svg>{{ action.label }}
+                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
                     </button>
                     {% endif %}
                   {% else %}
@@ -188,11 +174,7 @@
                             data-action-confirm="{{ action.confirm or '' }}"
                             data-action-submit="{{ action.label }}"
                             class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      {% if action.icon %}
-                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
-                      </svg>
-                      {% endif %}
+                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}
                       {{ action.label }}
                     </button>
                   {% endif %}
