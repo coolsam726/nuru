@@ -32,17 +32,21 @@ class Section:
         Section(
             title="Contact",
             cols=2,
+            styled=True,
             fields=[
                 Text(key="email"),
                 Text(key="phone", col_span="full"),
             ],
+            footer="All fields are required.",
         )
     """
     fields: list
     title: str = ""
     description: str = ""
+    footer: str = ""
     cols: int = 1          # 1 | 2 | 3 | 4  (responsive breakpoints applied automatically)
     col_span: int | str = 1  # 1 | 2 | 3 | 4 | "full"
+    styled: bool = False   # True = white card with border, shadow, optional header/footer
     is_section: bool = True  # discriminator — always True for sections
 
 

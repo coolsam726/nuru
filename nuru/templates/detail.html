@@ -92,6 +92,8 @@
         {% if item.is_section %}
           {# ── Section block — respects col_span ────────────────── #}
           {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
+          {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
+          {% if item.styled %}
           <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
             {% if item.title %}
             <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
@@ -99,7 +101,6 @@
               {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
             </div>
             {% endif %}
-            {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
             <div class="grid {{ cols_class }} gap-0 divide-x divide-zinc-100 dark:divide-zinc-700">
               {% for field in item.fields %}
                 {% if field.field_type != 'hidden' %}
@@ -110,7 +111,32 @@
                 {% endif %}
               {% endfor %}
             </div>
+            {% if item.footer %}
+            <div class="px-6 py-3 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40">
+              <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ item.footer }}</p>
+            </div>
+            {% endif %}
           </div>
+          {% else %}
+          <div class="{{ _section_span }}">
+            {% if item.title %}
+            <div class="mb-3">
+              <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
+              {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
+            </div>
+            {% endif %}
+            <div class="grid {{ cols_class }} gap-5">
+              {% for field in item.fields %}
+                {% if field.field_type != 'hidden' %}
+                  {% set value = record | field_value(field.key) %}
+                  {% set in_section = True %}
+                  {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
+                  {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
 
         {% elif item.field_type != 'hidden' %}
           {# ── Bare field — sits in the top-level grid ───────────── #}
