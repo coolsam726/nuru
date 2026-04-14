@@ -91,10 +91,28 @@
       {% for item in _detail_fields %}
 
         {% if item.is_section %}
-          {# ── Section block — respects col_span ────────────────── #}
+          {# ── Section / Fieldset — respects col_span ─────────────── #}
           {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
           {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
-          {% if item.styled %}
+          {% if item.is_fieldset %}
+          {# ── Fieldset: bordered box with legend ──────────────────── #}
+          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden">
+            {% if item.title %}
+            <legend class="ml-6 px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>
+            {% endif %}
+            {% if item.description %}<p class="px-6 text-xs text-zinc-400 dark:text-zinc-500 mb-2">{{ item.description }}</p>{% endif %}
+            <div class="grid {{ cols_class }} gap-0 divide-x divide-zinc-100 dark:divide-zinc-700">
+              {% for field in item.fields %}
+                {% if field.field_type != 'hidden' %}
+                  {% set value = record | field_value(field.key) %}
+                  {% set in_section = True %}
+                  {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
+                  {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </fieldset>
+          {% elif item.styled %}
           <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
             {% if item.title %}
             <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
@@ -145,7 +163,7 @@
           {% set value = record | field_value(field.key) %}
           {% set in_section = _bare_in_section %}
           {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-          <div class="{{ span_class }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+          <div class="{{ span_class }}">
             {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
           </div>
         {% endif %}

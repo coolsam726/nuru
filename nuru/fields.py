@@ -47,7 +47,37 @@ class Section:
     cols: int = 1          # 1 | 2 | 3 | 4  (responsive breakpoints applied automatically)
     col_span: int | str = 1  # 1 | 2 | 3 | 4 | "full"
     styled: bool = True    # True = white card with border, shadow, optional header/footer
-    is_section: bool = True  # discriminator — always True for sections
+    is_section: bool = True  # discriminator
+    is_fieldset: bool = False
+
+
+@dataclass
+class Fieldset:
+    """
+    A semantic ``<fieldset>`` grouping with a ``<legend>`` label.
+
+    Visually renders as a bordered box with the title floating in the border.
+    On detail pages it renders as a titled card, same as a styled Section.
+
+    Example::
+
+        Fieldset(
+            title="Billing Address",
+            cols=2,
+            fields=[
+                Text(key="street"),
+                Text(key="city"),
+                Text(key="postcode", col_span="full"),
+            ],
+        )
+    """
+    fields: list
+    title: str = ""
+    description: str = ""
+    cols: int = 1
+    col_span: int | str = 1
+    is_section: bool = True   # enters the same template branch as Section
+    is_fieldset: bool = True  # selects <fieldset>/<legend> rendering
 
 
 @dataclass
