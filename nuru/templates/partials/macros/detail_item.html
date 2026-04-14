@@ -1,0 +1,78 @@
+{#
+  Recursive macro for rendering a detail field item (Field, Section, or Fieldset).
+  Import with context so _span_map, _cols_map, record, _bare_in_section etc. are available.
+
+  inside_section controls layout behaviour:
+    False (default) — top-level: field gets a wrapper <div>, in_section = _bare_in_section
+    True            — nested inside a section: no wrapper div, in_section = True
+
+  Usage:
+    {% from "partials/macros/detail_item.html" import render_item with context %}
+    {{ render_item(item) }}
+#}
+{% macro render_item(item, inside_section=False) %}
+  {% if item.is_section %}
+    {# ── Section / Fieldset ───────────────────────────────────── #}
+    {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
+    {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
+    {% if item.is_fieldset %}
+    {# ── Fieldset: bordered box with legend ──────────────────── #}
+    <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl overflow-hidden {{ item.css_class }}">
+      {% if item.title %}
+      <legend class="ml-6 px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>
+      {% endif %}
+      {% if item.description %}<p class="px-6 text-xs text-zinc-400 dark:text-zinc-500 mb-2">{{ item.description }}</p>{% endif %}
+      <div class="grid {{ cols_class }} gap-0 divide-x divide-zinc-100 dark:divide-zinc-700">
+        {% for child in item.fields %}{{ render_item(child, inside_section=True) }}{% endfor %}
+      </div>
+    </fieldset>
+    {% elif item.styled %}
+    {# ── Styled section: white card with optional header/footer ─ #}
+    <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden {{ item.css_class }}">
+      {% if item.title %}
+      <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ item.title }}</h3>
+        {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
+      </div>
+      {% endif %}
+      <div class="grid {{ cols_class }} gap-0 divide-x divide-zinc-100 dark:divide-zinc-700">
+        {% for child in item.fields %}{{ render_item(child, inside_section=True) }}{% endfor %}
+      </div>
+      {% if item.footer %}
+      <div class="px-6 py-3 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40">
+        <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ item.footer }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    {# ── Flat section: optional title, no card chrome ─────────── #}
+    <div class="{{ _section_span }} {{ item.css_class }}">
+      {% if item.title %}
+      <div class="mb-3">
+        <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
+        {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
+      </div>
+      {% endif %}
+      <div class="grid {{ cols_class }} gap-5">
+        {% for child in item.fields %}{{ render_item(child, inside_section=True) }}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  {% elif item.field_type != 'hidden' %}
+    {# ── Plain field ─────────────────────────────────────────── #}
+    {% set field = item %}
+    {% set value = record | field_value(field.key) %}
+    {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
+    {% if inside_section %}
+      {# No wrapper — the partial controls its own layout #}
+      {% set in_section = True %}
+      {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+    {% else %}
+      {# Top-level: wrap in a grid-cell div #}
+      {% set in_section = _bare_in_section %}
+      <div class="{{ span_class }} {{ field.css_class }}">
+        {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+      </div>
+    {% endif %}
+  {% endif %}
+{% endmacro %}

@@ -81,96 +81,9 @@
       {%- set _cols_map = {1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", 4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} %}
       {%- set _span_map = {"full": "col-span-full", 2: "col-span-2", 3: "col-span-3", 4: "col-span-4"} %}
       {%- set _top_cols = _cols_map[resource.form_cols] if resource.form_cols in _cols_map else "grid-cols-1" %}
+      {% from "partials/macros/form_item.html" import render_item with context %}
       <div class="grid {{ _top_cols }} gap-5">
-      {% for item in resource.form_fields %}
-
-        {% if item.is_section %}
-          {# ── Section / Fieldset — respects col_span ─────────────── #}
-          {% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
-          {% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
-          {%- set _fields_block -%}
-          {%- endset -%}
-          {% if item.is_fieldset %}
-          {# ── Fieldset: <fieldset>/<legend> ───────────────────────── #}
-          <fieldset class="{{ _section_span }} border border-zinc-200 dark:border-zinc-700 rounded-xl px-5 pt-2 pb-5 {{ item.css_class }}">
-            {% if item.title %}<legend class="px-2 text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ item.title }}</legend>{% endif %}
-            {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mb-3 mt-1">{{ item.description }}</p>{% endif %}
-            <div class="grid {{ cols_class }} gap-4 mt-3">
-              {% for field in item.fields %}
-                {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-                {% set current = record | field_value(field.key) if record else '' %}
-                {% set has_error = errors and field.key in errors %}
-                {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-                {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-                <div class="{{ span_class }}">
-                  {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
-                </div>
-              {% endfor %}
-            </div>
-          </fieldset>
-          {% elif item.styled %}
-          <div class="{{ _section_span }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden {{ item.css_class }}">
-            {% if item.title %}
-            <div class="px-5 py-4 border-b border-zinc-100 dark:border-zinc-700">
-              <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
-              {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
-            </div>
-            {% endif %}
-            <div class="p-5 grid {{ cols_class }} gap-4">
-              {% for field in item.fields %}
-                {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-                {% set current = record | field_value(field.key) if record else '' %}
-                {% set has_error = errors and field.key in errors %}
-                {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-                {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-                <div class="{{ span_class }}">
-                  {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
-                </div>
-              {% endfor %}
-            </div>
-            {% if item.footer %}
-            <div class="px-5 py-3 border-t border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40">
-              <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ item.footer }}</p>
-            </div>
-            {% endif %}
-          </div>
-          {% else %}
-          <div class="{{ _section_span }} {{ item.css_class }}">
-            {% if item.title %}
-            <div class="mb-4">
-              <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ item.title }}</h3>
-              {% if item.description %}<p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.description }}</p>{% endif %}
-            </div>
-            {% endif %}
-            <div class="grid {{ cols_class }} gap-4">
-              {% for field in item.fields %}
-                {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-                {% set current = record | field_value(field.key) if record else '' %}
-                {% set has_error = errors and field.key in errors %}
-                {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-                {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-                <div class="{{ span_class }}">
-                  {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-          {% endif %}
-
-        {% else %}
-          {# ── Bare field — sits in the top-level grid ─────────────── #}
-          {% set field = item %}
-          {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-          {% set current = record | field_value(field.key) if record else '' %}
-          {% set has_error = errors and field.key in errors %}
-          {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-          {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-          <div class="{{ span_class }} {{ field.css_class }}">
-            {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
-          </div>
-        {% endif %}
-
-      {% endfor %}
+        {% for item in resource.form_fields %}{{ render_item(item) }}{% endfor %}
       </div>
     {% else %}
       <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">

@@ -379,14 +379,20 @@ class UserResource(Resource):
         columns.Boolean("active", "Active"),
     ]
     detail_fields = [
-        fields.Fieldset(
+        fields.Section(
             fields=[
-                fields.Text("name", "Full name"),
-                fields.Email("email", "Email address"),
-                fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
-            ], 
-            title="User Details",
-            css_class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md mb-6",
+                fields.Fieldset(
+                    fields=[
+                        fields.Text("name", "Full name"),
+                        fields.Email("email", "Email address"),
+                        fields.Select(
+                            "role", "Role", options=["admin", "editor", "viewer"]
+                        ),
+                    ],
+                    title="User Details",
+                    css_class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md mb-6",
+                )
+            ]
         )
     ]
     form_fields = [
