@@ -151,7 +151,7 @@
                   <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                 </svg>
               </button>
-              <div class="overflow-dropdown hidden absolute right-0 bottom-full mb-1 w-44 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-lg z-50 py-1">
+              <div class="overflow-dropdown hidden fixed w-44 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-lg z-[9999] py-1">
                 {% for action in _overflow %}
                   {% set _mcls = _menu_cls.get(action.style, _menu_cls['default']) %}
                   {% if action.is_builtin %}
@@ -296,7 +296,16 @@ function toggleRowOverflow(btn) {
   var opening = menu.classList.contains('hidden');
   // close all open overflow menus
   document.querySelectorAll('.overflow-dropdown').forEach(function(m) { m.classList.add('hidden'); });
-  if (opening) menu.classList.remove('hidden');
+  if (opening) {
+    var r = btn.getBoundingClientRect();
+    menu.style.top  = (r.top - menu.offsetHeight - 4) + 'px';
+    menu.style.left = (r.right - 176) + 'px'; // 176 = w-44
+    menu.classList.remove('hidden');
+    // recalc after paint (menu height now known)
+    requestAnimationFrame(function() {
+      menu.style.top = (r.top - menu.offsetHeight - 4) + 'px';
+    });
+  }
 }
 
 if (!window._rowOverflowClickHandler) {
