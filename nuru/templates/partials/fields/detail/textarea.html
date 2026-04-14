@@ -1,4 +1,12 @@
-<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6 {% if not is_last %}border-b border-zinc-100 dark:border-zinc-700{% endif %}">
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">{{ field.label }}</dt>
+  <dd class="text-sm text-zinc-900 dark:text-zinc-100">
+    {% if value is not none and value != '' %}<pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{{ value }}</pre>{% else %}<span class="text-zinc-400 dark:text-zinc-500 italic">—</span>{% endif %}
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
   <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center">{{ field.label }}</dt>
   <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-zinc-900 dark:text-zinc-100">
     {% if value is not none and value != '' %}
@@ -8,3 +16,4 @@
     {% endif %}
   </dd>
 </div>
+{% endif %}

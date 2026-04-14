@@ -363,7 +363,7 @@ class Resource:
         data: dict[str, Any] = {}
         submitted = dict(form_data)
 
-        for field in self.form_fields:
+        for field in self._flat_form_fields:
             key = field.key
             if field.field_type == "checkbox":
                 data[key] = submitted.get(key) == "true"
@@ -376,6 +376,17 @@ class Resource:
                 data[key] = None
 
         return data
+
+    @property
+    def _flat_form_fields(self) -> list:
+        """Flatten form_fields, expanding any Section containers into their fields."""
+        flat = []
+        for item in self.form_fields:
+            if getattr(item, "is_section", False):
+                flat.extend(item.fields)
+            else:
+                flat.append(item)
+        return flat
 
     # ------------------------------------------------------------------
     # Internal helpers

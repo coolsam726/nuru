@@ -13,10 +13,36 @@ class Field:
     default: Any = None
     field_type: str = "text"
     input_type: str = "text"
+    # Layout hints — used when the field lives inside a Section
+    col_span: int | str = 1   # 1 (default) | 2 | 3 | 4 | "full"
+    is_section: bool = False  # discriminator — always False for fields
 
     def __post_init__(self):
         if not self.label:
             self.label = self.key.replace("_", " ").title()
+
+
+@dataclass
+class Section:
+    """
+    A layout container that groups fields into a responsive grid.
+
+    Example::
+
+        Section(
+            title="Contact",
+            cols=2,
+            fields=[
+                Text(key="email"),
+                Text(key="phone", col_span="full"),
+            ],
+        )
+    """
+    fields: list
+    title: str = ""
+    description: str = ""
+    cols: int = 1          # 1 | 2 | 3 | 4  (responsive breakpoints applied automatically)
+    is_section: bool = True  # discriminator — always True for sections
 
 
 @dataclass
