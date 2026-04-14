@@ -85,6 +85,7 @@ class AdminPanel:
         per_page: int = 25,
         auth: AuthBackend | None = None,
         template_dirs: list[str | Path] | None = None,
+        extra_css: list[str] | str | None = None,
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
@@ -101,6 +102,12 @@ class AdminPanel:
         self.logo_url = logo_url
         self.per_page = per_page
         self.auth = auth
+        if extra_css is None:
+            self.extra_css: list[str] = []
+        elif isinstance(extra_css, str):
+            self.extra_css = [extra_css]
+        else:
+            self.extra_css = list(extra_css)
 
         # Derive a safe identifier from the prefix for naming purposes.
         # "/admin" → "admin", "/staff/panel" → "staff_panel"
@@ -363,5 +370,6 @@ class AdminPanel:
             "resources":    self._resources,
             "pages":         self._pages,
             "auth_enabled": self.auth is not None,
+            "extra_css":    self.extra_css,
             "current_user": None,   # overridden per-request via _render(user=...)
         }

@@ -217,6 +217,70 @@ Nuru uses **Tailwind CSS v4** compiled to a single static file (`nuru/static/tai
 
 The input CSS lives at `nuru/static/tailwind.input.css` and uses Tailwind 4's CSS-first configuration. All Tailwind theme colors (`--color-indigo-500`, `--color-gray-200`, etc.) are exposed as native CSS custom properties on `:root` by the built stylesheet — no JavaScript probing needed.
 
+## Custom Tailwind classes
+
+Nuru's pre-built `tailwind.css` only scans Nuru's own templates. If your `Resource`, `Page`, or custom Jinja templates use Tailwind utility classes that aren't already present in Nuru's templates, those classes won't be included in the built stylesheet.
+
+### Option 1 — supplemental stylesheet (recommended)
+
+Build a second, project-level stylesheet that covers only your application code, then pass it to `AdminPanel` via `extra_css`:
+
+```css
+/* my_app/static/admin-extra.input.css */
+@import "tailwindcss";
+
+/* Point at your own code */
+@source "../**/*.py";
+@source "../templates/**/*.html";
+
+@variant dark (&:where(.dark, .dark *));
+```
+
+```bash
+# reuse Nuru's node_modules, or install tailwindcss in your project
+./node_modules/.bin/tailwindcss \
+  -i my_app/static/admin-extra.input.css \
+  -o my_app/static/admin-extra.css \
+  --minify
+```
+
+```python
+# app setup
+panel = AdminPanel(
+    prefix="/admin",
+    extra_css="/static/admin-extra.css",          # single URL
+    # extra_css=["/static/a.css", "/static/b.css"],  # or a list
+)
+```
+
+The `extra_css` stylesheets are loaded **after** Nuru's stylesheet, so your utilities can safely complement or override it.
+
+### Option 2 — replace Nuru's stylesheet entirely
+
+If you prefer a single request, build one stylesheet that covers both Nuru's templates and your own code, then serve it at `{prefix}/static/tailwind.css` via a higher-priority `StaticFiles` mount:
+
+```css
+/* my_app/static/tailwind.input.css */
+@import "tailwindcss";
+
+/* Nuru's own templates */
+@source "/path/to/site-packages/nuru/templates/**/*.html";
+
+/* Your application code */
+@source "../**/*.py";
+@source "../templates/**/*.html";
+
+@variant dark (&:where(.dark, .dark *));
+```
+
+Build and mount before Nuru's route:
+
+```python
+from starlette.staticfiles import StaticFiles
+
+app.mount("/admin/static", StaticFiles(directory="my_app/static"), name="admin-static")
+```
+
 ## What's shipped
 
 - ✅ **Core CRUD** — tables, forms, detail views

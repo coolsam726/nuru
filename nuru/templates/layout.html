@@ -30,6 +30,9 @@
   {% endif %}
 
   <link rel="stylesheet" href="{{ panel_prefix }}/static/tailwind.css">
+  {% for css_url in extra_css %}
+  <link rel="stylesheet" href="{{ css_url }}">
+  {% endfor %}
 
   <style>
     :root {
