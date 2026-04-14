@@ -75,114 +75,130 @@
         <td class="px-4 py-3 text-right">
           <div class="flex items-center justify-end gap-1">
 
-            {% set _row_actions = resource.row_actions %}
-            {% set _show_inline = _row_actions[:2] if _row_actions | length > 3 else _row_actions %}
-            {% set _overflow    = _row_actions[2:] if _row_actions | length > 3 else [] %}
+            {% set _all = resource.all_row_actions %}
+            {% set _show_inline = _all[:2] if _all | length > 3 else _all %}
+            {% set _overflow    = _all[2:] if _all | length > 3 else [] %}
+
+            {# ── shared style maps ──────────────────────────────── #}
+            {% set _icon_cls = {
+              'success': 'text-zinc-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 dark:hover:text-green-400',
+              'warning': 'text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:hover:text-amber-400',
+              'danger':  'text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:hover:text-red-400',
+              'default': 'text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400',
+            } %}
+            {% set _menu_cls = {
+              'success': 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30',
+              'warning': 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30',
+              'danger':  'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30',
+              'default': 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700',
+            } %}
 
             {# ── Inline actions ─────────────────────────────────── #}
             {% for action in _show_inline %}
-              {% set _style_cls = {
-                'success': 'text-zinc-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 dark:hover:text-green-400',
-                'warning': 'text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 dark:hover:text-amber-400',
-                'danger':  'text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:hover:text-red-400',
-                'default': 'text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400',
-              } %}
-              {% set _btn_cls = _style_cls.get(action.style, _style_cls['default']) %}
-              <button type="button"
-                      data-action-trigger
-                      data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-                      data-action-title="{{ action.modal_title }}"
-                      data-action-fields="{{ action.fields_json() | e }}"
-                      data-action-confirm="{{ action.confirm or '' }}"
-                      data-action-submit="{{ action.label }}"
-                      class="p-1.5 rounded transition-colors text-xs font-medium {{ _btn_cls }}"
-                      title="{{ action.label }}">
-                {% if action.icon %}
+              {% set _cls = _icon_cls.get(action.style, _icon_cls['default']) %}
+              {% if action.is_builtin %}
+                {# Built-in: view → <a>, edit → <a>, delete → hx-delete #}
+                {% if action.key == '__view__' %}
+                <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
+                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
                   </svg>
-                {% else %}
-                  {{ action.label }}
+                </a>
+                {% elif action.key == '__edit__' %}
+                <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
+                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                  </svg>
+                </a>
+                {% elif action.key == '__delete__' %}
+                <button class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}"
+                        hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
+                        hx-confirm="Delete this {{ resource.label }}?"
+                        hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                  </svg>
+                </button>
                 {% endif %}
-              </button>
+              {% else %}
+                {# Custom action: data-action-trigger modal #}
+                <button type="button"
+                        data-action-trigger
+                        data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+                        data-action-title="{{ action.modal_title }}"
+                        data-action-fields="{{ action.fields_json() | e }}"
+                        data-action-confirm="{{ action.confirm or '' }}"
+                        data-action-submit="{{ action.label }}"
+                        class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
+                  {% if action.icon %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                  </svg>
+                  {% else %}{{ action.label }}{% endif %}
+                </button>
+              {% endif %}
             {% endfor %}
 
             {# ── Overflow menu (⋮) ──────────────────────────────── #}
             {% if _overflow %}
             <div class="relative" data-overflow-menu>
-              <button type="button"
-                      onclick="toggleRowOverflow(this)"
+              <button type="button" onclick="toggleRowOverflow(this)"
                       class="p-1.5 rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 dark:hover:text-zinc-200 transition-colors"
                       title="More actions">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="5"  r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                  <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                 </svg>
               </button>
               <div class="overflow-dropdown hidden absolute right-0 bottom-full mb-1 w-44 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-lg z-50 py-1">
                 {% for action in _overflow %}
-                  {% set _dm_cls = {
-                    'success': 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30',
-                    'warning': 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30',
-                    'danger':  'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30',
-                    'default': 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700',
-                  } %}
-                  <button type="button"
-                          data-action-trigger
-                          data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-                          data-action-title="{{ action.modal_title }}"
-                          data-action-fields="{{ action.fields_json() | e }}"
-                          data-action-confirm="{{ action.confirm or '' }}"
-                          data-action-submit="{{ action.label }}"
-                          class="w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 {{ _dm_cls.get(action.style, _dm_cls['default']) }}">
-                    {% if action.icon %}
+                  {% set _mcls = _menu_cls.get(action.style, _menu_cls['default']) %}
+                  {% if action.is_builtin %}
+                    {% if action.key == '__view__' %}
+                    <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
+                       class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
+                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                      </svg>{{ action.label }}
+                    </a>
+                    {% elif action.key == '__edit__' %}
+                    <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
+                       class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
+                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                      </svg>{{ action.label }}
+                    </a>
+                    {% elif action.key == '__delete__' %}
+                    <button class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}"
+                            hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
+                            hx-confirm="Delete this {{ resource.label }}?"
+                            hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
+                      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+                      </svg>{{ action.label }}
+                    </button>
+                    {% endif %}
+                  {% else %}
+                    <button type="button"
+                            data-action-trigger
+                            data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+                            data-action-title="{{ action.modal_title }}"
+                            data-action-fields="{{ action.fields_json() | e }}"
+                            data-action-confirm="{{ action.confirm or '' }}"
+                            data-action-submit="{{ action.label }}"
+                            class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
+                      {% if action.icon %}
                       <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
                       </svg>
-                    {% endif %}
-                    {{ action.label }}
-                  </button>
+                      {% endif %}
+                      {{ action.label }}
+                    </button>
+                  {% endif %}
                 {% endfor %}
               </div>
             </div>
-            {% endif %}
-
-            {% if resource.can_view %}
-            <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
-               class="p-1.5 rounded text-zinc-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/30 dark:hover:text-sky-400 transition-colors"
-               title="View">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
-            </a>
-            {% endif %}
-
-            {% if resource.can_edit %}
-            <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
-               class="p-1.5 rounded text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 dark:hover:text-indigo-400 transition-colors"
-               title="Edit">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-            </a>
-            {% endif %}
-
-            {% if resource.can_delete %}
-            <button
-               class="p-1.5 rounded text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 dark:hover:text-red-400 transition-colors"
-               title="Delete"
-               hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
-               hx-confirm="Delete this {{ resource.label }}?"
-               hx-target="#row-{{ record_id }}"
-               hx-swap="outerHTML swap:200ms">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
             {% endif %}
 
           </div>
