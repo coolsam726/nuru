@@ -175,7 +175,7 @@ class AdminPanel:
                 continue
             slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
             label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
-            icon_name = resource_cls.nav_icon or "table"
+            icon_name = resource_cls.nav_icon or "folder"
             icon = resolve_icon(icon_name)
             items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
 
@@ -311,7 +311,7 @@ class AdminPanel:
                 continue
             slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
             label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
-            icon_name = resource_cls.nav_icon or "table"
+            icon_name = resource_cls.nav_icon or "folder"
             icon = resolve_icon(icon_name)
             items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
 
