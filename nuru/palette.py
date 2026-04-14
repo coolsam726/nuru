@@ -252,34 +252,42 @@ def palette_css_vars(name: str, color: str) -> str:
 
     ``name`` should be one of: primary, secondary, accent, info, success,
     danger, warning.
+
+    ``color`` may be a real CSS color value such as ``#6366f1`` or
+    ``oklch(...)``, or an existing CSS variable such as
+    ``var(--color-indigo-500)`` / ``--color-indigo-500``. Variable inputs
+    are expanded with ``color-mix(...)`` so the full 50–950 scale can still
+    be derived from the provided token.
     """
-    # If the user passed a CSS variable (e.g. "var(--color-indigo-500)")
-    # or a raw property name (e.g. "--color-indigo-500"), prefer to map
-    # the generated stops to that variable family instead of attempting
-    # to parse the variable's computed colour here.
+    # CSS variable input is handled with color-mix so we can derive the
+    # surrounding stops from the provided token without needing its concrete
+    # computed value at build time.
     v = color.strip()
+    if v.lower().startswith("var(") and v.endswith(")"):
+        base_token = v
+    elif v.startswith("--"):
+        base_token = f"var({v})"
+    else:
+        base_token = ""
 
-    # Handle 'var(--foo-500)' or 'var(--foo)'. Extract the inner token and
-    # decide whether it encodes a numeric stop at the end.
-    if v.lower().startswith('var(') and v.endswith(')'):
-        inner = v[v.find('(') + 1 : v.rfind(')')].strip()
-        if inner.startswith('--'):
-            m_end = re.search(r'-(50|100|200|300|400|500|600|700|800|900|950)$', inner)
-            if m_end:
-                base = inner[:m_end.start()]
-                lines = [f"  --color-{name}-{stop}: var({base}-{stop});" for stop, _ in _STOPS]
-            else:
-                lines = [f"  --color-{name}-{stop}: var({inner});" for stop, _ in _STOPS]
-            return "\n".join(lines)
+    if base_token:
+        base_lightness = dict(_STOPS)[500]
 
-    # Handle raw property names like --color-indigo-500 or --brand
-    if v.startswith('--'):
-        m_end = re.search(r'-(50|100|200|300|400|500|600|700|800|900|950)$', v)
-        if m_end:
-            base = v[:m_end.start()]
-            lines = [f"  --color-{name}-{stop}: var({base}-{stop});" for stop, _ in _STOPS]
-        else:
-            lines = [f"  --color-{name}-{stop}: var({v});" for stop, _ in _STOPS]
+        def mix_expr(target_lightness: float) -> str:
+            if target_lightness == base_lightness:
+                return base_token
+            if target_lightness > base_lightness:
+                base_pct = max(0.0, min(100.0, (1.0 - target_lightness) / (1.0 - base_lightness) * 100.0))
+                light_pct = 100.0 - base_pct
+                return f"color-mix(in oklch, white {light_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+            base_pct = max(0.0, min(100.0, target_lightness / base_lightness * 100.0))
+            dark_pct = 100.0 - base_pct
+            return f"color-mix(in oklch, black {dark_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+
+        lines = [
+            f"  --color-{name}-{stop}: {mix_expr(L_target)};"
+            for stop, L_target in _STOPS
+        ]
         return "\n".join(lines)
 
     # Fallback: compute an OKLch palette from the provided colour string
