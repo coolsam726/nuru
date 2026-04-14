@@ -9,6 +9,7 @@ Run with:  uvicorn example_app.main:app --reload
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, Request
@@ -20,7 +21,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker as _asm,
 )
 
-from nuru import AdminPanel, Resource, SimpleAuthBackend, columns, fields
+from nuru import AdminPanel, Page, Resource, SimpleAuthBackend, columns, fields
 from nuru.actions import Action
 
 
@@ -710,6 +711,81 @@ class ProductResource(Resource):
 
 
 # ---------------------------------------------------------------------------
+# Custom Page: Reports
+# ---------------------------------------------------------------------------
+
+_EXAMPLE_TEMPLATES = Path(__file__).parent / "templates"
+
+
+class ReportsPage(Page):
+    """Live summary page — showcases Page, detail_grid, and Fieldset partials."""
+
+    label = "Reports"
+    slug = "reports"
+    icon = "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+
+    async def get_context(self, request: Request) -> dict:
+        async with _get_session() as session:
+            all_users = (await session.exec(sm_select(User))).all()
+            all_orders = (await session.exec(sm_select(Order))).all()
+
+        total_users = len(all_users)
+        active_users = sum(1 for u in all_users if u.active)
+        total_orders = len(all_orders)
+        total_revenue = sum(o.total for o in all_orders)
+        avg_order = total_revenue / total_orders if total_orders else 0
+        pending_orders = sum(1 for o in all_orders if o.status == "pending")
+
+        role_counts = {
+            r: sum(1 for u in all_users if u.role == r)
+            for r in ("admin", "editor", "viewer")
+        }
+
+        recent_orders = sorted(all_orders, key=lambda o: o.id or 0, reverse=True)[:8]
+
+        # Fields for the KPI detail grid
+        kpi_fields = [
+            fields.Text("total_users", "Total users"),
+            fields.Text("active_users", "Active users"),
+            fields.Text("total_orders", "Total orders"),
+            fields.Text("pending_orders", "Pending orders"),
+            fields.Text("total_revenue", "Total revenue (KES)"),
+            fields.Text("avg_order", "Avg order value (KES)"),
+        ]
+        kpi = {
+            "total_users": str(total_users),
+            "active_users": f"{active_users} ({100 * active_users // total_users if total_users else 0}%)",
+            "total_orders": str(total_orders),
+            "pending_orders": str(pending_orders),
+            "total_revenue": f"{total_revenue:,.2f}",
+            "avg_order": f"{avg_order:,.2f}",
+        }
+
+        # Fields for the role breakdown grid (Fieldset demo)
+        role_fields = [
+            fields.Fieldset(
+                title="Roles",
+                description="Count of users by assigned role.",
+                cols=3,
+                col_span="full",
+                fields=[
+                    fields.Text("admin", "Admins"),
+                    fields.Text("editor", "Editors"),
+                    fields.Text("viewer", "Viewers"),
+                ],
+            )
+        ]
+
+        return {
+            "kpi_fields": kpi_fields,
+            "kpi": kpi,
+            "role_fields": role_fields,
+            "role_counts": {k: str(v) for k, v in role_counts.items()},
+            "recent_orders": recent_orders,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Panel mounts
 # ---------------------------------------------------------------------------
 
@@ -723,9 +799,11 @@ admin_panel = AdminPanel(
         password="secret",
         secret_key="dev-secret-key-change-in-production",
     ),
+    template_dirs=[_EXAMPLE_TEMPLATES],
 )
 admin_panel.register(UserResource)
 admin_panel.register(OrderResource)
+admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
 
 ops_panel = AdminPanel(title="Ops", prefix="/ops", brand_color="#e11d48")

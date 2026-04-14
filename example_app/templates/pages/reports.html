@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block title %}Reports — {{ panel_title }}{% endblock %}
+
+{% block breadcrumb %}
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
+    <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
+    <span class="select-none">›</span>
+    <span class="text-zinc-600 dark:text-zinc-300">Reports</span>
+  </nav>
+{% endblock %}
+
+{% block page_heading %}
+  <div>
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Reports</h1>
+    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Live stats sourced from the database — rendered with nuru partials.</p>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  {# ── Callout explaining this page ──────────────────────────────────── #}
+  <div class="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50
+              dark:border-blue-700/50 dark:bg-blue-900/20 px-4 py-3 text-sm
+              text-blue-800 dark:text-blue-300">
+    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>
+      This is a <strong>custom <code class="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">Page</code></strong>
+      — no model or CRUD required.
+      The stat cards use <code class="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">partials/detail_grid.html</code>
+      and the order table uses raw Tailwind HTML. Register your own pages with
+      <code class="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">panel.register_page(MyPage)</code>.
+    </span>
+  </div>
+
+  {# ── KPI stat cards via detail_grid ────────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">Overview</h2>
+
+    {%- set _fields = kpi_fields %}
+    {%- set _form_cols = 4 %}
+    {%- set record = kpi %}
+    {% include "partials/detail_grid.html" %}
+  </section>
+
+  {# ── Role breakdown (Fieldset demo) ────────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">User breakdown</h2>
+
+    {%- set _fields = role_fields %}
+    {%- set _form_cols = 2 %}
+    {%- set record = role_counts %}
+    {% include "partials/detail_grid.html" %}
+  </section>
+
+  {# ── Recent orders — plain HTML table ──────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4">Recent orders</h2>
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700">
+            <th class="px-4 py-2.5 text-left font-medium text-zinc-500 dark:text-zinc-400">Order #</th>
+            <th class="px-4 py-2.5 text-left font-medium text-zinc-500 dark:text-zinc-400">Customer</th>
+            <th class="px-4 py-2.5 text-left font-medium text-zinc-500 dark:text-zinc-400">Status</th>
+            <th class="px-4 py-2.5 text-right font-medium text-zinc-500 dark:text-zinc-400">Total (KES)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700/60">
+          {% for order in recent_orders %}
+          <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+            <td class="px-4 py-2.5 font-mono text-zinc-800 dark:text-zinc-200">
+              <a href="{{ panel_prefix }}/order/{{ order.id }}/view"
+                 class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                {{ order.order_number }}
+              </a>
+            </td>
+            <td class="px-4 py-2.5 text-zinc-700 dark:text-zinc-300">{{ order.customer }}</td>
+            <td class="px-4 py-2.5">
+              {%- set badge_colors = {
+                "pending":    "bg-amber-100  text-amber-800  dark:bg-amber-900/40  dark:text-amber-300",
+                "processing": "bg-blue-100   text-blue-800   dark:bg-blue-900/40   dark:text-blue-300",
+                "shipped":    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+                "delivered":  "bg-green-100  text-green-800  dark:bg-green-900/40  dark:text-green-300",
+                "cancelled":  "bg-red-100    text-red-800    dark:bg-red-900/40    dark:text-red-300"
+              } %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                           {{ badge_colors.get(order.status, 'bg-zinc-100 text-zinc-700') }}">
+                {{ order.status }}
+              </span>
+            </td>
+            <td class="px-4 py-2.5 text-right font-medium text-zinc-800 dark:text-zinc-200">
+              {{ '{:,.2f}'.format(order.total) }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="px-4 py-6 text-center text-zinc-400 dark:text-zinc-500">No orders yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-zinc-400 dark:text-zinc-500">Showing the 8 most recent orders.</p>
+  </section>
+
+</div>
+{% endblock %}
