@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 if TYPE_CHECKING:
     from .panel import AdminPanel
@@ -85,6 +85,37 @@ class Page:
         """
         return {}
 
+    async def handle_post(self, request: Request) -> Response:
+        """Handle a POST submission to this page's URL.
+
+        Override this to process form submissions from ``partials/form_widget.html``
+        (or any other form that POSTs to this page's slug).
+
+        The default implementation simply redirects back to the GET view.
+        A POST route is only registered if this method is overridden in a
+        subclass.
+
+        Typical pattern::
+
+            async def handle_post(self, request: Request) -> Response:
+                form   = await request.form()
+                title  = str(form.get("title", "")).strip()
+                if not title:
+                    # redirect back with an error flag
+                    return RedirectResponse(
+                        f"{self.panel.prefix}/{self.slug}?error=missing_title",
+                        status_code=303,
+                    )
+                # ... do something with the data ...
+                return RedirectResponse(
+                    f"{self.panel.prefix}/{self.slug}?success=1",
+                    status_code=303,
+                )
+        """
+        return RedirectResponse(
+            f"{self.panel.prefix}/{self.slug}", status_code=303
+        )
+
     # ── Internals — do not override ────────────────────────────────────
 
     def _template_name(self) -> str:
@@ -115,3 +146,16 @@ class Page:
                 request=request,
             )
             return HTMLResponse(html)
+
+        # Only register a POST route if the subclass overrides handle_post.
+        if type(page).handle_post is not Page.handle_post:
+
+            @router.post(
+                f"/{page.slug}",
+                response_model=None,
+                include_in_schema=False,
+            )
+            async def page_post(request: Request) -> Response:
+                if (redir := await panel._require_login(request)):
+                    return redir  # type: ignore[return-value]
+                return await page.handle_post(request)

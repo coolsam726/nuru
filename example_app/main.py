@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse, Response
 from sqlmodel import SQLModel, Field as SMField, select as sm_select
 from sqlmodel.ext.asyncio.session import AsyncSession as _AsyncSession
 from sqlalchemy.ext.asyncio import (
@@ -716,9 +716,12 @@ class ProductResource(Resource):
 
 _EXAMPLE_TEMPLATES = Path(__file__).parent / "templates"
 
+# In-memory store for the quick-note demo form
+_quick_notes: list[dict] = []
+
 
 class ReportsPage(Page):
-    """Live summary page — showcases Page, detail_grid, and Fieldset partials."""
+    """Live summary page — showcases Page, form_widget, table_widget, detail_grid."""
 
     label = "Reports"
     slug = "reports"
@@ -743,7 +746,7 @@ class ReportsPage(Page):
 
         recent_orders = sorted(all_orders, key=lambda o: o.id or 0, reverse=True)[:8]
 
-        # Fields for the KPI detail grid
+        # ── KPI detail grid ──────────────────────────────────────────────
         kpi_fields = [
             fields.Text("total_users", "Total users"),
             fields.Text("active_users", "Active users"),
@@ -761,7 +764,7 @@ class ReportsPage(Page):
             "avg_order": f"{avg_order:,.2f}",
         }
 
-        # Fields for the role breakdown grid (Fieldset demo)
+        # ── Role breakdown Fieldset ──────────────────────────────────────
         role_fields = [
             fields.Fieldset(
                 title="Roles",
@@ -776,13 +779,88 @@ class ReportsPage(Page):
             )
         ]
 
+        # ── table_widget: recent orders ───────────────────────────────────
+        order_columns = [
+            columns.Text("order_number", "Order #"),
+            columns.Text("customer", "Customer"),
+            columns.Badge(
+                "status",
+                "Status",
+                colors={
+                    "pending": "amber",
+                    "processing": "blue",
+                    "shipped": "purple",
+                    "delivered": "green",
+                    "cancelled": "red",
+                },
+            ),
+            columns.Currency("total", "Total (KES)", currency="KES"),
+        ]
+
+        # ── form_widget: quick note ───────────────────────────────────────
+        note_fields = [
+            fields.Text("author", "Your name", required=True, placeholder="Jane Doe"),
+            fields.Textarea(
+                "message",
+                "Note",
+                required=True,
+                placeholder="Write a quick note visible to other admins...",
+                col_span="full",
+            ),
+        ]
+
+        # ── table_widget: submitted notes ────────────────────────────────
+        note_columns = [
+            columns.Text("author", "Author"),
+            columns.Text("message", "Message"),
+            columns.Text("posted_at", "Posted"),
+        ]
+
+        error = request.query_params.get("error", "")
+        success = request.query_params.get("success", "")
+
         return {
             "kpi_fields": kpi_fields,
             "kpi": kpi,
             "role_fields": role_fields,
             "role_counts": {k: str(v) for k, v in role_counts.items()},
+            "order_columns": order_columns,
             "recent_orders": recent_orders,
+            "note_fields": note_fields,
+            "note_columns": note_columns,
+            "notes": list(_quick_notes),
+            "form_error": error,
+            "form_success": success,
+            # form_widget needs these
+            "record": None,
+            "errors": None,
         }
+
+    async def handle_post(self, request: Request) -> Response:
+        form = await request.form()
+        author = str(form.get("author", "")).strip()
+        message = str(form.get("message", "")).strip()
+
+        if not author or not message:
+            return RedirectResponse(
+                f"{self.panel.prefix}/{self.slug}?error=Please+fill+in+all+fields.",
+                status_code=303,
+            )
+
+        from datetime import datetime, timezone
+
+        _quick_notes.insert(
+            0,
+            {
+                "author": author,
+                "message": message,
+                "posted_at": datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC"),
+            },
+        )
+        return RedirectResponse(
+            f"{self.panel.prefix}/{self.slug}?success=Note+posted.",
+            status_code=303,
+        )
 
 
 # ---------------------------------------------------------------------------

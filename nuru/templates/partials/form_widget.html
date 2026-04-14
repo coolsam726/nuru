@@ -1,0 +1,50 @@
+{#
+  Standalone form widget — a full <form> wrapper around partials/form_grid.html.
+  Use this inside any custom Page template to embed an input form without
+  needing a Resource.
+
+  Required context variables:
+    _fields      — list of Field / Section / Fieldset instances
+    _form_cols   — int (1–4): top-level grid column count
+    _form_action — URL the form POSTs to
+
+  Optional context variables:
+    record           — dict or ORM object used to pre-fill field values (or None)
+    errors           — dict of {field_key: error_message} for inline errors (or None)
+    _form_method     — HTTP method attribute (default: "post")
+    _form_submit     — submit button label (default: "Save")
+    _form_cancel_url — URL for a "Cancel" link; omit to hide the cancel link
+    _form_enctype    — enctype attribute, e.g. "multipart/form-data"
+
+  Usage in a custom page template:
+    {% set _fields       = [fields.Text("title", "Title", required=True), fields.Textarea("body", "Body")] %}
+    {% set _form_cols    = 1 %}
+    {% set _form_action  = panel_prefix + "/my-page" %}
+    {% set _form_submit  = "Submit" %}
+    {% set record        = None %}
+    {% set errors        = form_errors %}
+    {% include "partials/form_widget.html" %}
+#}
+{%- set _form_method     = _form_method     if _form_method     is defined else "post" %}
+{%- set _form_submit     = _form_submit     if _form_submit     is defined else "Save" %}
+{%- set _form_enctype    = _form_enctype    if _form_enctype    is defined else "" %}
+{%- set _form_cancel_url = _form_cancel_url if _form_cancel_url is defined else "" %}
+<form method="{{ _form_method }}"
+      action="{{ _form_action }}"
+      {% if _form_enctype %}enctype="{{ _form_enctype }}"{% endif %}>
+  {% include "partials/form_grid.html" %}
+  <div class="flex items-center {% if _form_cancel_url %}justify-between{% else %}justify-end{% endif %}
+              pt-4 mt-1 border-t border-zinc-100 dark:border-zinc-700">
+    {% if _form_cancel_url %}
+    <a href="{{ _form_cancel_url }}"
+       class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400
+              hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+      Cancel
+    </a>
+    {% endif %}
+    <button type="submit"
+            class="px-4 py-2 text-sm font-medium text-white rounded-lg brand-bg hover:opacity-90 transition-opacity">
+      {{ _form_submit }}
+    </button>
+  </div>
+</form>
