@@ -1,8 +1,19 @@
-<textarea
-  name="{{ field.key }}"
-  rows="{{ field.rows | default(4) }}"
-  {% if field.required %}required{% endif %}
-  {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-  class="{{ input_class }}"
-  style="--tw-ring-color: var(--brand);"
->{{ current }}</textarea>
+<div>
+  <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+    {{ field.label }}
+    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+  <textarea
+    name="{{ field.key }}"
+    rows="{{ field.rows | default(4) }}"
+    {% if field.required %}required{% endif %}
+    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+    class="{{ input_class }}"
+    style="--tw-ring-color: var(--brand);"
+  >{{ current }}</textarea>
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
+  {% endif %}
+</div>

@@ -84,17 +84,7 @@
       {% for field in resource.form_fields %}
         {% set value = record | field_value(field.key) %}
         {% if field.field_type != 'hidden' %}
-        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6
-                    {% if not loop.last %}border-b border-zinc-100 dark:border-zinc-700{% endif %}">
-
-          <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center">
-            {{ field.label }}
-          </dt>
-
-          <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-zinc-900 dark:text-zinc-100">
-            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
-          </dd>
-        </div>
+          {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
         {% endif %}
       {% endfor %}
     {% else %}

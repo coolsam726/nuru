@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
 
 if TYPE_CHECKING:
     from .auth import AuthBackend
@@ -62,6 +62,7 @@ class AdminPanel:
         logo_url: str | None = None,
         per_page: int = 25,
         auth: AuthBackend | None = None,
+        template_dirs: list[str | Path] | None = None,
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
@@ -76,8 +77,15 @@ class AdminPanel:
 
         self._resources: list[type[Resource]] = []
         self._router = APIRouter(prefix=self.prefix)
+
+        # Build loader: user dirs (highest priority) → built-in package templates
+        loaders: list[FileSystemLoader] = []
+        for d in (template_dirs or []):
+            loaders.append(FileSystemLoader(str(d)))
+        loaders.append(FileSystemLoader(str(_TEMPLATES_DIR)))
+
         self._jinja_env = Environment(
-            loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+            loader=ChoiceLoader(loaders),
             autoescape=select_autoescape(["html"]),
         )
         self._jinja_env.globals.update(self._template_globals())

@@ -84,25 +84,7 @@
         {% set has_error = errors and field.key in errors %}
         {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
         {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-
-        {% if field.field_type == 'hidden' %}
-          <input type="hidden" name="{{ field.key }}" value="{{ current if current is not none else '' }}">
-        {% else %}
-        <div>
-          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-            {{ field.label }}
-            {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
-          </label>
-
-          {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
-
-          {% if has_error %}
-            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
-          {% elif field.help_text and field.field_type != 'checkbox' %}
-            <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
-          {% endif %}
-        </div>
-        {% endif %}
+        {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
       {% endfor %}
     {% else %}
       <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">

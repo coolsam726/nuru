@@ -1,15 +1,26 @@
-<select
-  name="{{ field.key }}"
-  {% if field.required %}required{% endif %}
-  class="{{ input_class }}"
-  style="--tw-ring-color: var(--brand);"
->
-  <option value="">— Select —</option>
-  {% for opt in field.options %}
-    {% set opt_value = opt.value if opt is mapping else opt %}
-    {% set opt_label = opt.label if opt is mapping else opt %}
-    <option value="{{ opt_value }}" {% if current == opt_value %}selected{% endif %}>
-      {{ opt_label }}
-    </option>
-  {% endfor %}
-</select>
+<div>
+  <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+    {{ field.label }}
+    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+  <select
+    name="{{ field.key }}"
+    {% if field.required %}required{% endif %}
+    class="{{ input_class }}"
+    style="--tw-ring-color: var(--brand);"
+  >
+    <option value="">— Select —</option>
+    {% for opt in field.options %}
+      {% set opt_value = opt.value if opt is mapping else opt %}
+      {% set opt_label = opt.label if opt is mapping else opt %}
+      <option value="{{ opt_value }}" {% if current == opt_value %}selected{% endif %}>
+        {{ opt_label }}
+      </option>
+    {% endfor %}
+  </select>
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
+  {% endif %}
+</div>

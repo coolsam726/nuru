@@ -1,12 +1,23 @@
-<input
-  type="{{ field.input_type | default('text') }}"
-  name="{{ field.key }}"
-  value="{{ current if current is not none else '' }}"
-  {% if field.required %}required{% endif %}
-  {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-  {% if field.min_value is defined and field.min_value is not none %}min="{{ field.min_value }}"{% endif %}
-  {% if field.max_value is defined and field.max_value is not none %}max="{{ field.max_value }}"{% endif %}
-  {% if field.max_length is defined and field.max_length is not none %}maxlength="{{ field.max_length }}"{% endif %}
-  class="{{ input_class }}"
-  style="--tw-ring-color: var(--brand);"
->
+<div>
+  <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+    {{ field.label }}
+    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+  <input
+    type="{{ field.input_type | default('text') }}"
+    name="{{ field.key }}"
+    value="{{ current if current is not none else '' }}"
+    {% if field.required %}required{% endif %}
+    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+    {% if field.min_value is defined and field.min_value is not none %}min="{{ field.min_value }}"{% endif %}
+    {% if field.max_value is defined and field.max_value is not none %}max="{{ field.max_value }}"{% endif %}
+    {% if field.max_length is defined and field.max_length is not none %}maxlength="{{ field.max_length }}"{% endif %}
+    class="{{ input_class }}"
+    style="--tw-ring-color: var(--brand);"
+  >
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
+  {% endif %}
+</div>
