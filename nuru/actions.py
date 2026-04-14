@@ -153,6 +153,7 @@ class Action:
     form_fields: list[Field] = dc_field(default_factory=list)
     form_title: str = ""
     icon: str = ""
+    is_builtin: bool = False                              # always False for user-defined actions
 
     # ── Helpers called by Jinja2 templates ────────────────────────────
 

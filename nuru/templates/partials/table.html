@@ -76,8 +76,8 @@
           <div class="flex items-center justify-end gap-1">
 
             {% set _all = resource.all_row_actions %}
-            {% set _show_inline = _all[:2] if _all | length > 3 else _all %}
-            {% set _overflow    = _all[2:] if _all | length > 3 else [] %}
+            {% set _show_inline = _all | selectattr('is_builtin') | list %}
+            {% set _overflow    = _all | rejectattr('is_builtin') | list %}
 
             {# ── shared style maps ──────────────────────────────── #}
             {% set _icon_cls = {
