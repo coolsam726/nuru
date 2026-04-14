@@ -4,6 +4,8 @@ A declarative admin panel framework for FastAPI. Define your resources once
 in Python — get a full admin UI with tables, forms, search, sorting, and
 dashboards. No HTML, no JS, no separate frontend process.
 
+![screenshot](image.png)
+
 ## Installation
 
 ```bash
