@@ -178,6 +178,14 @@ class AdminPanel:
             }, user=user, request=request)
             return HTMLResponse(html)
 
+        @self._router.get("/profile", response_class=HTMLResponse, response_model=None, include_in_schema=False)
+        async def profile(request: Request) -> HTMLResponse | RedirectResponse:
+            if (redir := await panel._require_login(request)):
+                return redir
+            user = await panel._current_user(request)
+            html = panel._render("profile.html", {}, user=user, request=request)
+            return HTMLResponse(html)
+
     def _mount_static(self, app: FastAPI) -> None:
         """
         Mount the package static directory under this panel's prefix.
