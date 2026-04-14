@@ -1,0 +1,8 @@
+<textarea
+  name="{{ field.key }}"
+  rows="{{ field.rows | default(4) }}"
+  {% if field.required %}required{% endif %}
+  {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+  class="{{ input_class }}"
+  style="--tw-ring-color: var(--brand);"
+>{{ current }}</textarea>

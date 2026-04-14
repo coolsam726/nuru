@@ -83,6 +83,7 @@
     {% if resource.form_fields %}
       {% for field in resource.form_fields %}
         {% set value = record | field_value(field.key) %}
+        {% if field.field_type != 'hidden' %}
         <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6
                     {% if not loop.last %}border-b border-zinc-100 dark:border-zinc-700{% endif %}">
 
@@ -91,68 +92,10 @@
           </dt>
 
           <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-zinc-900 dark:text-zinc-100">
-
-            {% if field.field_type == 'checkbox' %}
-              {% if value %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                             bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                  </svg>
-                  Yes
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-                             bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                  No
-                </span>
-              {% endif %}
-
-            {% elif field.field_type == 'textarea' %}
-              {% if value is not none and value != '' %}
-                <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed
-                            text-zinc-900 dark:text-zinc-100">{{ value }}</pre>
-              {% else %}
-                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
-              {% endif %}
-
-            {% elif field.field_type == 'password' %}
-              <span class="tracking-widest text-zinc-400 dark:text-zinc-500">••••••••</span>
-
-            {% elif field.field_type == 'select' %}
-              {% if value is not none and value != '' %}
-                {# Try to find a matching table_column Badge for colored display #}
-                {% set badge_col = none %}
-                {% for col in resource.table_columns %}
-                  {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}
-                    {% set badge_col = col %}
-                  {% endif %}
-                {% endfor %}
-                {% if badge_col %}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                               {{ badge_col.css_classes(value) }}">
-                    {{ value }}
-                  </span>
-                {% else %}
-                  {{ value }}
-                {% endif %}
-              {% else %}
-                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
-              {% endif %}
-
-            {% else %}
-              {% if value is not none and value != '' %}
-                {{ value }}
-              {% else %}
-                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
-              {% endif %}
-            {% endif %}
-
+            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
           </dd>
         </div>
+        {% endif %}
       {% endfor %}
     {% else %}
       <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">

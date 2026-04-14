@@ -1,0 +1,12 @@
+<input
+  type="{{ field.input_type | default('text') }}"
+  name="{{ field.key }}"
+  value="{{ current if current is not none else '' }}"
+  {% if field.required %}required{% endif %}
+  {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+  {% if field.min_value is defined and field.min_value is not none %}min="{{ field.min_value }}"{% endif %}
+  {% if field.max_value is defined and field.max_value is not none %}max="{{ field.max_value }}"{% endif %}
+  {% if field.max_length is defined and field.max_length is not none %}maxlength="{{ field.max_length }}"{% endif %}
+  class="{{ input_class }}"
+  style="--tw-ring-color: var(--brand);"
+>

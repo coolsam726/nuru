@@ -82,63 +82,19 @@
       {% for field in resource.form_fields %}
         {% set current = record | field_value(field.key) if record else '' %}
         {% set has_error = errors and field.key in errors %}
+        {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
+        {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
+
+        {% if field.field_type == 'hidden' %}
+          <input type="hidden" name="{{ field.key }}" value="{{ current if current is not none else '' }}">
+        {% else %}
         <div>
           <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
             {{ field.label }}
             {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
           </label>
 
-          {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-          {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
-
-          {% if field.field_type == 'textarea' %}
-            <textarea
-              name="{{ field.key }}"
-              rows="4"
-              {% if field.required %}required{% endif %}
-              {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-              class="{{ input_class }}"
-              style="--tw-ring-color: var(--brand);"
-            >{{ current }}</textarea>
-
-          {% elif field.field_type == 'select' %}
-            <select
-              name="{{ field.key }}"
-              {% if field.required %}required{% endif %}
-              class="{{ input_class }}"
-              style="--tw-ring-color: var(--brand);"
-            >
-              <option value="">— Select —</option>
-              {% for opt in field.options %}
-                {% set opt_value = opt.value if opt is mapping else opt %}
-                {% set opt_label = opt.label if opt is mapping else opt %}
-                <option value="{{ opt_value }}" {% if current == opt_value %}selected{% endif %}>
-                  {{ opt_label }}
-                </option>
-              {% endfor %}
-            </select>
-
-          {% elif field.field_type == 'checkbox' %}
-            <div class="flex items-center gap-2">
-              <input type="checkbox" name="{{ field.key }}" value="true"
-                     {% if current %}checked{% endif %}
-                     class="rounded border-zinc-300 dark:border-zinc-600">
-              {% if field.help_text %}
-                <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ field.help_text }}</span>
-              {% endif %}
-            </div>
-
-          {% else %}
-            <input
-              type="{{ field.input_type | default('text') }}"
-              name="{{ field.key }}"
-              value="{{ current if current is not none else '' }}"
-              {% if field.required %}required{% endif %}
-              {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
-              class="{{ input_class }}"
-              style="--tw-ring-color: var(--brand);"
-            >
-          {% endif %}
+          {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
 
           {% if has_error %}
             <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
@@ -146,6 +102,7 @@
             <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
           {% endif %}
         </div>
+        {% endif %}
       {% endfor %}
     {% else %}
       <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">

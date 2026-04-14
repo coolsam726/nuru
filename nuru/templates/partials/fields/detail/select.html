@@ -1,0 +1,19 @@
+{% if value is not none and value != '' %}
+  {# Try to find a matching Badge column for colored display #}
+  {% set badge_col = none %}
+  {% for col in resource.table_columns %}
+    {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}
+      {% set badge_col = col %}
+    {% endif %}
+  {% endfor %}
+  {% if badge_col %}
+    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                 {{ badge_col.css_classes(value) }}">
+      {{ value }}
+    </span>
+  {% else %}
+    {{ value }}
+  {% endif %}
+{% else %}
+  <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
+{% endif %}
