@@ -10,6 +10,15 @@
   </nav>
 {% endblock %}
 
+{% block page_heading %}
+  <div>
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ resource.label_plural }}</h1>
+    {% if total is defined %}
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{{ total }} record{{ 's' if total != 1 }}</p>
+    {% endif %}
+  </div>
+{% endblock %}
+
 {% block header_actions %}
   {% for action in resource.list_actions %}
   <button type="button"
@@ -91,14 +100,7 @@
 {% block content %}
 <div>
 
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-4">
-    <div class="min-w-0">
-      <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ resource.label_plural }}</h1>
-      {% if total is defined %}
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{{ total }} record{{ 's' if total != 1 }}</p>
-      {% endif %}
-    </div>
-
+  <div class="flex flex-col sm:flex-row sm:items-center justify-end mb-5 gap-4">
     <div class="relative w-full sm:w-64 flex-shrink-0">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none"
            fill="none" stroke="currentColor" viewBox="0 0 24 24">

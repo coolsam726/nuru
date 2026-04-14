@@ -14,6 +14,12 @@
   </nav>
 {% endblock %}
 
+{% block page_heading %}
+  <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+    {% if record_id %}Edit {{ resource.label }}{% else %}New {{ resource.label }}{% endif %}
+  </h1>
+{% endblock %}
+
 {% block header_actions %}
   {% if record_id %}
     {% if resource.can_view %}
@@ -55,12 +61,6 @@
 
 {% block content %}
 <div class="max-w-2xl">
-
-  <div class="mb-6">
-    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-      {% if record_id %}Edit {{ resource.label }}{% else %}New {{ resource.label }}{% endif %}
-    </h1>
-  </div>
 
   {% if errors and errors.__all__ %}
   <div class="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-800
