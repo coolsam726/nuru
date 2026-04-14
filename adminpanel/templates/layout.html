@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ panel_title }}{% endblock %}</title>
+
+  {# Apply saved theme before render to avoid flash #}
+  <script>
+    (function(){
+      var t = localStorage.getItem('ap-theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  {# Inter font — matches Catalyst #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Add support for Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  {# HTMX #}
+  {% if htmx_local %}
+    <script src="{{ panel_prefix }}/static/htmx.min.js"></script>
+  {% else %}
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+  {% endif %}
+
+  {# Tailwind CDN — config after load so it's applied before first compile pass #}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root { --brand: {{ brand_color }}; }
+    .brand-bg     { background-color: var(--brand); }
+    .brand-text   { color: var(--brand); }
+    .brand-border { border-color: var(--brand); }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator  { display: block; }
+    .htmx-request.htmx-indicator   { display: block; }
+    #ap-action-modal::backdrop { background: rgba(0,0,0,0.35); }
+  </style>
+</head>
+
+{#
+  Catalyst-inspired layout:
+  - Sidebar: always zinc-950 (dark), regardless of color scheme
+  - Content: white (light) / zinc-900 (dark)
+  - No separate topbar strip — breadcrumb sits inline in main
+#}
+<body class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 min-h-screen flex font-sans antialiased">
+
+  {# Tailwind safelist: ensures dynamically-added active-nav classes are generated #}
+  <div class="hidden bg-zinc-200 dark:bg-white/10 text-zinc-900 dark:text-white"></div>
+
+  {# ─── Mobile backdrop ─────────────────────────────────────────────── #}
+  <div id="sidebar-backdrop"
+       class="fixed inset-0 bg-black/30 z-20 hidden md:hidden"
+       onclick="closeSidebar()"></div>
+
+  {# ─── Sidebar (always zinc-950) ───────────────────────────────────── #}
+  <aside id="sidebar"
+         class="fixed md:relative inset-y-0 left-0 z-30
+                w-64 min-h-screen bg-zinc-50 dark:bg-zinc-900 flex flex-col flex-shrink-0
+                -translate-x-full md:translate-x-0
+                transition-transform duration-200 ease-in-out">
+
+    {# Brand / Logo #}
+    <div class="bg-white dark:bg-zinc-900 shadow-none px-4 py-3 h-[60px] border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+      {% if logo_url %}
+        <img src="{{ logo_url }}" alt="{{ panel_title }}" class="h-7">
+      {% else %}
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg brand-bg flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <span class="font-semibold text-zinc-900 dark:text-white text-sm tracking-tight">{{ panel_title }}</span>
+        </div>
+      {% endif %}
+      <button class="md:hidden p-1 rounded-lg text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              onclick="closeSidebar()" aria-label="Close">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    {# Navigation #}
+    <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+
+      {# Dashboard link #}
+      <a href="{{ panel_prefix }}/"
+         data-nav-link
+         class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
+                text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+
+      {% if resources %}
+        {# Section label #}
+        <div class="px-3 pt-5 pb-1">
+          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Resources</p>
+        </div>
+
+        {% for res_cls in resources %}
+          {% set res_slug  = res_cls.slug        if res_cls.slug        else res_cls.label.lower().replace(' ', '-') %}
+          {% set res_label = res_cls.label_plural if res_cls.label_plural else res_cls.label + 's' %}
+          <a href="{{ panel_prefix }}/{{ res_slug }}"
+             data-nav-link
+             class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
+                    text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
+             onclick="closeSidebar()">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+            {{ res_label }}
+          </a>
+        {% endfor %}
+      {% endif %}
+    </nav>
+
+    {# Sidebar footer — user info #}
+    <div class="shrink-0 border-t border-zinc-200 dark:border-white/5 px-2 py-3">
+      {% if auth_enabled and current_user %}
+        <div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors">
+          <div class="w-7 h-7 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-xs font-semibold">{{ current_user.username[0] | upper }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-zinc-900 dark:text-white truncate">{{ current_user.username }}</p>
+          </div>
+          <a href="{{ panel_prefix }}/logout"
+             title="Sign out"
+             class="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+          </a>
+        </div>
+      {% else %}
+        <p class="px-3 text-[11px] text-zinc-700">{{ panel_title }}</p>
+      {% endif %}
+    </div>
+  </aside>
+
+  {# ─── Main content ────────────────────────────────────────────────── #}
+  <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-zinc-50 dark:bg-zinc-900">
+
+    {# Slim top strip: hamburger + breadcrumb + right actions #}
+    <header class="flex items-center gap-3 px-4 md:px-6 py-3 h-[60px] shadow-none border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+
+      {# Hamburger — mobile only #}
+      <button class="md:hidden p-1.5 -ml-1.5 rounded-lg text-zinc-500 dark:text-zinc-400
+                     hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+              onclick="openSidebar()" aria-label="Open menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      {# Breadcrumb #}
+      <div class="flex-1 min-w-0 text-sm">
+        {% block breadcrumb %}
+          <span class="text-zinc-500 dark:text-zinc-400">Dashboard</span>
+        {% endblock %}
+      </div>
+
+      {# Right: header actions + dark toggle #}
+      <div class="flex items-center gap-2 flex-shrink-0">
+        {% block header_actions %}{% endblock %}
+
+        <button onclick="toggleTheme()"
+                aria-label="Toggle dark mode"
+                class="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400
+                       hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+          <svg class="w-4 h-4 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    {# Flash messages #}
+    <div id="flash-messages" class="px-4 md:px-6 space-y-2">
+      {% block flash %}{% endblock %}
+    </div>
+
+    {# Page content #}
+    <main class="flex-1 px-4 md:px-6 md:px-8 py-6 pt-3 overflow-auto">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    // ─── Active nav highlight ─────────────────────────────────────────
+    (function() {
+      var path = window.location.pathname;
+      var prefix = '{{ panel_prefix | tojson }}'.slice(1, -1);  // unquote;
+      document.querySelectorAll('[data-nav-link]').forEach(function(el) {
+        var href = el.getAttribute('href');
+        var isActive;
+        // Dashboard: exact match only
+        if (href === prefix + '/') {
+          isActive = (path === prefix + '/' || path === prefix);
+        } else {
+          isActive = path.startsWith(href);
+        }
+        if (isActive) {
+          el.classList.remove(
+            'text-zinc-600', 'dark:text-zinc-400',
+            'hover:text-zinc-900', 'dark:hover:text-white',
+            'hover:bg-zinc-200/70', 'dark:hover:bg-white/5'
+          );
+          el.classList.add('bg-zinc-200', 'dark:bg-white/10', 'text-zinc-900', 'dark:text-white');
+        }
+      });
+    })();
+
+    // ─── Dark mode toggle ─────────────────────────────────────────────
+    function toggleTheme() {
+      var html = document.documentElement;
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.setItem('ap-theme', 'light');
+      } else {
+        html.classList.add('dark');
+        localStorage.setItem('ap-theme', 'dark');
+      }
+    }
+
+    // ─── Mobile sidebar ───────────────────────────────────────────────
+    function openSidebar() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('sidebar-backdrop').classList.remove('hidden');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebar-backdrop').classList.add('hidden');
+    }
+  </script>
+
+  {# ─── Action modal dialog ─────────────────────────────────────────── #}
+  <dialog id="ap-action-modal"
+          class="w-full max-w-md rounded-xl border border-zinc-200 dark:border-zinc-700
+                 bg-white dark:bg-zinc-800 shadow-xl p-0 text-zinc-900 dark:text-zinc-100">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-700">
+      <h3 id="ap-modal-title" class="text-sm font-semibold"></h3>
+      <button type="button" onclick="apCloseModal()"
+              class="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="ap-modal-form" method="post">
+      <div id="ap-modal-fields" class="px-5 py-4 space-y-4"></div>
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-zinc-100 dark:border-zinc-700">
+        <button type="button" onclick="apCloseModal()"
+                class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400
+                       hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+          Cancel
+        </button>
+        <button id="ap-modal-submit" type="submit"
+                class="px-4 py-2 text-sm font-medium text-white rounded-lg brand-bg
+                       hover:opacity-90 transition-opacity">
+          Execute
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    // ─── Action modal ─────────────────────────────────────────────────
+    var _apModal = document.getElementById('ap-action-modal');
+    var _apModalTitle = document.getElementById('ap-modal-title');
+    var _apModalForm  = document.getElementById('ap-modal-form');
+    var _apModalFields = document.getElementById('ap-modal-fields');
+    var _apModalSubmit = document.getElementById('ap-modal-submit');
+
+    function apCloseModal() { _apModal && _apModal.close(); }
+
+    function _apBuildField(spec) {
+      var wrap  = document.createElement('div');
+      var IC = 'w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 ' +
+               'rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 ' +
+               'placeholder-zinc-400 focus:outline-none focus:ring-2 focus:border-transparent';
+      var lbl = document.createElement('label');
+      lbl.className = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5';
+      lbl.textContent = spec.label + (spec.required ? ' *' : '');
+      wrap.appendChild(lbl);
+
+      var el;
+      if (spec.field_type === 'textarea') {
+        el = document.createElement('textarea');
+        el.name = spec.key; el.rows = 3; el.className = IC;
+        if (spec.placeholder) el.placeholder = spec.placeholder;
+        if (spec.required)    el.required = true;
+      } else if (spec.field_type === 'select') {
+        el = document.createElement('select');
+        el.name = spec.key; el.className = IC;
+        if (spec.required) el.required = true;
+        var blank = document.createElement('option');
+        blank.value = ''; blank.textContent = '— Select —'; el.appendChild(blank);
+        (spec.options || []).forEach(function(opt) {
+          var o = document.createElement('option');
+          o.value = (typeof opt === 'object') ? opt.value : opt;
+          o.textContent = (typeof opt === 'object') ? opt.label : opt;
+          el.appendChild(o);
+        });
+      } else if (spec.field_type === 'checkbox') {
+        var row = document.createElement('div'); row.className = 'flex items-center gap-2';
+        el = document.createElement('input');
+        el.type = 'checkbox'; el.name = spec.key; el.value = 'true';
+        el.className = 'rounded border-zinc-300 dark:border-zinc-600';
+        row.appendChild(el);
+        if (spec.help_text) {
+          var ht2 = document.createElement('span');
+          ht2.className = 'text-sm text-zinc-500 dark:text-zinc-400';
+          ht2.textContent = spec.help_text;
+          row.appendChild(ht2);
+        }
+        wrap.appendChild(row);
+        return wrap;
+      } else {
+        el = document.createElement('input');
+        el.type = spec.input_type || spec.field_type || 'text';
+        el.name = spec.key; el.className = IC;
+        if (spec.placeholder) el.placeholder = spec.placeholder;
+        if (spec.required)    el.required = true;
+      }
+      el.style.cssText = '--tw-ring-color: var(--brand);';
+      wrap.appendChild(el);
+      if (spec.help_text && spec.field_type !== 'checkbox') {
+        var ht = document.createElement('p');
+        ht.className = 'text-xs text-zinc-400 dark:text-zinc-500 mt-1';
+        ht.textContent = spec.help_text;
+        wrap.appendChild(ht);
+      }
+      return wrap;
+    }
+
+    // Dispatch action button clicks
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action-trigger]');
+      if (!btn) return;
+      e.preventDefault();
+      var url    = btn.dataset.actionUrl;
+      var fields = JSON.parse(btn.dataset.actionFields || '[]');
+      var msg    = btn.dataset.actionConfirm;
+
+      if (fields.length === 0) {
+        if (msg && !window.confirm(msg)) return;
+        var f = document.createElement('form');
+        f.method = 'POST'; f.action = url;
+        document.body.appendChild(f); f.submit(); document.body.removeChild(f);
+        return;
+      }
+      // Open modal
+      _apModalTitle.textContent = btn.dataset.actionTitle || btn.textContent.trim();
+      _apModalForm.action = url;
+      _apModalFields.innerHTML = '';
+      fields.forEach(function(spec) { _apModalFields.appendChild(_apBuildField(spec)); });
+      _apModalSubmit.textContent = btn.dataset.actionSubmit || btn.textContent.trim();
+      _apModal.showModal();
+    });
+
+    // Close on backdrop click
+    _apModal && _apModal.addEventListener('click', function(e) {
+      var r = _apModal.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+        _apModal.close();
+      }
+    });
+  </script>
+
+</body>
+</html>

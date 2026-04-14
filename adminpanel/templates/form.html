@@ -1,0 +1,198 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  {% if record_id %}Edit {{ resource.label }}{% else %}New {{ resource.label }}{% endif %} — {{ panel_title }}
+{% endblock %}
+
+{% block breadcrumb %}
+  <nav class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+    <a href="{{ panel_prefix }}/" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Dashboard</a>
+    <span>/</span>
+    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">{{ resource.label_plural }}</a>
+    <span>/</span>
+    <span class="text-zinc-900 dark:text-zinc-100 font-medium">{% if record_id %}Edit{% else %}New{% endif %}</span>
+  </nav>
+{% endblock %}
+
+{% block header_actions %}
+  {% if record_id %}
+    {% if resource.can_view %}
+    <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
+       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+              text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700
+              hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+      </svg>
+      View
+    </a>
+    {% endif %}
+    {% for action in resource.form_actions %}
+      {% if action.placement == 'header' %}
+      <button type="button"
+              data-action-trigger
+              data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+              data-action-title="{{ action.modal_title }}"
+              data-action-fields="{{ action.fields_json() | e }}"
+              data-action-confirm="{{ action.confirm or '' }}"
+              data-action-submit="{{ action.label }}"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                     {{ action.button_class }} transition-colors">
+        {% if action.icon %}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+          </svg>
+        {% endif %}
+        {{ action.label }}
+      </button>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+
+  <div class="mb-6">
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+      {% if record_id %}Edit {{ resource.label }}{% else %}New {{ resource.label }}{% endif %}
+    </h1>
+  </div>
+
+  {% if errors and errors.__all__ %}
+  <div class="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-800
+              dark:bg-red-900/30 dark:border-red-700/50 dark:text-red-300
+              rounded-xl px-4 py-3 text-sm">
+    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    {{ errors.__all__ }}
+  </div>
+  {% endif %}
+
+  <form method="post"
+        action="{{ panel_prefix }}/{{ resource.slug }}{% if record_id %}/{{ record_id }}{% endif %}"
+        class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-5 shadow-sm">
+
+    {% if resource.form_fields %}
+      {% for field in resource.form_fields %}
+        {% set current = record | field_value(field.key) if record else '' %}
+        {% set has_error = errors and field.key in errors %}
+        <div>
+          <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            {{ field.label }}
+            {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+          </label>
+
+          {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
+          {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
+
+          {% if field.field_type == 'textarea' %}
+            <textarea
+              name="{{ field.key }}"
+              rows="4"
+              {% if field.required %}required{% endif %}
+              {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+              class="{{ input_class }}"
+              style="--tw-ring-color: var(--brand);"
+            >{{ current }}</textarea>
+
+          {% elif field.field_type == 'select' %}
+            <select
+              name="{{ field.key }}"
+              {% if field.required %}required{% endif %}
+              class="{{ input_class }}"
+              style="--tw-ring-color: var(--brand);"
+            >
+              <option value="">— Select —</option>
+              {% for opt in field.options %}
+                {% set opt_value = opt.value if opt is mapping else opt %}
+                {% set opt_label = opt.label if opt is mapping else opt %}
+                <option value="{{ opt_value }}" {% if current == opt_value %}selected{% endif %}>
+                  {{ opt_label }}
+                </option>
+              {% endfor %}
+            </select>
+
+          {% elif field.field_type == 'checkbox' %}
+            <div class="flex items-center gap-2">
+              <input type="checkbox" name="{{ field.key }}" value="true"
+                     {% if current %}checked{% endif %}
+                     class="rounded border-zinc-300 dark:border-zinc-600">
+              {% if field.help_text %}
+                <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ field.help_text }}</span>
+              {% endif %}
+            </div>
+
+          {% else %}
+            <input
+              type="{{ field.input_type | default('text') }}"
+              name="{{ field.key }}"
+              value="{{ current if current is not none else '' }}"
+              {% if field.required %}required{% endif %}
+              {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+              class="{{ input_class }}"
+              style="--tw-ring-color: var(--brand);"
+            >
+          {% endif %}
+
+          {% if has_error %}
+            <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+          {% elif field.help_text and field.field_type != 'checkbox' %}
+            <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">{{ field.help_text }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">
+        No form fields defined. Add <code class="font-mono bg-zinc-100 dark:bg-zinc-700 px-1 rounded">form_fields</code>
+        to your Resource class.
+      </p>
+    {% endif %}
+
+    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-700">
+      <a href="{{ panel_prefix }}/{{ resource.slug }}"
+         class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+        Cancel
+      </a>
+      <div class="flex flex-wrap gap-2 items-center">
+        {# Inline form actions #}
+        {% if record_id %}
+          {% for action in resource.form_actions %}
+            {% if action.placement == 'inline' %}
+            <button type="button"
+                    data-action-trigger
+                    data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+                    data-action-title="{{ action.modal_title }}"
+                    data-action-fields="{{ action.fields_json() | e }}"
+                    data-action-confirm="{{ action.confirm or '' }}"
+                    data-action-submit="{{ action.label }}"
+                    class="px-4 py-2 text-sm rounded-lg font-medium {{ action.button_class }} transition-colors">
+              {{ action.label }}
+            </button>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {# Save buttons #}
+        {% if record_id %}
+          <button type="submit" name="_action" value="save_and_continue"
+                  class="px-4 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-600
+                         hover:bg-zinc-50 dark:hover:bg-zinc-700
+                         text-zinc-700 dark:text-zinc-300 transition-colors">
+            Save &amp; continue editing
+          </button>
+        {% endif %}
+        <button type="submit"
+                class="px-4 py-2 text-sm font-medium text-white rounded-lg brand-bg hover:opacity-90 transition-opacity">
+          {% if record_id %}Save changes{% else %}Create {{ resource.label }}{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ record }} — {{ resource.label }} — {{ panel_title }}{% endblock %}
+
+{% block breadcrumb %}
+  <nav class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+    <a href="{{ panel_prefix }}/" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Dashboard</a>
+    <span>/</span>
+    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">{{ resource.label_plural }}</a>
+    <span>/</span>
+    <span class="text-zinc-900 dark:text-zinc-100 font-medium">{{ record }}</span>
+  </nav>
+{% endblock %}
+
+{% block header_actions %}
+  {% if resource.form_actions %}
+    {% for action in resource.form_actions %}
+      {% if action.placement == 'header' %}
+      <button type="button"
+              data-action-trigger
+              data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+              data-action-title="{{ action.modal_title }}"
+              data-action-fields="{{ action.fields_json() | e }}"
+              data-action-confirm="{{ action.confirm or '' }}"
+              data-action-submit="{{ action.label }}"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                     {{ action.button_class }} transition-colors">
+        {% if action.icon %}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+          </svg>
+        {% endif %}
+        {{ action.label }}
+      </button>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  {% if resource.can_edit %}
+  <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
+     class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+            text-white brand-bg hover:opacity-90 transition-opacity">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+    </svg>
+    Edit
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block flash %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+
+  <div class="mb-6">
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ record }}</h1>
+    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ resource.label }} · #{{ record_id }}</p>
+  </div>
+
+  {% if flash == 'action_ok' %}
+  <div id="flash-banner"
+       class="mb-5 flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
+              dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300
+              rounded-lg px-4 py-2.5 text-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    Action completed.
+  </div>
+  <script>
+    var fb = document.getElementById('flash-banner');
+    if (fb) setTimeout(function(){ fb.style.transition='opacity .4s'; fb.style.opacity=0; setTimeout(function(){ fb.remove(); }, 400); }, 3000);
+  </script>
+  {% endif %}
+
+  {# ── Detail description list ────────────────────────────────────── #}
+  <div class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+
+    {% if resource.form_fields %}
+      {% for field in resource.form_fields %}
+        {% set value = record | field_value(field.key) %}
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6
+                    {% if not loop.last %}border-b border-zinc-100 dark:border-zinc-700{% endif %}">
+
+          <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center">
+            {{ field.label }}
+          </dt>
+
+          <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-zinc-900 dark:text-zinc-100">
+
+            {% if field.field_type == 'checkbox' %}
+              {% if value %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                             bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  Yes
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                             bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  No
+                </span>
+              {% endif %}
+
+            {% elif field.field_type == 'textarea' %}
+              {% if value is not none and value != '' %}
+                <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed
+                            text-zinc-900 dark:text-zinc-100">{{ value }}</pre>
+              {% else %}
+                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
+              {% endif %}
+
+            {% elif field.field_type == 'password' %}
+              <span class="tracking-widest text-zinc-400 dark:text-zinc-500">••••••••</span>
+
+            {% elif field.field_type == 'select' %}
+              {% if value is not none and value != '' %}
+                {# Try to find a matching table_column Badge for colored display #}
+                {% set badge_col = none %}
+                {% for col in resource.table_columns %}
+                  {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}
+                    {% set badge_col = col %}
+                  {% endif %}
+                {% endfor %}
+                {% if badge_col %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                               {{ badge_col.css_classes(value) }}">
+                    {{ value }}
+                  </span>
+                {% else %}
+                  {{ value }}
+                {% endif %}
+              {% else %}
+                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
+              {% endif %}
+
+            {% else %}
+              {% if value is not none and value != '' %}
+                {{ value }}
+              {% else %}
+                <span class="text-zinc-400 dark:text-zinc-500 italic">—</span>
+              {% endif %}
+            {% endif %}
+
+          </dd>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
+        No fields configured.
+      </div>
+    {% endif %}
+
+  </div>
+
+  {# ── Inline form actions ────────────────────────────────────────── #}
+  {% set inline_actions = [] %}
+  {% for action in resource.form_actions %}
+    {% if action.placement == 'inline' %}
+      {% set _ = inline_actions.append(action) %}
+    {% endif %}
+  {% endfor %}
+
+  {% if inline_actions %}
+  <div class="mt-6 flex flex-wrap items-center gap-2">
+    <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mr-1">Actions</span>
+    {% for action in inline_actions %}
+    <button type="button"
+            data-action-trigger
+            data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
+            data-action-title="{{ action.modal_title }}"
+            data-action-fields="{{ action.fields_json() | e }}"
+            data-action-confirm="{{ action.confirm or '' }}"
+            data-action-submit="{{ action.label }}"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                   {{ action.button_class }} transition-colors">
+      {% if action.icon %}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ action.icon }}"/>
+        </svg>
+      {% endif %}
+      {{ action.label }}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

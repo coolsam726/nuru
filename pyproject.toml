@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adminpanel"
+version = "0.1.0"
+description = "A declarative admin panel framework for FastAPI"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111.0",
+    "jinja2>=3.1.0",
+    "python-multipart>=0.0.9",
+    "sqlmodel>=0.0.19",
+    "uvicorn[standard]>=0.29.0",
+    "itsdangerous>=2.2.0",
+    "aiosqlite>=0.19.0",
+]
+
+[project.optional-dependencies]
+dev = ["httpx", "pytest", "pytest-asyncio"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["adminpanel*"]
+
+[tool.setuptools.package-data]
+adminpanel = ["templates/**/*", "static/**/*"]
