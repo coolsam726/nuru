@@ -68,6 +68,10 @@ class Page:
     slug: str = ""
     icon: str = ""            # SVG path d="…" string; defaults to document icon
     template: str = ""        # Template path relative to template dirs; defaults to pages/<slug>.html
+    show_in_nav: bool = True
+    nav_label: str = ""
+    nav_icon: str = ""
+    nav_sort: int = 100
 
     # ── Internal ───────────────────────────────────────────────────────
 

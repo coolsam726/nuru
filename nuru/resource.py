@@ -113,6 +113,10 @@ class Resource:
     label_plural: str = ""
     slug: str = ""
     icon: str = "table"
+    show_in_nav: bool = True
+    nav_label: str = ""
+    nav_icon: str = ""
+    nav_sort: int = 100
 
     table_columns: list = []
     form_fields: list = []

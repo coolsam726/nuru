@@ -115,52 +115,24 @@
         Dashboard
       </a>
 
-      {% if resources %}
-        {# Section label #}
+      {% if nav_items %}
         <div class="px-3 pt-5 pb-1">
-          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Resources</p>
+          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Navigation</p>
         </div>
 
-        {% for res_cls in resources %}
-          {% set res_slug  = res_cls.slug        if res_cls.slug        else res_cls.label.lower().replace(' ', '-') %}
-          {% set res_label = res_cls.label_plural if res_cls.label_plural else res_cls.label + 's' %}
-          <a href="{{ panel_prefix }}/{{ res_slug }}"
-             data-nav-link
-             class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
-                    text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
-             onclick="closeSidebar()">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-            </svg>
-            {{ res_label }}
-          </a>
-        {% endfor %}
-      {% endif %}
-
-      {% if pages %}
-        <div class="px-3 pt-5 pb-1">
-          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Pages</p>
-        </div>
-        {% for page_cls in pages %}
-          {% set pg_slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(' ', '-') %}
-          <a href="{{ panel_prefix }}/{{ pg_slug }}"
+        {% for nav in nav_items %}
+          <a href="{{ nav.href }}"
              data-nav-link
              class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
                     text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white
                     hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
              onclick="closeSidebar()">
-            {% if page_cls.icon %}
+            {% if nav.icon %}
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ page_cls.icon }}"/>
-            </svg>
-            {% else %}
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ nav.icon }}"/>
             </svg>
             {% endif %}
-            {{ page_cls.label }}
+            {{ nav.label }}
           </a>
         {% endfor %}
       {% endif %}

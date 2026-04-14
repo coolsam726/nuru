@@ -306,6 +306,7 @@ _servers = [
 class UserResource(Resource):
     label = "User"
     label_plural = "Users"
+    nav_sort = 10
     model = User
     session_factory = _get_session
     search_fields = ["name", "email"]
@@ -458,6 +459,7 @@ class UserResource(Resource):
 class OrderResource(Resource):
     label = "Order"
     label_plural = "Orders"
+    nav_sort = 30
     model = Order
     session_factory = _get_session
     search_fields = ["order_number", "customer"]
@@ -725,6 +727,7 @@ class ReportsPage(Page):
 
     label = "Reports"
     slug = "reports"
+    nav_sort = 20
     icon = "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
 
     async def get_context(self, request: Request) -> dict:

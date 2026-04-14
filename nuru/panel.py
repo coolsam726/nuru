@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, Request
@@ -18,6 +19,16 @@ _PACKAGE_DIR = Path(__file__).parent
 _TEMPLATES_DIR = _PACKAGE_DIR / "templates"
 _STATIC_DIR = _PACKAGE_DIR / "static"
 _HTMX_LOCAL = (_STATIC_DIR / "htmx.min.js").exists()
+_DEFAULT_RESOURCE_NAV_ICON = "M4 6h16M4 10h16M4 14h16M4 18h16"
+_DEFAULT_PAGE_NAV_ICON = "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+
+
+@dataclass(frozen=True)
+class _NavItem:
+    label: str
+    href: str
+    icon: str
+    sort: int
 
 
 def _field_value(record: Any, key: str) -> Any:
@@ -78,6 +89,7 @@ class AdminPanel:
 
         self._resources: list[type[Resource]] = []
         self._pages: list[type[Page]] = []
+        self._nav_items: list[_NavItem] = []
         self._router = APIRouter(prefix=self.prefix)
 
         # Build loader: user dirs (highest priority) → built-in package templates
@@ -105,6 +117,10 @@ class AdminPanel:
         """Register a Page class with this panel."""
         self._pages.append(page_cls)
 
+    def register_nav_item(self, *, label: str, href: str, icon: str = "", sort: int = 100) -> None:
+        """Register a custom sidebar item that is not tied to a resource or page."""
+        self._nav_items.append(_NavItem(label=label, href=href, icon=icon, sort=sort))
+
     def mount(self, app: FastAPI) -> None:
         """
         Attach all admin routes and static files to an existing FastAPI app.
@@ -131,6 +147,28 @@ class AdminPanel:
         for page_cls in self._pages:
             page = page_cls(panel=self)
             page._register_routes(self._router)
+
+    def _nav_entries(self) -> list[dict[str, Any]]:
+        items: list[_NavItem] = list(self._nav_items)
+
+        for resource_cls in self._resources:
+            if not getattr(resource_cls, "show_in_nav", True):
+                continue
+            slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
+            label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
+            icon = resource_cls.nav_icon or _DEFAULT_RESOURCE_NAV_ICON
+            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
+
+        for page_cls in self._pages:
+            if not getattr(page_cls, "show_in_nav", True):
+                continue
+            slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(" ", "-")
+            label = page_cls.nav_label or page_cls.label
+            icon = page_cls.nav_icon or page_cls.icon or _DEFAULT_PAGE_NAV_ICON
+            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
+
+        items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
+        return [item.__dict__ for item in items]
 
     def _add_login_routes(self) -> None:
         """Add GET /login, POST /login, and GET /logout routes."""
@@ -253,7 +291,7 @@ class AdminPanel:
     def _render(self, template_name: str, context: dict, *, user: Any = None, request: Request | None = None) -> str:
         template = self._jinja_env.get_template(template_name)
         current_path = str(request.url.path) if request is not None else ""
-        return template.render(current_user=user, current_path=current_path, **context)
+        return template.render(current_user=user, current_path=current_path, nav_items=self._nav_entries(), **context)
 
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
