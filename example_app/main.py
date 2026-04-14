@@ -308,6 +308,7 @@ class UserResource(Resource):
     model = User
     session_factory = _get_session
     search_fields = ["name", "email"]
+    form_cols = 2
 
     row_actions = [
         Action(
@@ -377,12 +378,22 @@ class UserResource(Resource):
         ),
         columns.Boolean("active", "Active"),
     ]
-
-    form_fields = [
-        fields.Text("name", "Full name", required=True, placeholder="Jane Doe"),
-        fields.Email("email", "Email", required=True),
+    detail_fields = [
+        fields.Text("name", "Full name"),
+        fields.Email("email", "Email address"),
         fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
-        fields.Checkbox("active", "Active", help_text="Uncheck to deactivate"),
+    ]
+    form_fields = [
+        fields.Section(
+            col_span="full",
+            cols=2,
+            fields=[
+                fields.Text("name", "Full name", required=True, placeholder="Jane Doe"),
+                fields.Email("email", "Email", required=True),
+                fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
+                fields.Checkbox("active", "Active", help_text="Uncheck to deactivate"),
+            ]
+        )
     ]
 
     # Action handlers
@@ -442,7 +453,7 @@ class OrderResource(Resource):
     model = Order
     session_factory = _get_session
     search_fields = ["order_number", "customer"]
-    form_cols=2
+    form_cols = 2
 
     table_columns = [
         columns.Text("order_number", "Order #", sortable=True),
@@ -465,6 +476,7 @@ class OrderResource(Resource):
         fields.Section(
             title="Order Details",
             cols=2,
+            col_span="full",
             fields=[
                 fields.Text("order_number", "Order number", required=True),
                 fields.Text("customer", "Customer", required=True),
@@ -484,7 +496,7 @@ class OrderResource(Resource):
         ),
         fields.Section(
             title="Internal Notes",
-            description="Visible to staff only",
+            col_span="full",
             fields=[
                 fields.Textarea(
                     "notes",

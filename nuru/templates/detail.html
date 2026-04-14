@@ -85,9 +85,10 @@
     {%- set _top_cols = _cols_map[resource.form_cols] if resource.form_cols in _cols_map else "grid-cols-1" %}
     {%- set _bare_in_section = resource.form_cols > 1 %}
 
-    {% if resource.form_fields %}
+    {%- set _detail_fields = resource.detail_fields if resource.detail_fields else resource.form_fields %}
+    {% if _detail_fields %}
       <div class="grid {{ _top_cols }} gap-5">
-      {% for item in resource.form_fields %}
+      {% for item in _detail_fields %}
 
         {% if item.is_section %}
           {# ── Section block — respects col_span ────────────────── #}

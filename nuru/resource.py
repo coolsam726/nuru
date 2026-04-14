@@ -97,6 +97,7 @@ class Resource:
 
     table_columns: list = []
     form_fields: list = []
+    detail_fields: list = []  # if empty, falls back to form_fields
     form_cols: int = 1        # top-level column count for bare fields (1–4)
     row_actions: list = []
     bulk_actions: list = []
