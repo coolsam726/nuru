@@ -267,14 +267,24 @@ class OrderResource(Resource):
     ]
 
     form_fields = [
-        fields.Text("order_number", "Order number", required=True),
+        fields.Section(
+            title="Order Details",
+            cols=2,
+            fields=[
+                fields.Text("order_number", "Order number", required=True),
         fields.Text("customer",     "Customer",     required=True),
         fields.Select("status", "Status",
                       options=["pending", "processing", "shipped",
                                "delivered", "cancelled"]),
         fields.Number("total", "Total (KES)"),
-        fields.Textarea("notes", "Internal notes",
-                        placeholder="Staff-only notes about this order..."),
+        ],
+        ),
+        fields.Section(
+            title='Internal Notes', description="Visible to staff only",
+                       fields=[
+                           fields.Textarea("notes", "Internal notes",
+                                          placeholder="Staff-only notes about this order..."),
+                       ]),
     ]
 
     form_actions = [

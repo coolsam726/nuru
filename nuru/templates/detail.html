@@ -59,7 +59,7 @@
 {% block flash %}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl">
+<div>
 
   {% if flash == 'action_ok' %}
   <div id="flash-banner"
@@ -78,17 +78,20 @@
   {% endif %}
 
   {# ── Detail description list ────────────────────────────────────── #}
-  <div class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-700">
+  <div>
 
     {%- set _cols_map = {1: "grid-cols-1", 2: "grid-cols-1 sm:grid-cols-2", 3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3", 4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"} %}
     {%- set _span_map = {"full": "col-span-full", 2: "col-span-2", 3: "col-span-3", 4: "col-span-4"} %}
+    {%- set _top_cols = _cols_map[resource.form_cols] if resource.form_cols in _cols_map else "grid-cols-1" %}
+    {%- set _bare_in_section = resource.form_cols > 1 %}
 
     {% if resource.form_fields %}
+      <div class="grid {{ _top_cols }} gap-5">
       {% for item in resource.form_fields %}
 
         {% if item.is_section %}
           {# ── Section block ─────────────────────────────────────── #}
-          <div>
+          <div class="col-span-full bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
             {% if item.title %}
             <div class="px-6 py-3 bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-700">
               <h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ item.title }}</h3>
@@ -109,15 +112,18 @@
           </div>
 
         {% elif item.field_type != 'hidden' %}
-          {# ── Bare field ────────────────────────────────────────── #}
+          {# ── Bare field — sits in the top-level grid ───────────── #}
           {% set field = item %}
           {% set value = record | field_value(field.key) %}
-          {% set in_section = False %}
-          {% set span_class = "" %}
-          {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+          {% set in_section = _bare_in_section %}
+          {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
+          <div class="{{ span_class }} bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-sm overflow-hidden">
+            {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+          </div>
         {% endif %}
 
       {% endfor %}
+      </div>
     {% else %}
       <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
         No fields configured.

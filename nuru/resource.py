@@ -97,6 +97,7 @@ class Resource:
 
     table_columns: list = []
     form_fields: list = []
+    form_cols: int = 1        # top-level column count for bare fields (1–4)
     row_actions: list = []
     bulk_actions: list = []
     list_actions: list = []   # Action instances shown in the list-page header
