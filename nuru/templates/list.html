@@ -3,10 +3,10 @@
 {% block title %}{{ resource.label_plural }} — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-    <a href="{{ panel_prefix }}/" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Dashboard</a>
-    <span>/</span>
-    <span class="text-zinc-900 dark:text-zinc-100 font-medium">{{ resource.label_plural }}</span>
+  <nav class="flex flex-wrap items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
+    <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
+    <span class="select-none">›</span>
+    <span class="text-zinc-600 dark:text-zinc-300">{{ resource.label_plural }}</span>
   </nav>
 {% endblock %}
 
