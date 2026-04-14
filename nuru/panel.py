@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
+from .icons import resolve_icon
 
 if TYPE_CHECKING:
     from .auth import AuthBackend
@@ -156,7 +157,8 @@ class AdminPanel:
                 continue
             slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
             label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
-            icon = resource_cls.nav_icon or _DEFAULT_RESOURCE_NAV_ICON
+            icon_name = resource_cls.nav_icon or "table"
+            icon = resolve_icon(icon_name)
             items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
 
         for page_cls in self._pages:
@@ -164,7 +166,8 @@ class AdminPanel:
                 continue
             slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(" ", "-")
             label = page_cls.nav_label or page_cls.label
-            icon = page_cls.nav_icon or page_cls.icon or _DEFAULT_PAGE_NAV_ICON
+            icon_name = page_cls.nav_icon or page_cls.icon or "document"
+            icon = resolve_icon(icon_name)
             items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
 
         items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
@@ -282,6 +285,29 @@ class AdminPanel:
             )
         return None
 
+    def _nav_entries(self) -> list[dict[str, Any]]:
+        items: list[_NavItem] = list(self._nav_items)
+
+        for resource_cls in self._resources:
+            if not getattr(resource_cls, "show_in_nav", True):
+                continue
+            slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
+            label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
+            icon_name = resource_cls.nav_icon or "table"
+            icon = resolve_icon(icon_name)
+            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
+
+        for page_cls in self._pages:
+            if not getattr(page_cls, "show_in_nav", True):
+                continue
+            slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(" ", "-")
+            label = page_cls.nav_label or page_cls.label
+            icon_name = page_cls.nav_icon or page_cls.icon or "document"
+            icon = resolve_icon(icon_name)
+            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
+
+        items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
+        return [item.__dict__ for item in items]
     async def _current_user(self, request: Request) -> Any | None:
         """Return the current user, or None if auth is disabled."""
         if self.auth is None:

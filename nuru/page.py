@@ -4,6 +4,7 @@ from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from .icons import resolve_icon
 
 if TYPE_CHECKING:
     from .panel import AdminPanel
