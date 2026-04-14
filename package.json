@@ -1,0 +1,12 @@
+{
+  "name": "nuru",
+  "private": true,
+  "scripts": {
+    "build:css": "./node_modules/.bin/tailwindcss -i ./nuru/static/tailwind.input.css -o ./nuru/static/tailwind.css --minify",
+    "watch:css": "./node_modules/.bin/tailwindcss -i ./nuru/static/tailwind.input.css -o ./nuru/static/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

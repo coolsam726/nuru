@@ -194,9 +194,28 @@ AdminPanel(
 git clone https://github.com/yourname/nuru
 cd nuru
 pip install -e .
+
+# Build the Tailwind CSS (requires Node ≥ 18)
+npm install
+npm run build:css
+
 uvicorn example_app.main:app --reload
 # open http://localhost:8000/admin
 ```
+
+> **Developing?** Run `npm run watch:css` in a second terminal while uvicorn is running to rebuild the stylesheet automatically as you edit templates.
+
+## CSS build
+
+Nuru uses **Tailwind CSS v4** compiled to a single static file (`nuru/static/tailwind.css`) shipped with the package. The pre-built stylesheet is committed to the repo so end-users need no Node toolchain to *use* Nuru — only contributors who edit templates need to rebuild it.
+
+| Command | Effect |
+|---|---|
+| `npm install` | Install `tailwindcss` + `@tailwindcss/cli` |
+| `npm run build:css` | One-off minified build → `nuru/static/tailwind.css` |
+| `npm run watch:css` | Rebuild on every template save |
+
+The input CSS lives at `nuru/static/tailwind.input.css` and uses Tailwind 4's CSS-first configuration. All Tailwind theme colors (`--color-indigo-500`, `--color-gray-200`, etc.) are exposed as native CSS custom properties on `:root` by the built stylesheet — no JavaScript probing needed.
 
 ## What's shipped
 

@@ -876,7 +876,7 @@ class ReportsPage(Page):
 admin_panel = AdminPanel(
     title="Acme Admin",
     prefix="/admin",
-    primary="oklch(54.2% 0.034 322.5)",
+    primary="var(--color-rose-500)",
     per_page=10,
     auth=SimpleAuthBackend(
         username="admin",
@@ -890,11 +890,11 @@ admin_panel.register(OrderResource)
 admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
 
-ops_panel = AdminPanel(title="Ops", prefix="/ops", primary="#e11d48")
+ops_panel = AdminPanel(title="Ops", prefix="/ops", primary="var(--color-rose-500)")
 ops_panel.register(ServerResource)
 ops_panel.mount(app)
 
-db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="#0f766e")
+db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="var(--color-rose-500)")
 db_panel.register(ProductResource)
 db_panel.mount(app)
 

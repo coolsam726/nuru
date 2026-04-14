@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Scan nuru templates and the example app for utility class names */
+@source "../templates/**/*.html";
+@source "../../example_app/**/*.py";
+
+/* Class-based dark mode — toggled via <html class="dark"> */
+@variant dark (&:where(.dark, .dark *));
+
+/* Custom theme tokens */
+@theme {
+  --font-family-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
