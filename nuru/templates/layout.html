@@ -139,29 +139,6 @@
       {% endif %}
     </nav>
 
-    {# Sidebar footer — user info #}
-    <div class="shrink-0 border-t border-zinc-200 dark:border-white/5 px-2 py-3">
-      {% if auth_enabled and current_user %}
-        <div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors">
-          <div class="w-7 h-7 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
-            <span class="text-white text-xs font-semibold">{{ current_user.username[0] | upper }}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-zinc-900 dark:text-white truncate">{{ current_user.username }}</p>
-          </div>
-          <a href="{{ panel_prefix }}/logout"
-             title="Sign out"
-             class="flex-shrink-0 p-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-          </a>
-        </div>
-      {% else %}
-        <p class="px-3 text-[11px] text-zinc-700">{{ panel_title }}</p>
-      {% endif %}
-    </div>
   </aside>
 
   {# ─── Main content ────────────────────────────────────────────────── #}
@@ -181,8 +158,59 @@
 
       <div class="flex-1"></div>
 
-      {# Right: dark toggle only #}
+      {# Right: user dropdown + dark toggle #}
       <div class="flex items-center gap-2 flex-shrink-0">
+
+        {% if auth_enabled and current_user %}
+        {# User avatar dropdown #}
+        <div class="relative" id="user-menu-wrap">
+          <button id="user-menu-btn"
+                  onclick="toggleUserMenu()"
+                  class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg
+                         hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group"
+                  aria-haspopup="true" aria-expanded="false">
+            <div class="w-7 h-7 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
+              <span class="text-white text-xs font-semibold select-none">{{ current_user.username[0] | upper }}</span>
+            </div>
+            <span class="hidden sm:block text-sm font-medium text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">{{ current_user.username }}</span>
+            <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          {# Dropdown panel #}
+          <div id="user-menu"
+               class="hidden absolute right-0 top-full mt-2 w-56 rounded-xl
+                      bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700
+                      shadow-lg overflow-hidden z-50">
+            {# Profile header #}
+            <div class="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full brand-bg flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-sm font-semibold select-none">{{ current_user.username[0] | upper }}</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{{ current_user.username }}</p>
+                  <p class="text-xs text-zinc-400 dark:text-zinc-500">Administrator</p>
+                </div>
+              </div>
+            </div>
+            {# Actions #}
+            <div class="py-1">
+              <a href="{{ panel_prefix }}/logout"
+                 class="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-600 dark:text-zinc-300
+                        hover:bg-zinc-50 dark:hover:bg-zinc-700/60 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Sign out
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
         <button onclick="toggleTheme()"
                 aria-label="Toggle dark mode"
                 class="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400
@@ -216,7 +244,7 @@
 
       {# Page header: title on the left, actions on the right #}
       {% if self.page_heading() or self.header_actions() %}
-      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div class="flex flex-wrap items-baseline justify-between gap-4 mb-6">
         <div>{% block page_heading %}{% endblock %}</div>
         <div class="flex flex-wrap items-center gap-2">{% block header_actions %}{% endblock %}</div>
       </div>
@@ -250,6 +278,22 @@
         }
       });
     })();
+
+    // ─── User menu dropdown ───────────────────────────────────────────
+    function toggleUserMenu() {
+      var menu = document.getElementById('user-menu');
+      var btn  = document.getElementById('user-menu-btn');
+      var open = !menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', open);
+      btn.setAttribute('aria-expanded', String(!open));
+    }
+    document.addEventListener('click', function(e) {
+      var wrap = document.getElementById('user-menu-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('user-menu').classList.add('hidden');
+        document.getElementById('user-menu-btn').setAttribute('aria-expanded', 'false');
+      }
+    });
 
     // ─── Dark mode toggle ─────────────────────────────────────────────
     function toggleTheme() {

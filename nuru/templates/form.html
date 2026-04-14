@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex flex-wrap items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
     <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
     <span class="select-none">›</span>
     <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">{{ resource.label_plural }}</a>
