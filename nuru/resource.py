@@ -298,7 +298,7 @@ class Resource:
         request: Request,
     ) -> Any:
         """
-        Locate the :class:`~adminpanel.actions.Action` whose ``key`` matches
+        Locate the :class:`~nuru.actions.Action` whose ``key`` matches
         ``action_key`` across all action lists, then call the method named by
         ``action.handler`` on this resource instance.
 

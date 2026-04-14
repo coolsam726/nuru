@@ -2,15 +2,15 @@ from __future__ import annotations
 """
 Backward-compatibility shim.
 
-``SQLModelResource`` has been merged into :class:`adminpanel.Resource`.
+``SQLModelResource`` has been merged into :class:`nuru.Resource`.
 Just use ``Resource`` directly — setting ``model`` and ``session_factory``
 class attributes activates the SQLModel CRUD automatically.
 
 This module is kept so existing imports don't break::
 
-    from adminpanel.integrations.sqlmodel import SQLModelResource  # still works
+    from nuru.integrations.sqlmodel import SQLModelResource  # still works
 """
-from adminpanel.resource import Resource
+from nuru.resource import Resource
 
 
 __all__ = ["Resource"]
@@ -22,7 +22,7 @@ Usage::
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
     from contextlib import asynccontextmanager
 
-    from adminpanel.integrations.sqlmodel import Resource
+    from nuru.integrations.sqlmodel import Resource
 
     engine = create_async_engine("sqlite+aiosqlite:///app.db")
     _SessionFactory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -51,7 +51,7 @@ from typing import Any, ClassVar, Union, get_args, get_origin
 from sqlalchemy import func, or_
 from sqlmodel import select
 
-from adminpanel import Resource, columns, fields
+from nuru import Resource, columns, fields
 
 
 # ---------------------------------------------------------------------------

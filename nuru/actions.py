@@ -45,8 +45,8 @@ class Action:
 
     Usage::
 
-        from adminpanel.actions import Action
-        from adminpanel import fields
+        from nuru.actions import Action
+        from nuru import fields
 
         class UserResource(Resource):
 
@@ -137,7 +137,7 @@ class Action:
                     before submitting when ``form_fields`` is empty.
         form_fields: If non-empty, clicking the button opens a modal that
                     collects data before submitting to the handler.
-                    Pass any :mod:`adminpanel.fields` instance — ``Text``,
+                    Pass any :mod:`nuru.fields` instance — ``Text``,
                     ``Textarea``, ``Select``, ``Checkbox``, ``Number``, etc.
         form_title: Modal dialog heading; defaults to ``label``.
         icon:       Optional SVG ``path d="…"`` string rendered as a 4×4

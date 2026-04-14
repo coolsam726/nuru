@@ -182,14 +182,14 @@ class AdminPanel:
         """
         Mount the package static directory under this panel's prefix.
 
-        Each panel gets its own mount name (e.g. "adminpanel_static_admin",
-        "adminpanel_static_staff") so multiple panels on the same app
+        Each panel gets its own mount name (e.g. "nuru_static_admin",
+        "nuru_static_staff") so multiple panels on the same app
         never conflict.
         """
         if not (_STATIC_DIR.exists() and any(_STATIC_DIR.iterdir())):
             return
 
-        mount_name = f"adminpanel_static_{self._panel_id}"
+        mount_name = f"nuru_static_{self._panel_id}"
         mount_path = f"{self.prefix}/static"
 
         # Guard against accidentally mounting the same panel twice

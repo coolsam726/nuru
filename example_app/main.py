@@ -17,12 +17,12 @@ from sqlmodel import SQLModel, Field as SMField, select as sm_select
 from sqlmodel.ext.asyncio.session import AsyncSession as _AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine as _cae, async_sessionmaker as _asm
 
-from adminpanel import AdminPanel, Resource, SimpleAuthBackend, columns, fields
-from adminpanel.actions import Action
+from nuru import AdminPanel, Resource, SimpleAuthBackend, columns, fields
+from nuru.actions import Action
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
-    from adminpanel.migrations import sync_schema
+    from nuru.migrations import sync_schema
     await sync_schema(_engine, SQLModel.metadata)
 
     async with _get_session() as session:

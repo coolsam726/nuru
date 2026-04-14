@@ -13,7 +13,7 @@ class AuthBackend(ABC):
     """
     Abstract authentication backend.
 
-    Subclass this and pass an instance to :class:`~adminpanel.AdminPanel`::
+    Subclass this and pass an instance to :class:`~nuru.AdminPanel`::
 
         panel = AdminPanel(title="My Admin", auth=MyAuthBackend(...))
 
@@ -52,7 +52,7 @@ class SimpleAuthBackend(AuthBackend):
 
     Usage::
 
-        from adminpanel.auth import SimpleAuthBackend
+        from nuru.auth import SimpleAuthBackend
 
         panel = AdminPanel(
             title="My Admin",

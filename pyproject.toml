@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adminpanel"
+name = "nuru"
 version = "0.1.0"
-description = "A declarative admin panel framework for FastAPI"
+description = "A declarative UI framework for FastAPI, inspired by FilamentPHP"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111.0",
@@ -22,7 +22,7 @@ dev = ["httpx", "pytest", "pytest-asyncio"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["adminpanel*"]
+include = ["nuru*"]
 
 [tool.setuptools.package-data]
-adminpanel = ["templates/**/*", "static/**/*"]
+nuru = ["templates/**/*", "static/**/*"]

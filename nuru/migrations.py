@@ -25,7 +25,7 @@ Usage
 -----
 Replace your startup ``create_all`` call with ``sync_schema``::
 
-    from adminpanel.migrations import sync_schema
+    from nuru.migrations import sync_schema
     from sqlmodel import SQLModel
 
     @app.on_event("startup")
