@@ -82,6 +82,7 @@ class AdminPanel:
         logo_url: str | None = None,
         per_page: int = 25,
         auth: AuthBackend | None = None,
+        permission_checker: Any | None = None,
         template_dirs: list[str | Path] | None = None,
         extra_css: list[str] | str | None = None,
     ) -> None:
@@ -97,6 +98,10 @@ class AdminPanel:
         self.logo_url = logo_url
         self.per_page = per_page
         self.auth = auth
+        # Permission checker: callable(user, action, resource) -> bool
+        # Default to nuru.auth.default_permission_checker if not supplied.
+        from . import auth as _auth
+        self.permission_checker = permission_checker or _auth.default_permission_checker
         if extra_css is None:
             self.extra_css: list[str] = []
         elif isinstance(extra_css, str):
@@ -248,7 +253,10 @@ class AdminPanel:
                 destination = f"{panel.prefix}/"
 
             response: Response = RedirectResponse(destination, status_code=303)
-            panel.auth.set_session(response, username)  # type: ignore[union-attr]
+            # Allow the backend to store its preferred identifier (e.g. user PK
+            # for DatabaseAuthBackend, or username for SimpleAuthBackend).
+            session_id = await panel.auth.get_session_user_id(username)  # type: ignore[union-attr]
+            panel.auth.set_session(response, session_id)  # type: ignore[union-attr]
             return response  # type: ignore[return-value]
 
         @self._router.get("/logout", include_in_schema=False)
@@ -258,6 +266,56 @@ class AdminPanel:
             )
             panel.auth.clear_session(response)  # type: ignore[union-attr]
             return response  # type: ignore[return-value]
+
+    # ------------------------------------------------------------------
+    # Permission sync
+    # ------------------------------------------------------------------
+
+    async def sync_permissions(self, session_factory: Any) -> None:
+        """Upsert ``nuru_permission`` rows for every registered resource.
+
+        Call this at application startup alongside ``sync_schema``::
+
+            from nuru.migrations import sync_schema
+
+            await sync_schema(engine, SQLModel.metadata)
+            await panel.sync_permissions(get_session)
+
+        The method creates one permission row per ``{slug}:{action}`` pair for
+        each registered resource, using the STANDARD_ACTIONS list from
+        :mod:`nuru.roles` (``list``, ``view``, ``create``, ``edit``,
+        ``delete``, ``action``).  Rows are inserted only when they do not
+        already exist so the call is safe to repeat on every restart.
+        """
+        from sqlmodel import select
+        from .roles import STANDARD_ACTIONS, Permission
+
+        slugs: list[str] = []
+        for resource_cls in self._resources:
+            slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
+            slugs.append(slug)
+
+        # Build the full set of codenames that should exist.
+        desired: list[tuple[str, str]] = [
+            (f"{slug}:{action}", f"{resource_cls.label_plural or resource_cls.label} — {action}")
+            for resource_cls, slug in zip(self._resources, slugs)
+            for action in STANDARD_ACTIONS
+        ]
+        # Always include the superuser wildcard.
+        desired.append(("*", "Superuser — all permissions"))
+
+        async with session_factory() as session:
+            existing = set(
+                (await session.exec(select(Permission.codename))).all()
+            )
+            new_perms = [
+                Permission(codename=codename, label=label)
+                for codename, label in desired
+                if codename not in existing
+            ]
+            if new_perms:
+                session.add_all(new_perms)
+                await session.commit()
 
     def _mount_static(self, app: FastAPI) -> None:
         """
