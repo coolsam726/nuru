@@ -1,4 +1,4 @@
-name: Publish Python package
+name: Publish & Deploy
 
 on:
   push:
@@ -7,13 +7,16 @@ on:
 
 jobs:
   publish:
+    name: Build & publish to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -33,3 +36,33 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/*
+
+  deploy:
+    name: Deploy to nuru.pythonanywhere.com
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      # ── 1. Wait for PyPI to propagate the new version ─────────────────
+      - name: Wait for PyPI propagation
+        run: sleep 60
+
+      # ── 2. SSH in and upgrade the package in the PA virtualenv ────────
+      - name: Install updated package on PythonAnywhere
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ssh.pythonanywhere.com
+          username: coolsam
+          key: ${{ secrets.PA_SSH_KEY }}
+          script: |
+            source ${{ secrets.PA_VIRTUALENV }}/bin/activate
+            pip install --upgrade nuru
+
+      # ── 3. Reload the web app via the PythonAnywhere API ──────────────
+      - name: Reload web app
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Token ${{ secrets.PA_API_TOKEN }}" \
+            https://www.pythonanywhere.com/api/v0/user/coolsam/webapps/nuru.pythonanywhere.com/reload/ \
+          | grep -q "^200$" && echo "Reload succeeded" || (echo "Reload failed" && exit 1)
+
