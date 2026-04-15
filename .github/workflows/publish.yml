@@ -38,7 +38,7 @@ jobs:
         run: twine upload dist/*
 
   deploy:
-    name: Deploy to nuru.pythonanywhere.com
+    name: Deploy to coolsam.pythonanywhere.com
     needs: publish
     runs-on: ubuntu-latest
     steps:
@@ -46,23 +46,63 @@ jobs:
       - name: Wait for PyPI propagation
         run: sleep 60
 
-      # ── 2. SSH in and upgrade the package in the PA virtualenv ────────
-      - name: Install updated package on PythonAnywhere
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ssh.pythonanywhere.com
-          username: coolsam
-          key: ${{ secrets.PA_SSH_KEY }}
-          script: |
-            source ${{ secrets.PA_VIRTUALENV }}/bin/activate
-            pip install --upgrade nuru
+      # ── 2. Open a PA bash console, run pip install, poll for completion
+      #       (free PA accounts have no SSH — we use the Consoles API)
+      - name: Upgrade nuru on PythonAnywhere
+        env:
+          PA_TOKEN: ${{ secrets.PA_API_TOKEN }}
+          PA_VENV: ${{ secrets.PA_VIRTUALENV }}
+        run: |
+          python3 - <<'EOF'
+          import os, time, urllib.request, json, sys
+
+          token = os.environ["PA_TOKEN"]
+          venv  = os.environ["PA_VENV"]
+          base  = "https://www.pythonanywhere.com/api/v0/user/coolsam"
+          hdrs  = {"Authorization": f"Token {token}", "Content-Type": "application/json"}
+
+          def api(method, path, body=None):
+              data = json.dumps(body).encode() if body else None
+              req  = urllib.request.Request(f"{base}{path}", data=data, headers=hdrs, method=method)
+              with urllib.request.urlopen(req) as r:
+                  return json.load(r)
+
+          # Create a bash console
+          console = api("POST", "/consoles/", {"executable": "bash", "arguments": ""})
+          cid = console["id"]
+          print(f"Console {cid} created", flush=True)
+
+          # Give the console a moment to start, then send the install command
+          time.sleep(3)
+          activate = f"source {venv}/bin/activate" if venv else ""
+          cmd = f"{activate + ' && ' if activate else ''}pip install --upgrade --quiet nuru && echo '__DONE__'\n"
+          api("POST", f"/consoles/{cid}/send_input/", {"input": cmd})
+
+          # Poll up to 3 minutes for completion
+          for _ in range(36):
+              time.sleep(5)
+              out = api("GET", f"/consoles/{cid}/get_latest_output/")
+              output = out.get("output", "")
+              if output:
+                  print(output, end="", flush=True)
+              if "__DONE__" in output:
+                  print("\nInstall succeeded.", flush=True)
+                  break
+          else:
+              print("Timed out waiting for pip install", file=sys.stderr)
+              sys.exit(1)
+
+          # Tear down the console
+          api("DELETE", f"/consoles/{cid}/")
+          EOF
 
       # ── 3. Reload the web app via the PythonAnywhere API ──────────────
       - name: Reload web app
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST \
             -H "Authorization: Token ${{ secrets.PA_API_TOKEN }}" \
-            https://www.pythonanywhere.com/api/v0/user/coolsam/webapps/nuru.pythonanywhere.com/reload/ \
-          | grep -q "^200$" && echo "Reload succeeded" || (echo "Reload failed" && exit 1)
+            https://www.pythonanywhere.com/api/v0/user/coolsam/webapps/coolsam.pythonanywhere.com/reload/)
+          echo "Reload status: $STATUS"
+          [ "$STATUS" = "200" ] || exit 1
 
