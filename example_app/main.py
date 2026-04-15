@@ -285,9 +285,7 @@ app = FastAPI(title="Nuru Demo App", lifespan=_lifespan)
 # Shared async SQLite engine
 # ---------------------------------------------------------------------------
 
-import os as _os
-_db_path = _os.environ.get("NURU_DB_PATH", "example_db.sqlite3")
-_engine = _cae(f"sqlite+aiosqlite:///{_db_path}")
+_engine = _cae("sqlite+aiosqlite:///example_db.sqlite3")
 _SessionFactory = _asm(_engine, class_=_AsyncSession, expire_on_commit=False)
 
 

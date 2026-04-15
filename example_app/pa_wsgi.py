@@ -35,7 +35,9 @@ async def _run_startup():
 asyncio.run(_run_startup())
 
 # Prevent a2wsgi from running lifespan again on the first request.
-_asgi_app.router.lifespan_handler = None
+# `lifespan` (not `lifespan_handler`) is the actual FastAPI Router attribute
+# that a2wsgi reads via `lifespan_context`. Setting it to None disables re-run.
+_asgi_app.router.lifespan = None
 
 # ── WSGI application ──────────────────────────────────────────────────────────
 from a2wsgi import ASGIMiddleware  # noqa: E402
