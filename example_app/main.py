@@ -10,7 +10,7 @@ Run with:  uvicorn example_app.main:app --reload
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, RedirectResponse, Response
@@ -803,6 +803,24 @@ class ReportsPage(Page):
 # ---------------------------------------------------------------------------
 
 
+class _RoleView:
+    """Thin wrapper returned by RoleResource.get_record for the detail page.
+
+    Mirrors all Role attributes and adds ``permissions_list`` — a sorted,
+    comma-separated string of codenames assigned to the role — so it can be
+    displayed as a read-only field without any framework changes.
+    """
+
+    def __init__(self, role: Role, codenames: list[str]) -> None:
+        self.id          = role.id
+        self.name        = role.name
+        self.description = role.description
+        self.permissions_list = ", ".join(sorted(codenames)) if codenames else "—"
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class RoleResource(Resource):
     """Manage nuru roles from the admin panel."""
 
@@ -829,6 +847,42 @@ class RoleResource(Resource):
             ],
         )
     ]
+    detail_fields = [
+        fields.Fieldset(
+            title="Role Details",
+            cols=2,
+            fields=[
+                fields.Text("name", "Role Name"),
+                fields.Text("description", "Description"),
+            ],
+        ),
+        fields.Fieldset(
+            title="Assigned Permissions",
+            description="Codenames granted to users in this role.",
+            col_span="full",
+            cols=1,
+            fields=[
+                fields.Text("permissions_list", "Permissions"),
+            ],
+        ),
+    ]
+
+    async def get_record(self, id: Any) -> _RoleView | None:
+        async with _get_session() as session:
+            role = await session.get(Role, int(id))
+            if role is None:
+                return None
+            role_perms = (await session.exec(
+                sm_select(RolePermission).where(RolePermission.role_id == role.id)
+            )).all()
+            perm_ids = [rp.permission_id for rp in role_perms]
+            codenames: list[str] = []
+            if perm_ids:
+                perms = (await session.exec(
+                    sm_select(Permission).where(Permission.id.in_(perm_ids))
+                )).all()
+                codenames = [p.codename for p in perms]
+            return _RoleView(role, codenames)
 
 
 # ---------------------------------------------------------------------------
