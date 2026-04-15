@@ -54,46 +54,71 @@ jobs:
           PA_VENV: ${{ secrets.PA_VIRTUALENV }}
         run: |
           python3 - <<'EOF'
-          import os, time, urllib.request, json, sys
+          import os, time, urllib.request, urllib.error, json, sys
+
+          TIMEOUT = 30  # seconds for each HTTP request
 
           token = os.environ["PA_TOKEN"]
-          venv  = os.environ["PA_VENV"]
+          venv  = os.environ.get("PA_VENV", "")
           base  = "https://www.pythonanywhere.com/api/v0/user/coolsam"
           hdrs  = {"Authorization": f"Token {token}", "Content-Type": "application/json"}
 
           def api(method, path, body=None):
               data = json.dumps(body).encode() if body else None
               req  = urllib.request.Request(f"{base}{path}", data=data, headers=hdrs, method=method)
-              with urllib.request.urlopen(req) as r:
-                  return json.load(r)
+              with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                  raw = r.read()
+                  return json.loads(raw) if raw.strip() else {}
 
           # Create a bash console
           console = api("POST", "/consoles/", {"executable": "bash", "arguments": ""})
           cid = console["id"]
           print(f"Console {cid} created", flush=True)
 
-          # Give the console a moment to start, then send the install command
-          time.sleep(3)
-          activate = f"source {venv}/bin/activate" if venv else ""
-          cmd = f"{activate + ' && ' if activate else ''}pip install --upgrade --quiet nuru && echo '__DONE__'\n"
-          api("POST", f"/consoles/{cid}/send_input/", {"input": cmd})
+          success = False
+          try:
+              # Poll get_latest_output until the console is alive (PA requires this
+              # "attach" step before it will accept send_input; 412 otherwise)
+              for _ in range(20):
+                  time.sleep(3)
+                  try:
+                      out = api("GET", f"/consoles/{cid}/get_latest_output/")
+                      print(f"Console ready: {out.get('output', '').strip()!r}", flush=True)
+                      break
+                  except (urllib.error.HTTPError, urllib.error.URLError) as e:
+                      print(f"Waiting for console... ({e})", flush=True)
+              else:
+                  print("Console never became ready", file=sys.stderr)
+                  sys.exit(1)
 
-          # Poll up to 3 minutes for completion
-          for _ in range(36):
-              time.sleep(5)
-              out = api("GET", f"/consoles/{cid}/get_latest_output/")
-              output = out.get("output", "")
-              if output:
-                  print(output, end="", flush=True)
-              if "__DONE__" in output:
-                  print("\nInstall succeeded.", flush=True)
-                  break
-          else:
-              print("Timed out waiting for pip install", file=sys.stderr)
+              # Send the install command
+              activate = f"source {venv}/bin/activate && " if venv else ""
+              cmd = f"{activate}pip install --upgrade --quiet nuru && echo '__DONE__'\n"
+              api("POST", f"/consoles/{cid}/send_input/", {"input": cmd})
+
+              # Poll up to 3 minutes for completion marker
+              for _ in range(36):
+                  time.sleep(5)
+                  out = api("GET", f"/consoles/{cid}/get_latest_output/")
+                  output = out.get("output", "")
+                  if output:
+                      print(output, end="", flush=True)
+                  if "__DONE__" in output:
+                      print("\nInstall succeeded.", flush=True)
+                      success = True
+                      break
+              else:
+                  print("Timed out waiting for pip install", file=sys.stderr)
+          finally:
+              # Always attempt to tear down the console, even on failure
+              try:
+                  api("DELETE", f"/consoles/{cid}/")
+                  print(f"Console {cid} deleted.", flush=True)
+              except (urllib.error.HTTPError, urllib.error.URLError) as e:
+                  print(f"Warning: could not delete console {cid}: {e}", file=sys.stderr)
+
+          if not success:
               sys.exit(1)
-
-          # Tear down the console
-          api("DELETE", f"/consoles/{cid}/")
           EOF
 
       # ── 3. Reload the web app via the PythonAnywhere API ──────────────
