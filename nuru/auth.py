@@ -111,3 +111,70 @@ class SimpleAuthBackend(AuthBackend):
 
     def clear_session(self, response: Response) -> None:
         response.delete_cookie(self.COOKIE_NAME)
+
+
+# ---------------------------------------------------------------------------
+# Basic role/permission helper
+#
+# Provide a conservative, easily-replaceable default permission checker that
+# understands a small role hierarchy (admin > editor > viewer). Backends that
+# integrate with a user database may return richer user objects (with a
+# ``role`` attribute) and can supply a custom permission checker to
+# ``AdminPanel`` during construction.
+# ---------------------------------------------------------------------------
+
+
+ROLE_RANK: dict[str, int] = {
+    "viewer": 10,
+    "editor": 20,
+    "admin": 30,
+}
+
+
+def default_permission_checker(user: Any | None, action: str, resource: object | None = None) -> bool:
+    """
+    Default permission policy.
+
+    - If *user* is None, deny access.
+    - If *user* exposes a ``role`` attribute or mapping key, use the role
+      rank to determine permission: admins can do everything, editors can
+      create/edit but not necessarily delete, viewers can only view/list.
+    - If *user* contains no role information (e.g. the built-in
+      ``SimpleAuthBackend`` returns a simple dict with only a username),
+      treat the session as an admin for compatibility with single-user
+      setups.
+
+    This function is intentionally simple and meant to be replaced by a
+    project-specific checker for production deployments.
+    """
+    if user is None:
+        return False
+
+    # Extract role from object or mapping
+    role = None
+    try:
+        if isinstance(user, dict):
+            role = user.get("role")
+        else:
+            role = getattr(user, "role", None)
+    except Exception:
+        role = None
+
+    # No role -> assume single-user admin (compatibility)
+    if not role:
+        return True
+
+    rank = ROLE_RANK.get(str(role), 0)
+
+    if action in ("view", "list"):
+        return rank >= ROLE_RANK.get("viewer", 10)
+    if action in ("create", "edit"):
+        return rank >= ROLE_RANK.get("editor", 20)
+    if action in ("delete",):
+        return rank >= ROLE_RANK.get("admin", 30)
+    if action.startswith("action:"):
+        # Generic actions require at least editor by default
+        return rank >= ROLE_RANK.get("editor", 20)
+
+    # Unknown actions — be conservative and deny.
+    return False

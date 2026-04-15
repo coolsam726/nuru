@@ -5,6 +5,7 @@ from typing import Any, ClassVar, Union, get_args, get_origin, TYPE_CHECKING
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from .icons import resolve_icon
+import inspect
 
 if TYPE_CHECKING:
     from .panel import AdminPanel
@@ -210,6 +211,22 @@ class Resource:
             self.slug = self.label.lower().replace(" ", "-")
         if not self.label_plural:
             self.label_plural = self.label + "s"
+
+    async def _user_allowed(self, request: Request, action: str, action_key: str | None = None) -> bool:
+        """Invoke the panel's permission checker for *action* (or action_key).
+
+        Returns ``True`` if allowed, ``False`` otherwise.  The checker may be
+        synchronous or async; both are supported.
+        """
+        user = await self.panel._current_user(request)
+        act = action if action_key is None else f"action:{action_key}"
+        checker = getattr(self.panel, "permission_checker", None)
+        if checker is None:
+            return True
+        res = checker(user, act, self)
+        if inspect.isawaitable(res):
+            res = await res
+        return bool(res)
 
     @property
     def all_row_actions(self) -> list:
@@ -498,6 +515,8 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             user = await resource.panel._current_user(request)
+            if not await resource._user_allowed(request, "list"):
+                return HTMLResponse("Not allowed", status_code=403)
             ctx = await resource._fetch_list(
                 page=page, search=search,
                 sort_by=sort_by, sort_dir=sort_dir,
@@ -536,6 +555,8 @@ class Resource:
                 return redir
             if not resource.can_create:
                 return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "create"):
+                return HTMLResponse("Not allowed", status_code=403)
             user = await resource.panel._current_user(request)
             html = resource.panel._render("form.html", {
                 "resource": resource,
@@ -551,6 +572,8 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_create:
+                return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "create"):
                 return HTMLResponse("Not allowed", status_code=403)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
@@ -585,6 +608,8 @@ class Resource:
                 return redir
             if not resource.can_view:
                 return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "view"):
+                return HTMLResponse("Not allowed", status_code=403)
             user = await resource.panel._current_user(request)
             try:
                 record = await resource.get_record(record_id)
@@ -609,6 +634,8 @@ class Resource:
                 return redir
             if not resource.can_edit:
                 return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "edit"):
+                return HTMLResponse("Not allowed", status_code=403)
             user = await resource.panel._current_user(request)
             try:
                 record = await resource.get_record(record_id)
@@ -631,6 +658,8 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_edit:
+                return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "edit"):
                 return HTMLResponse("Not allowed", status_code=403)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
@@ -662,6 +691,8 @@ class Resource:
                 return redir
             if not resource.can_delete:
                 return HTMLResponse("Not allowed", status_code=403)
+            if not await resource._user_allowed(request, "delete"):
+                return HTMLResponse("Not allowed", status_code=403)
             try:
                 await resource.delete_record(record_id)
                 return HTMLResponse("", status_code=200)
@@ -682,6 +713,8 @@ class Resource:
         ) -> HTMLResponse | RedirectResponse:
             if (redir := await resource.panel._require_login(request)):
                 return redir
+            if not await resource._user_allowed(request, "action", action_key):
+                return HTMLResponse("Not allowed", status_code=403)
             data = await resource.parse_action_form(request)
             try:
                 result = await resource._dispatch_action(action_key, None, data, request)
@@ -711,6 +744,8 @@ class Resource:
         ) -> HTMLResponse | RedirectResponse:
             if (redir := await resource.panel._require_login(request)):
                 return redir
+            if not await resource._user_allowed(request, "action", action_key):
+                return HTMLResponse("Not allowed", status_code=403)
             data = await resource.parse_action_form(request)
             try:
                 result = await resource._dispatch_action(

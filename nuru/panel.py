@@ -82,6 +82,7 @@ class AdminPanel:
         logo_url: str | None = None,
         per_page: int = 25,
         auth: AuthBackend | None = None,
+        permission_checker: Any | None = None,
         template_dirs: list[str | Path] | None = None,
         extra_css: list[str] | str | None = None,
     ) -> None:
@@ -97,6 +98,10 @@ class AdminPanel:
         self.logo_url = logo_url
         self.per_page = per_page
         self.auth = auth
+        # Permission checker: callable(user, action, resource) -> bool
+        # Default to nuru.auth.default_permission_checker if not supplied.
+        from . import auth as _auth
+        self.permission_checker = permission_checker or _auth.default_permission_checker
         if extra_css is None:
             self.extra_css: list[str] = []
         elif isinstance(extra_css, str):
