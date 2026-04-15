@@ -35,9 +35,11 @@
   {% endfor %}
 
   <style>
-    :root {
+    {% if palette_css %}:root {
 {{ palette_css }}
-    }
+    }{% endif %}
+
+    /* ── Semantic colour shorthands ─────────────────────────────── */
     .bg-primary     { background-color: var(--color-primary-500); }
     .bg-primary-600 { background-color: var(--color-primary-600); }
     .text-primary   { color: var(--color-primary-500); }
@@ -51,6 +53,37 @@
     .text-warning   { color: var(--color-warning-600); }
     .bg-info        { background-color: var(--color-info-500); }
     .text-info      { color: var(--color-info-600); }
+
+    /* ── Sidebar nav items ──────────────────────────────────────── */
+    .nav-item {
+      color: var(--color-primary-700);
+    }
+    @media (hover: hover) {
+      .nav-item:hover {
+        background-color: var(--color-primary-100);
+        color: var(--color-primary-900);
+      }
+    }
+    .nav-item.nav-active {
+      background-color: var(--color-primary-100);
+      color: var(--color-primary-700);
+      font-weight: 600;
+    }
+    :where(.dark, .dark *) .nav-item {
+      color: var(--color-primary-300);
+    }
+    @media (hover: hover) {
+      :where(.dark, .dark *) .nav-item:hover {
+        background-color: color-mix(in oklab, var(--color-primary-900) 25%, transparent);
+        color: var(--color-primary-100);
+      }
+    }
+    :where(.dark, .dark *) .nav-item.nav-active {
+      background-color: color-mix(in oklab, var(--color-primary-900) 35%, transparent);
+      color: var(--color-primary-100);
+    }
+
+    /* ── HTMX indicators ────────────────────────────────────────── */
     .htmx-indicator { display: none; }
     .htmx-request .htmx-indicator  { display: block; }
     .htmx-request.htmx-indicator   { display: block; }
@@ -60,29 +93,28 @@
 
 {#
   Catalyst-inspired layout:
-  - Sidebar: always zinc-950 (dark), regardless of color scheme
-  - Content: white (light) / zinc-900 (dark)
+  - Sidebar: always secondary-950 (dark), regardless of color scheme
+  - Content: white (light) / secondary-900 (dark)
   - No separate topbar strip — breadcrumb sits inline in main
 #}
-<body class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 min-h-screen flex font-sans antialiased">
+<body class="bg-white dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 min-h-screen flex font-sans antialiased">
 
-  {# Active nav-item highlight colours scanned by TW4 build #}
-  <div class="hidden bg-zinc-200 dark:bg-white/10 text-zinc-900 dark:text-white"></div>
+
 
   {# ─── Mobile backdrop ─────────────────────────────────────────────── #}
   <div id="sidebar-backdrop"
        class="fixed inset-0 bg-black/30 z-20 hidden md:hidden"
        onclick="closeSidebar()"></div>
 
-  {# ─── Sidebar (always zinc-950) ───────────────────────────────────── #}
+  {# ─── Sidebar (always secondary-950) ───────────────────────────────────── #}
   <aside id="sidebar"
          class="fixed md:relative inset-y-0 left-0 z-30
-                w-64 min-h-screen bg-zinc-50 dark:bg-zinc-900 flex flex-col flex-shrink-0
+                w-64 min-h-screen bg-secondary-50 dark:bg-secondary-900 flex flex-col flex-shrink-0
                 -translate-x-full md:translate-x-0
                 transition-transform duration-200 ease-in-out">
 
     {# Brand / Logo #}
-    <div class="bg-white dark:bg-zinc-900 shadow-none px-4 py-3 h-[60px] border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+    <div class="bg-white dark:bg-secondary-900 shadow-none px-4 py-3 h-[60px] border-b border-secondary-200 dark:border-secondary-800 flex items-center justify-between">
       {% if logo_url %}
         <img src="{{ logo_url }}" alt="{{ panel_title }}" class="h-7">
       {% else %}
@@ -93,10 +125,10 @@
                 d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
-          <span class="font-semibold text-zinc-900 dark:text-white text-sm tracking-tight">{{ panel_title }}</span>
+          <span class="font-semibold text-secondary-900 dark:text-white text-sm tracking-tight">{{ panel_title }}</span>
         </div>
       {% endif %}
-      <button class="md:hidden p-1 rounded-lg text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+      <button class="md:hidden p-1 rounded-lg text-secondary-500 dark:text-secondary-500 hover:text-secondary-900 dark:hover:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-800 transition-colors"
               onclick="closeSidebar()" aria-label="Close">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -104,51 +136,30 @@
       </button>
     </div>
 
-    {# Navigation #}
+    {# Navigation — all items (including Dashboard) come from nav_items #}
     <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-
-      {# Dashboard link #}
-      <a href="{{ panel_prefix }}/"
-         data-nav-link
-         class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
-                text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full">
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-        Dashboard
-      </a>
-
-      {% if nav_items %}
-        <div class="px-3 pt-5 pb-1">
-          <p class="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Navigation</p>
-        </div>
-
-        {% for nav in nav_items %}
-          <a href="{{ nav.href }}"
-             data-nav-link
-             class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium
-                    text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white
-                    hover:bg-zinc-200/70 dark:hover:bg-white/5 transition-colors w-full"
-             onclick="closeSidebar()">
-            {{ render_icon(nav.icon, "w-4 h-4 flex-shrink-0") }}
-            {{ nav.label }}
-          </a>
-        {% endfor %}
-      {% endif %}
+      {% for nav in nav_items %}
+        <a href="{{ nav.href }}"
+           data-nav-link
+           class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
+           onclick="closeSidebar()">
+          {{ render_icon(nav.icon, "w-4 h-4 flex-shrink-0") }}
+          {{ nav.label }}
+        </a>
+      {% endfor %}
     </nav>
 
   </aside>
 
   {# ─── Main content ────────────────────────────────────────────────── #}
-  <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-zinc-50 dark:bg-zinc-900">
+  <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-secondary-50 dark:bg-secondary-900">
 
     {# Slim top strip: hamburger + dark toggle #}
-    <header class="flex items-center gap-3 px-4 md:px-6 py-3 h-[60px] shadow-none border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+    <header class="flex items-center gap-3 px-4 md:px-6 py-3 h-[60px] shadow-none border-b border-secondary-200 dark:border-secondary-800 bg-white dark:bg-secondary-900 sticky top-0 z-10">
 
       {# Hamburger — mobile only #}
-      <button class="md:hidden p-1.5 -ml-1.5 rounded-lg text-zinc-500 dark:text-zinc-400
-                     hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+      <button class="md:hidden p-1.5 -ml-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
+                     hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors flex-shrink-0"
               onclick="openSidebar()" aria-label="Open menu">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -166,13 +177,13 @@
           <button id="user-menu-btn"
                   onclick="toggleUserMenu()"
                   class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg
-                         hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group"
+                         hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors group"
                   aria-haspopup="true" aria-expanded="false">
             <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span class="text-white text-xs font-semibold select-none">{{ current_user.username[0] | upper }}</span>
             </div>
-            <span class="hidden sm:block text-sm font-medium text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">{{ current_user.username }}</span>
-            <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span class="hidden sm:block text-sm font-medium text-secondary-700 dark:text-secondary-300 max-w-[120px] truncate">{{ current_user.username }}</span>
+            <svg class="w-3.5 h-3.5 text-secondary-400 dark:text-secondary-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
@@ -180,25 +191,25 @@
           {# Dropdown panel #}
           <div id="user-menu"
                class="hidden absolute right-0 top-full mt-2 w-56 rounded-xl
-                      bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700
+                      bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700
                       shadow-lg overflow-hidden z-50">
             {# Profile header #}
-            <div class="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700">
+            <div class="px-4 py-3 border-b border-secondary-100 dark:border-secondary-700">
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                   <span class="text-white text-sm font-semibold select-none">{{ current_user.username[0] | upper }}</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{{ current_user.username }}</p>
-                  <p class="text-xs text-zinc-400 dark:text-zinc-500">Administrator</p>
+                  <p class="text-sm font-semibold text-secondary-900 dark:text-secondary-100 truncate">{{ current_user.username }}</p>
+                  <p class="text-xs text-secondary-400 dark:text-secondary-500">Administrator</p>
                 </div>
               </div>
             </div>
             {# Actions #}
             <div class="py-1">
               <a href="{{ panel_prefix }}/profile"
-                 class="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-600 dark:text-zinc-300
-                        hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-colors">
+                 class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
+                        hover:bg-secondary-50 dark:hover:bg-secondary-700/60 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -206,8 +217,8 @@
                 Profile
               </a>
               <a href="{{ panel_prefix }}/logout"
-                 class="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-600 dark:text-zinc-300
-                        hover:bg-zinc-50 dark:hover:bg-zinc-700/60 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                 class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
+                        hover:bg-secondary-50 dark:hover:bg-secondary-700/60 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -221,8 +232,8 @@
 
         <button onclick="toggleTheme()"
                 aria-label="Toggle dark mode"
-                class="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400
-                       hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                class="p-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
+                       hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
           <svg class="w-4 h-4 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -270,19 +281,14 @@
       document.querySelectorAll('[data-nav-link]').forEach(function(el) {
         var href = el.getAttribute('href');
         var isActive;
-        // Dashboard: exact match only
-        if (href === prefix + '/') {
+        // Root href (e.g. "/admin/") — exact match only to avoid matching everything
+        if (href === prefix + '/' || href === prefix) {
           isActive = (path === prefix + '/' || path === prefix);
         } else {
           isActive = path.startsWith(href);
         }
         if (isActive) {
-          el.classList.remove(
-            'text-zinc-600', 'dark:text-zinc-400',
-            'hover:text-zinc-900', 'dark:hover:text-white',
-            'hover:bg-zinc-200/70', 'dark:hover:bg-white/5'
-          );
-          el.classList.add('bg-zinc-200', 'dark:bg-white/10', 'text-zinc-900', 'dark:text-white');
+          el.classList.add('nav-active');
         }
       });
     })();
@@ -328,12 +334,12 @@
 
   {# ─── Action modal dialog ─────────────────────────────────────────── #}
   <dialog id="ap-action-modal"
-          class="w-full max-w-md rounded-xl border border-zinc-200 dark:border-zinc-700
-                 bg-white dark:bg-zinc-800 shadow-xl p-0 text-zinc-900 dark:text-zinc-100">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-700">
+          class="w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700
+                 bg-white dark:bg-secondary-800 shadow-xl p-0 text-secondary-900 dark:text-secondary-100">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-secondary-100 dark:border-secondary-700">
       <h3 id="ap-modal-title" class="text-sm font-semibold"></h3>
       <button type="button" onclick="apCloseModal()"
-              class="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+              class="p-1 rounded text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -341,10 +347,10 @@
     </div>
     <form id="ap-modal-form" method="post">
       <div id="ap-modal-fields" class="px-5 py-4 space-y-4"></div>
-      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-zinc-100 dark:border-zinc-700">
+      <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-secondary-100 dark:border-secondary-700">
         <button type="button" onclick="apCloseModal()"
-                class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400
-                       hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                class="px-4 py-2 text-sm text-secondary-500 dark:text-secondary-400
+                       hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors">
           Cancel
         </button>
         <button id="ap-modal-submit" type="submit"
@@ -368,11 +374,11 @@
 
     function _apBuildField(spec) {
       var wrap  = document.createElement('div');
-      var IC = 'w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 ' +
-               'rounded-lg bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 ' +
-               'placeholder-zinc-400 focus:outline-none focus:ring-2 focus:border-transparent';
+      var IC = 'w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600 ' +
+               'rounded-lg bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100 ' +
+               'placeholder-secondary-400 focus:outline-none focus:ring-2 focus:border-transparent';
       var lbl = document.createElement('label');
-      lbl.className = 'block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5';
+      lbl.className = 'block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5';
       lbl.textContent = spec.label + (spec.required ? ' *' : '');
       wrap.appendChild(lbl);
 
@@ -398,11 +404,11 @@
         var row = document.createElement('div'); row.className = 'flex items-center gap-2';
         el = document.createElement('input');
         el.type = 'checkbox'; el.name = spec.key; el.value = 'true';
-        el.className = 'rounded border-zinc-300 dark:border-zinc-600';
+        el.className = 'rounded border-secondary-300 dark:border-secondary-600';
         row.appendChild(el);
         if (spec.help_text) {
           var ht2 = document.createElement('span');
-          ht2.className = 'text-sm text-zinc-500 dark:text-zinc-400';
+          ht2.className = 'text-sm text-secondary-500 dark:text-secondary-400';
           ht2.textContent = spec.help_text;
           row.appendChild(ht2);
         }
@@ -419,7 +425,7 @@
       wrap.appendChild(el);
       if (spec.help_text && spec.field_type !== 'checkbox') {
         var ht = document.createElement('p');
-        ht.className = 'text-xs text-zinc-400 dark:text-zinc-500 mt-1';
+        ht.className = 'text-xs text-secondary-400 dark:text-secondary-500 mt-1';
         ht.textContent = spec.help_text;
         wrap.appendChild(ht);
       }

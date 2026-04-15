@@ -5,17 +5,17 @@
 {% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
-    <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-secondary-400 dark:text-secondary-500">
+    <a href="{{ panel_prefix }}/" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">Dashboard</a>
     <span class="select-none">›</span>
-    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">{{ resource.label_plural }}</a>
+    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">{{ resource.label_plural }}</a>
     <span class="select-none">›</span>
-    <span class="text-zinc-600 dark:text-zinc-300">{% if record_id %}Edit{% else %}New{% endif %}</span>
+    <span class="text-secondary-600 dark:text-secondary-300">{% if record_id %}Edit{% else %}New{% endif %}</span>
   </nav>
 {% endblock %}
 
 {% block page_heading %}
-  <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+  <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">
     {% if record_id %}Edit {{ resource.label }}{% else %}New {{ resource.label }}{% endif %}
   </h1>
 {% endblock %}
@@ -25,8 +25,8 @@
     {% if resource.can_view %}
     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
        class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
-              text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700
-              hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors">
+              text-secondary-600 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700
+              hover:bg-secondary-200 dark:hover:bg-secondary-600 transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -78,15 +78,15 @@
       {%- set _form_cols = resource.form_cols %}
       {% include "partials/form_grid.html" %}
     {% else %}
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">
-        No form fields defined. Add <code class="font-mono bg-zinc-100 dark:bg-zinc-700 px-1 rounded">form_fields</code>
+      <p class="text-sm text-secondary-500 dark:text-secondary-400 py-4 text-center">
+        No form fields defined. Add <code class="font-mono bg-secondary-100 dark:bg-secondary-700 px-1 rounded">form_fields</code>
         to your Resource class.
       </p>
     {% endif %}
 
-    <div class="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-700">
+    <div class="flex items-center justify-between pt-2 border-t border-secondary-100 dark:border-secondary-700">
       <a href="{{ panel_prefix }}/{{ resource.slug }}"
-         class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+         class="px-4 py-2 text-sm text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors">
         Cancel
       </a>
       <div class="flex flex-wrap gap-2 items-center">
@@ -110,9 +110,9 @@
         {# Save buttons #}
         {% if record_id %}
           <button type="submit" name="_action" value="save_and_continue"
-                  class="px-4 py-2 text-sm rounded-lg border border-zinc-200 dark:border-zinc-600
-                         hover:bg-zinc-50 dark:hover:bg-zinc-700
-                         text-zinc-700 dark:text-zinc-300 transition-colors">
+                  class="px-4 py-2 text-sm rounded-lg border border-secondary-200 dark:border-secondary-600
+                         hover:bg-secondary-50 dark:hover:bg-secondary-700
+                         text-secondary-700 dark:text-secondary-300 transition-colors">
             Save &amp; continue editing
           </button>
         {% endif %}

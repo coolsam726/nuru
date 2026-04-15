@@ -19,8 +19,8 @@
     {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
     {% set current = record | field_value(field.key) if record else '' %}
     {% set has_error = errors and field.key in errors %}
-    {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400 " %}
-    {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-zinc-200 dark:border-zinc-600") %}
+    {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-secondary-700 dark:text-secondary-100 dark:placeholder-secondary-400 " %}
+    {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-secondary-200 dark:border-secondary-600") %}
     <div class="{{ span_class }} {{ field.css_class }}">
       {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
     </div>

@@ -3,19 +3,19 @@
 {% block title %}{{ record }} — {{ resource.label }} — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
-    <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-secondary-400 dark:text-secondary-500">
+    <a href="{{ panel_prefix }}/" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">Dashboard</a>
     <span class="select-none">›</span>
-    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">{{ resource.label_plural }}</a>
+    <a href="{{ panel_prefix }}/{{ resource.slug }}" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">{{ resource.label_plural }}</a>
     <span class="select-none">›</span>
-    <span class="text-zinc-600 dark:text-zinc-300">{{ record }}</span>
+    <span class="text-secondary-600 dark:text-secondary-300">{{ record }}</span>
   </nav>
 {% endblock %}
 
 {% block page_heading %}
   <div>
-    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ record }}</h1>
-    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{{ resource.label }} · #{{ record_id }}</p>
+    <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">{{ record }}</h1>
+    <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">{{ resource.label }} · #{{ record_id }}</p>
   </div>
 {% endblock %}
 
@@ -82,7 +82,7 @@
       {%- set _form_cols = resource.form_cols %}
       {% include "partials/detail_grid.html" %}
     {% else %}
-      <div class="px-6 py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
+      <div class="px-6 py-10 text-center text-sm text-secondary-400 dark:text-secondary-500">
         No fields configured.
       </div>
     {% endif %}
@@ -99,7 +99,7 @@
 
   {% if inline_actions %}
   <div class="mt-6 flex flex-wrap items-center gap-2">
-    <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mr-1">Actions</span>
+    <span class="text-xs font-medium text-secondary-400 dark:text-secondary-500 uppercase tracking-wider mr-1">Actions</span>
     {% for action in inline_actions %}
     <button type="button"
             data-action-trigger

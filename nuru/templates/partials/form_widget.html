@@ -34,11 +34,11 @@
       {% if _form_enctype %}enctype="{{ _form_enctype }}"{% endif %}>
   {% include "partials/form_grid.html" %}
   <div class="flex items-center {% if _form_cancel_url %}justify-between{% else %}justify-end{% endif %}
-              pt-4 mt-1 border-t border-zinc-100 dark:border-zinc-700">
+              pt-4 mt-1 border-t border-secondary-100 dark:border-secondary-700">
     {% if _form_cancel_url %}
     <a href="{{ _form_cancel_url }}"
-       class="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400
-              hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+       class="px-4 py-2 text-sm text-secondary-500 dark:text-secondary-400
+              hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors">
       Cancel
     </a>
     {% endif %}

@@ -1,14 +1,14 @@
 <div>
-  <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
     {{ field.label }}
   </label>
   <div class="flex items-center gap-2">
     <input type="checkbox" name="{{ field.key }}" value="true"
            {% if current %}checked{% endif %}
-           class="rounded border-zinc-300 dark:border-zinc-600"
+           class="rounded border-secondary-300 dark:border-secondary-600"
            style="accent-color: var(--color-primary-500);">
     {% if field.help_text %}
-      <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ field.help_text }}</span>
+      <span class="text-sm text-secondary-500 dark:text-secondary-400">{{ field.help_text }}</span>
     {% endif %}
   </div>
   {% if has_error %}

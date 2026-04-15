@@ -78,7 +78,9 @@ class Page:
 
     def __init__(self, *, panel: AdminPanel) -> None:
         self.panel = panel
-        if not self.slug and self.label:
+        # Auto-generate slug from label only when the class hasn't explicitly
+        # declared a slug (even an empty string, which means "root route /").
+        if "slug" not in type(self).__dict__ and self.label:
             self.slug = self.label.lower().replace(" ", "-")
 
     # ── Override this ──────────────────────────────────────────────────
@@ -132,9 +134,11 @@ class Page:
     def _register_routes(self, router: APIRouter) -> None:
         page = self
         panel = self.panel
+        # Empty slug → root route ("/"), otherwise "/{slug}"
+        route_path = "/" if not page.slug else f"/{page.slug}"
 
         @router.get(
-            f"/{page.slug}",
+            route_path,
             response_class=HTMLResponse,
             response_model=None,
             include_in_schema=False,
@@ -156,7 +160,7 @@ class Page:
         if type(page).handle_post is not Page.handle_post:
 
             @router.post(
-                f"/{page.slug}",
+                route_path,
                 response_model=None,
                 include_in_schema=False,
             )
@@ -164,3 +168,50 @@ class Page:
                 if (redir := await panel._require_login(request)):
                     return redir  # type: ignore[return-value]
                 return await page.handle_post(request)
+
+
+# ---------------------------------------------------------------------------
+# Built-in pages — automatically registered unless overridden
+# ---------------------------------------------------------------------------
+
+
+class DashboardPage(Page):
+    """
+    Built-in dashboard page (route: ``/``).
+
+    Override ``get_context`` or the full class to customise the dashboard.
+    Provide a template at ``templates/dashboard.html`` in your own template
+    dirs to replace the default layout entirely::
+
+        class MyDashboard(DashboardPage):
+            async def get_context(self, request):
+                return {"stats": await fetch_stats()}
+
+        panel.register_page(MyDashboard)
+    """
+
+    label = "Dashboard"
+    slug = ""           # maps to the root route "/"
+    nav_icon = "home"
+    nav_sort = 0
+    template = "dashboard.html"
+
+    async def get_context(self, request: Request) -> dict:
+        return {"resources": self.panel._resources}
+
+
+class ProfilePage(Page):
+    """
+    Built-in profile page (route: ``/profile``).
+
+    Not shown in the nav — accessed from the user-menu dropdown.
+    Override the class or provide ``templates/profile.html`` to customise.
+    """
+
+    label = "Profile"
+    slug = "profile"
+    show_in_nav = False
+    template = "profile.html"
+
+    async def get_context(self, request: Request) -> dict:
+        return {}

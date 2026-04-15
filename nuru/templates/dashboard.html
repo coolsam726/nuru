@@ -3,15 +3,15 @@
 {% block title %}Dashboard — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex items-center text-sm text-zinc-400 dark:text-zinc-500">
-    <span class="text-zinc-600 dark:text-zinc-300">Dashboard</span>
+  <nav class="flex items-center text-sm text-secondary-400 dark:text-secondary-500">
+    <span class="text-secondary-600 dark:text-secondary-300">Dashboard</span>
   </nav>
 {% endblock %}
 
 {% block page_heading %}
   <div>
-    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Dashboard</h1>
-    <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Welcome to {{ panel_title }}</p>
+    <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">Dashboard</h1>
+    <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">Welcome to {{ panel_title }}</p>
   </div>
 {% endblock %}
 
@@ -23,8 +23,8 @@
       {% set res_slug  = res_cls.slug        if res_cls.slug        else res_cls.label.lower().replace(' ', '-') %}
       {% set res_label = res_cls.label_plural if res_cls.label_plural else res_cls.label + 's' %}
       <a href="{{ panel_prefix }}/{{ res_slug }}"
-         class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700
-                p-5 shadow-sm hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-600
+         class="bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700
+                p-5 shadow-sm hover:shadow-md hover:border-secondary-300 dark:hover:border-secondary-600
                 transition-all group">
         <div class="flex items-center justify-between mb-3">
           <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
@@ -33,27 +33,27 @@
                 d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
             </svg>
           </div>
-          <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 transition-colors"
+          <svg class="w-4 h-4 text-secondary-300 dark:text-secondary-600 group-hover:text-secondary-500 dark:group-hover:text-secondary-400 transition-colors"
                fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
           </svg>
         </div>
-        <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ res_label }}</p>
-        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Manage {{ res_label | lower }}</p>
+        <p class="font-medium text-secondary-900 dark:text-secondary-100">{{ res_label }}</p>
+        <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">Manage {{ res_label | lower }}</p>
       </a>
     {% endfor %}
   </div>
   {% else %}
-  <div class="bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 border-dashed p-12 text-center shadow-sm">
-    <div class="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center mx-auto mb-4">
-      <svg class="w-6 h-6 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700 border-dashed p-12 text-center shadow-sm">
+    <div class="w-12 h-12 rounded-full bg-secondary-100 dark:bg-secondary-700 flex items-center justify-center mx-auto mb-4">
+      <svg class="w-6 h-6 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
           d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
       </svg>
     </div>
-    <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">No resources registered</p>
-    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-      Call <code class="font-mono bg-zinc-100 dark:bg-zinc-700 px-1 rounded">panel.register(YourResource)</code> to add one.
+    <p class="text-sm font-medium text-secondary-700 dark:text-secondary-300">No resources registered</p>
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+      Call <code class="font-mono bg-secondary-100 dark:bg-secondary-700 px-1 rounded">panel.register(YourResource)</code> to add one.
     </p>
   </div>
   {% endif %}

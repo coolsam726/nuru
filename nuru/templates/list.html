@@ -3,18 +3,18 @@
 {% block title %}{{ resource.label_plural }} — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
-    <a href="{{ panel_prefix }}/" class="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">Dashboard</a>
+  <nav class="flex flex-wrap items-center gap-1 text-sm text-secondary-400 dark:text-secondary-500">
+    <a href="{{ panel_prefix }}/" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">Dashboard</a>
     <span class="select-none">›</span>
-    <span class="text-zinc-600 dark:text-zinc-300">{{ resource.label_plural }}</span>
+    <span class="text-secondary-600 dark:text-secondary-300">{{ resource.label_plural }}</span>
   </nav>
 {% endblock %}
 
 {% block page_heading %}
   <div>
-    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{{ resource.label_plural }}</h1>
+    <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">{{ resource.label_plural }}</h1>
     {% if total is defined %}
-      <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{{ total }} record{{ 's' if total != 1 }}</p>
+      <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">{{ total }} record{{ 's' if total != 1 }}</p>
     {% endif %}
   </div>
 {% endblock %}
@@ -98,7 +98,7 @@
 
   <div class="flex flex-col sm:flex-row sm:items-center justify-end mb-5 gap-4">
     <div class="relative w-full sm:w-64 flex-shrink-0">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none"
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 pointer-events-none"
            fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -109,9 +109,9 @@
         name="search"
         value="{{ search }}"
         placeholder="Search {{ resource.label_plural | lower }}…"
-        class="w-full pl-9 pr-8 py-2 text-sm border border-zinc-200 dark:border-zinc-600
-               rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100
-               placeholder-zinc-400 dark:placeholder-zinc-500
+        class="w-full pl-9 pr-8 py-2 text-sm border border-secondary-200 dark:border-secondary-600
+               rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100
+               placeholder-secondary-400 dark:placeholder-secondary-500
                focus:outline-none focus:ring-2 focus:border-transparent"
         style="--tw-ring-color: var(--color-primary-500);"
         hx-get="{{ panel_prefix }}/{{ resource.slug }}/table"
@@ -122,7 +122,7 @@
         hx-indicator="#search-spinner"
       >
       <svg id="search-spinner"
-           class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 animate-spin"
+           class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 animate-spin"
            fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>

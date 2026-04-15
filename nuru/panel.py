@@ -72,15 +72,13 @@ class AdminPanel:
         *,
         title: str = "Admin",
         prefix: str = "/admin",
-        primary: str = "#6366f1",
-        secondary: str = "#64748b",
-        accent: str = "#8b5cf6",
-        info: str = "#0ea5e9",
-        success: str = "#22c55e",
-        danger: str = "#ef4444",
-        warning: str = "#f59e0b",
-        # Legacy alias kept for backward compat
-        brand_color: str | None = None,
+        primary: str | None = None,
+        secondary: str | None = None,
+        accent: str | None = None,
+        info: str | None = None,
+        success: str | None = None,
+        danger: str | None = None,
+        warning: str | None = None,
         logo_url: str | None = None,
         per_page: int = 25,
         auth: AuthBackend | None = None,
@@ -89,16 +87,13 @@ class AdminPanel:
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
-        # brand_color is a legacy alias for primary
-        self.primary   = brand_color if brand_color is not None else primary
+        self.primary   = primary
         self.secondary = secondary
         self.accent    = accent
         self.info      = info
         self.success   = success
         self.danger    = danger
         self.warning   = warning
-        # Back-compat attribute — points to primary
-        self.brand_color = self.primary
         self.logo_url = logo_url
         self.per_page = per_page
         self.auth = auth
@@ -164,9 +159,15 @@ class AdminPanel:
     # ------------------------------------------------------------------
 
     def _build_routes(self) -> None:
+        from .page import DashboardPage, ProfilePage
         if self.auth is not None:
             self._add_login_routes()
-        self._add_dashboard_route()
+        # Register built-in pages unless the user has overridden them
+        registered_slugs = {cls.slug for cls in self._pages}
+        if "" not in registered_slugs:
+            DashboardPage(panel=self)._register_routes(self._router)
+        if "profile" not in registered_slugs:
+            ProfilePage(panel=self)._register_routes(self._router)
         for resource_cls in self._resources:
             resource = resource_cls(panel=self)
             resource._register_routes(self._router)
@@ -175,7 +176,16 @@ class AdminPanel:
             page._register_routes(self._router)
 
     def _nav_entries(self) -> list[dict[str, Any]]:
+        from .page import DashboardPage, ProfilePage
         items: list[_NavItem] = list(self._nav_items)
+
+        # Include built-in pages (in nav order) unless the user has overridden them
+        registered_slugs = {cls.slug for cls in self._pages}
+        builtin_page_cls: list[type] = []
+        if "" not in registered_slugs:
+            builtin_page_cls.append(DashboardPage)
+        if "profile" not in registered_slugs:
+            builtin_page_cls.append(ProfilePage)
 
         for resource_cls in self._resources:
             if not getattr(resource_cls, "show_in_nav", True):
@@ -186,14 +196,15 @@ class AdminPanel:
             icon = resolve_icon(icon_name)
             items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
 
-        for page_cls in self._pages:
+        for page_cls in builtin_page_cls + self._pages:
             if not getattr(page_cls, "show_in_nav", True):
                 continue
-            slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(" ", "-")
+            slug = page_cls.slug
+            href = f"{self.prefix}/" if not slug else f"{self.prefix}/{slug}"
             label = page_cls.nav_label or page_cls.label
-            icon_name = page_cls.nav_icon or page_cls.icon or "document"
+            icon_name = page_cls.nav_icon or getattr(page_cls, "icon", "") or "document"
             icon = resolve_icon(icon_name)
-            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
+            items.append(_NavItem(label=label, href=href, icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
 
         items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
         return [item.__dict__ for item in items]
@@ -248,27 +259,6 @@ class AdminPanel:
             panel.auth.clear_session(response)  # type: ignore[union-attr]
             return response  # type: ignore[return-value]
 
-    def _add_dashboard_route(self) -> None:
-        panel = self
-
-        @self._router.get("/", response_class=HTMLResponse, response_model=None, include_in_schema=False)
-        async def dashboard(request: Request) -> HTMLResponse | RedirectResponse:
-            if (redir := await panel._require_login(request)):
-                return redir
-            user = await panel._current_user(request)
-            html = panel._render("dashboard.html", {
-                "resources": panel._resources,
-            }, user=user, request=request)
-            return HTMLResponse(html)
-
-        @self._router.get("/profile", response_class=HTMLResponse, response_model=None, include_in_schema=False)
-        async def profile(request: Request) -> HTMLResponse | RedirectResponse:
-            if (redir := await panel._require_login(request)):
-                return redir
-            user = await panel._current_user(request)
-            html = panel._render("profile.html", {}, user=user, request=request)
-            return HTMLResponse(html)
-
     def _mount_static(self, app: FastAPI) -> None:
         """
         Mount the package static directory under this panel's prefix.
@@ -310,29 +300,6 @@ class AdminPanel:
             )
         return None
 
-    def _nav_entries(self) -> list[dict[str, Any]]:
-        items: list[_NavItem] = list(self._nav_items)
-
-        for resource_cls in self._resources:
-            if not getattr(resource_cls, "show_in_nav", True):
-                continue
-            slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
-            label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
-            icon_name = resource_cls.nav_icon or "folder"
-            icon = resolve_icon(icon_name)
-            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(resource_cls, "nav_sort", 100)))
-
-        for page_cls in self._pages:
-            if not getattr(page_cls, "show_in_nav", True):
-                continue
-            slug = page_cls.slug if page_cls.slug else page_cls.label.lower().replace(" ", "-")
-            label = page_cls.nav_label or page_cls.label
-            icon_name = page_cls.nav_icon or page_cls.icon or "document"
-            icon = resolve_icon(icon_name)
-            items.append(_NavItem(label=label, href=f"{self.prefix}/{slug}", icon=icon, sort=getattr(page_cls, "nav_sort", 100)))
-
-        items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
-        return [item.__dict__ for item in items]
     async def _current_user(self, request: Request) -> Any | None:
         """Return the current user, or None if auth is disabled."""
         if self.auth is None:
@@ -346,30 +313,35 @@ class AdminPanel:
 
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
-        # Build full palette CSS for all semantic colors
-        _colors = {
-            "primary":   self.primary,
-            "secondary": self.secondary,
-            "accent":    self.accent,
-            "info":      self.info,
-            "success":   self.success,
-            "danger":    self.danger,
-            "warning":   self.warning,
+        # Only generate palette overrides for colors explicitly set by the caller.
+        # Colors left as None fall back to the Tailwind @theme defaults.
+        _overrides = {
+            name: color
+            for name, color in {
+                "primary":   self.primary,
+                "secondary": self.secondary,
+                "accent":    self.accent,
+                "info":      self.info,
+                "success":   self.success,
+                "danger":    self.danger,
+                "warning":   self.warning,
+            }.items()
+            if color is not None
         }
         palette_css = "\n".join(
-            palette_css_vars(name, color) for name, color in _colors.items()
+            palette_css_vars(name, color) for name, color in _overrides.items()
         )
         return {
-            "render_icon":  render_icon,
-            "panel_title":  self.title,
-            "panel_prefix": self.prefix,
-            "palette_css":  palette_css,
-            "logo_url":     self.logo_url,
-            "htmx_local":   _HTMX_LOCAL,
-            "per_page":     self.per_page,
-            "resources":    self._resources,
-            "pages":         self._pages,
-            "auth_enabled": self.auth is not None,
-            "extra_css":    self.extra_css,
-            "current_user": None,   # overridden per-request via _render(user=...)
+            "render_icon":        render_icon,
+            "panel_title":        self.title,
+            "panel_prefix":       self.prefix,
+            "palette_css":        palette_css,
+            "logo_url":           self.logo_url,
+            "htmx_local":         _HTMX_LOCAL,
+            "per_page":           self.per_page,
+            "resources":          self._resources,
+            "pages":              self._pages,
+            "auth_enabled":       self.auth is not None,
+            "extra_css":          self.extra_css,
+            "current_user":       None,   # overridden per-request via _render(user=...)
         }

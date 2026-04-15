@@ -17,7 +17,7 @@
   {%- if col.is_true(value) %}
     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ col.true_label }}</span>
   {%- else %}
-    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">{{ col.false_label }}</span>
+    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-600 dark:bg-secondary-700 dark:text-secondary-400">{{ col.false_label }}</span>
   {%- endif %}
 {%- else %}
   {{- col.render(value) }}
