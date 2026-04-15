@@ -99,7 +99,7 @@ jobs:
 
               # Send the install command
               activate = f"source {venv}/bin/activate && " if venv else ""
-              cmd = f"{activate}pip install --upgrade --quiet nuru && echo '__DONE__'\n"
+              cmd = f"{activate}pip install --upgrade --quiet nuru a2wsgi aiosqlite && echo '__DONE__'\n"
               api("POST", f"/consoles/{cid}/send_input/", {"input": cmd})
 
               # Poll up to 3 minutes for completion marker
