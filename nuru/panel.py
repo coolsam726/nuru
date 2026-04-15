@@ -367,6 +367,31 @@ class AdminPanel:
             return None
         return await self.auth.get_current_user(request)
 
+    async def _render_error(
+        self,
+        status_code: int,
+        title: str,
+        message: str,
+        *,
+        request: Request | None = None,
+    ) -> "HTMLResponse":
+        """Render a styled error page and return an HTMLResponse with *status_code*."""
+        from fastapi.responses import HTMLResponse
+
+        user = None
+        if request is not None:
+            try:
+                user = await self._current_user(request)
+            except Exception:
+                pass
+        html = self._render(
+            "error.html",
+            {"error_code": status_code, "error_title": title, "error_message": message},
+            user=user,
+            request=request,
+        )
+        return HTMLResponse(html, status_code=status_code)
+
     def _render(self, template_name: str, context: dict, *, user: Any = None, request: Request | None = None) -> str:
         template = self._jinja_env.get_template(template_name)
         current_path = str(request.url.path) if request is not None else ""

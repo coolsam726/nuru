@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ error_code }} — {{ panel_title }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+
+  {# Large error code #}
+  <div class="text-[7rem] font-extrabold leading-none text-primary select-none tabular-nums">
+    {{ error_code }}
+  </div>
+
+  {# Icon block — chosen by status code family #}
+  <div class="mt-4 mb-6 w-20 h-20 rounded-full flex items-center justify-center
+              {% if error_code == 403 %}bg-red-100 dark:bg-red-900/30
+              {% elif error_code == 404 %}bg-amber-100 dark:bg-amber-900/30
+              {% elif error_code == 500 %}bg-red-100 dark:bg-red-900/30
+              {% else %}bg-secondary-100 dark:bg-secondary-800{% endif %}">
+    {% if error_code == 403 %}
+      {# Lock / shield #}
+      <svg class="w-9 h-9 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    {% elif error_code == 404 %}
+      {# Search / not found #}
+      <svg class="w-9 h-9 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+    {% elif error_code == 500 %}
+      {# Server / wrench #}
+      <svg class="w-9 h-9 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+    {% else %}
+      {# Generic warning / cog #}
+      <svg class="w-9 h-9 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    {% endif %}
+  </div>
+
+  {# Title #}
+  <h1 class="text-2xl font-bold text-secondary-900 dark:text-secondary-100 mb-2">
+    {{ error_title }}
+  </h1>
+
+  {# Message #}
+  <p class="text-secondary-500 dark:text-secondary-400 max-w-md leading-relaxed mb-8">
+    {{ error_message }}
+  </p>
+
+  {# Actions #}
+  <div class="flex flex-wrap items-center justify-center gap-3">
+    <button onclick="history.back()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                   bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700
+                   text-secondary-700 dark:text-secondary-300
+                   hover:bg-secondary-50 dark:hover:bg-secondary-700 transition-colors shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Go back
+    </button>
+    <a href="{{ panel_prefix }}/"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+              bg-primary text-white hover:bg-primary-600 transition-colors shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Dashboard
+    </a>
+  </div>
+
+</div>
+{% endblock %}
