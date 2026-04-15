@@ -1,4 +1,7 @@
-# nuru
+# Nuru
+[![CI](https://github.com/coolsam726/nuru/actions/workflows/python-tests.yml/badge.svg)](https://github.com/coolsam726/nuru/actions)
+[![Python versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org)
+[![PyPI version](https://img.shields.io/pypi/v/nuru.svg)](https://pypi.org/project/nuru)
 
 A declarative admin panel framework for FastAPI. Define your resources once
 in Python — get a full admin UI with tables, forms, search, sorting, and
