@@ -942,7 +942,9 @@ class RoleResource(Resource):
         ),
         fields.Fieldset(
             title="Permissions",
-            description="Select the permissions granted to users in this role.",
+            description="Select the permissions granted to users in this role. "
+                        "The ⭐ wildcard (*) grants everything — it cannot be removed via this UI; "
+                        "edit the database directly to revoke it.",
             col_span="full",
             cols=1,
             fields=[
@@ -998,7 +1000,13 @@ class RoleResource(Resource):
             return _RoleView(role, codenames, all_perms)
 
     async def after_save(self, record_id: Any, data: dict) -> None:
-        """Sync RolePermission rows from the submitted ``permission_ids`` list."""
+        """Sync RolePermission rows from the submitted ``permission_ids`` list.
+
+        Safety rule: if the role currently holds the wildcard (*) permission,
+        it is silently re-added even if the user submitted without it.  This
+        prevents accidental super-admin lockout through the UI.  To intentionally
+        remove *, make the change directly in the database.
+        """
         selected_ids = {int(v) for v in (data.get("permission_ids") or []) if v}
         async with _get_session() as session:
             role_id = int(record_id)
@@ -1006,6 +1014,18 @@ class RoleResource(Resource):
                 sm_select(RolePermission).where(RolePermission.role_id == role_id)
             )).all()
             existing_ids = {rp.permission_id for rp in existing}
+
+            # Preserve any existing wildcard (*) permissions — they cannot be
+            # removed through the admin UI to guard against accidental lockout.
+            if existing_ids:
+                wildcard_perms = (await session.exec(
+                    sm_select(Permission).where(
+                        Permission.id.in_(existing_ids),
+                        Permission.codename == "*",
+                    )
+                )).all()
+                for wp in wildcard_perms:
+                    selected_ids.add(wp.id)
 
             # Add newly selected.
             for perm_id in selected_ids - existing_ids:
