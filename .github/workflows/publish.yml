@@ -68,7 +68,13 @@ jobs:
               req  = urllib.request.Request(f"{base}{path}", data=data, headers=hdrs, method=method)
               with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
                   raw = r.read()
-                  return json.loads(raw) if raw.strip() else {}
+              if not raw or not raw.strip():
+                  return {}
+              try:
+                  return json.loads(raw)
+              except json.JSONDecodeError:
+                  print(f"Warning: non-JSON response from {method} {path}: {raw[:200]!r}", file=sys.stderr)
+                  return {}
 
           # Create a bash console
           console = api("POST", "/consoles/", {"executable": "bash", "arguments": ""})
