@@ -4,40 +4,53 @@ WSGI entry point for PythonAnywhere (free tier).
 Place this file at:
   /var/www/coolsam_pythonanywhere_com_wsgi.py
 
-And set these in the PythonAnywhere Web tab:
-  Source code:  /home/coolsam/nuru_demo   (where you cloned/copied the repo)
-  Virtualenv:   /home/coolsam/.virtualenvs/nuru
-  WSGI file:    /var/www/coolsam_pythonanywhere_com_wsgi.py
+Web tab settings:
+  Virtualenv:  /home/coolsam/.virtualenvs/nuru
+  WSGI file:   /var/www/coolsam_pythonanywhere_com_wsgi.py
 
 How it works
 ------------
 PythonAnywhere free accounts only support WSGI.
-FastAPI / nuru is ASGI.  The `a2wsgi` library bridges the gap by
-wrapping the ASGI app in a synchronous WSGI callable that PA can load.
+FastAPI/nuru is ASGI.  `a2wsgi` bridges the gap.
+
+The FastAPI lifespan (DB schema creation + seeding) is driven in a
+background thread that owns a persistent event loop for the process
+lifetime.  `future.result(timeout=120)` blocks import until startup
+completes, so the first request arrives to a fully-ready app.
 
 Limitations of ASGI-on-WSGI (via a2wsgi)
 -----------------------------------------
-  - Works perfectly for standard HTTP traffic.
-  - No WebSocket support (PA free doesn't expose WS anyway).
-  - Server-Sent Events (SSE) are not supported.
+  - Works for standard HTTP traffic.
+  - No WebSocket or SSE support on free PA.
 """
 
-import sys, os
+import sys, os, asyncio, threading
 
-# ── Add the repo root to sys.path so `example_app` is importable ─────────────
+# ── sys.path ──────────────────────────────────────────────────────────────────
 project_home = "/home/coolsam/nuru_demo"
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
-# ── Point the SQLite DB at a writable absolute path ───────────────────────────
-# example_app/main.py uses a relative path ("example_db.sqlite3") which would
-# resolve to the server's cwd (usually /) on PA.  Override it here.
+# ── DB path ───────────────────────────────────────────────────────────────────
 os.environ.setdefault("NURU_DB_PATH", f"{project_home}/example_db.sqlite3")
 
-# ── Import the FastAPI ASGI app from the existing example_app ─────────────────
+# ── Import app ────────────────────────────────────────────────────────────────
 from example_app.main import app as _asgi_app  # noqa: E402
 
-# ── Wrap ASGI → WSGI using a2wsgi ────────────────────────────────────────────
-from a2wsgi import ASGIMiddleware
+# ── Persistent event loop in a daemon thread ──────────────────────────────────
+# a2wsgi will submit coroutines to this loop via run_coroutine_threadsafe.
+_loop = asyncio.new_event_loop()
+threading.Thread(target=_loop.run_forever, daemon=True).start()
 
-application = ASGIMiddleware(_asgi_app)
+# ── Run lifespan startup now, block until done ────────────────────────────────
+# Holding _lifespan_ctx open keeps the async engine alive for the process
+# lifetime; shutdown fires when the thread eventually joins on worker exit.
+_lifespan_ctx = _asgi_app.router.lifespan_context(_asgi_app)
+asyncio.run_coroutine_threadsafe(
+    _lifespan_ctx.__aenter__(), _loop
+).result(timeout=120)
+
+# ── WSGI application ──────────────────────────────────────────────────────────
+from a2wsgi import ASGIMiddleware  # noqa: E402
+
+application = ASGIMiddleware(_asgi_app, lifespan="off")
