@@ -22,7 +22,7 @@
 {% block header_actions %}
   {% if resource.form_actions %}
     {% for action in resource.form_actions %}
-      {% if action.placement == 'header' %}
+      {% if action.placement == 'header' and has_perm(resource.slug + ':action') %}
       <button type="button"
               data-action-trigger
               data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
@@ -39,7 +39,7 @@
     {% endfor %}
   {% endif %}
 
-  {% if resource.can_edit %}
+  {% if resource.can_edit and has_perm(resource.slug + ':edit') %}
   <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
      class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
             text-white bg-primary hover:opacity-90 transition-opacity">
@@ -92,7 +92,7 @@
   {# ── Inline form actions ────────────────────────────────────────── #}
   {% set inline_actions = [] %}
   {% for action in resource.form_actions %}
-    {% if action.placement == 'inline' %}
+    {% if action.placement == 'inline' and has_perm(resource.slug + ':action') %}
       {% set _ = inline_actions.append(action) %}
     {% endif %}
   {% endfor %}

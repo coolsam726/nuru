@@ -98,17 +98,17 @@
               {% set _cls = _icon_cls.get(action.style, _icon_cls['default']) %}
               {% if action.is_builtin %}
                 {# Built-in: view → <a>, edit → <a>, delete → hx-delete #}
-                {% if action.key == '__view__' %}
+                {% if action.key == '__view__' and has_perm(resource.slug + ':view') %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
                    class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
                   {{ render_icon(action.icon) }}
                 </a>
-                {% elif action.key == '__edit__' %}
+                {% elif action.key == '__edit__' and has_perm(resource.slug + ':edit') %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                    class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
                   {{ render_icon(action.icon) }}
                 </a>
-                {% elif action.key == '__delete__' %}
+                {% elif action.key == '__delete__' and has_perm(resource.slug + ':delete') %}
                 <button class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}"
                         hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                         hx-confirm="Delete this {{ resource.label }}?"
@@ -118,6 +118,7 @@
                 {% endif %}
               {% else %}
                 {# Custom action: data-action-trigger modal #}
+                {% if has_perm(resource.slug + ':action') %}
                 <button type="button"
                         data-action-trigger
                         data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
@@ -130,11 +131,25 @@
                   {{ render_icon(action.icon) }}
                   {% else %}{{ action.label }}{% endif %}
                 </button>
+                {% endif %}
               {% endif %}
             {% endfor %}
 
             {# ── Overflow menu (⋮) ──────────────────────────────── #}
-            {% if _overflow %}
+            {# Build a list of overflow items the current user is allowed to see #}
+            {% set _visible_overflow = [] %}
+            {% for action in _overflow %}
+              {% if action.is_builtin %}
+                {% if (action.key == '__view__' and has_perm(resource.slug + ':view'))
+                    or (action.key == '__edit__' and has_perm(resource.slug + ':edit'))
+                    or (action.key == '__delete__' and has_perm(resource.slug + ':delete')) %}
+                  {% set _ = _visible_overflow.append(action) %}
+                {% endif %}
+              {% elif has_perm(resource.slug + ':action') %}
+                {% set _ = _visible_overflow.append(action) %}
+              {% endif %}
+            {% endfor %}
+            {% if _visible_overflow %}
             <div class="relative" data-overflow-menu>
               <button type="button" onclick="toggleRowOverflow(this)"
                       class="p-1.5 rounded text-secondary-400 hover:text-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-700 dark:hover:text-secondary-200 transition-colors"
@@ -144,7 +159,7 @@
                 </svg>
               </button>
               <div class="overflow-dropdown hidden fixed w-44 bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 shadow-lg z-[9999] py-1">
-                {% for action in _overflow %}
+                {% for action in _visible_overflow %}
                   {% set _mcls = _menu_cls.get(action.style, _menu_cls['default']) %}
                   {% if action.is_builtin %}
                     {% if action.key == '__view__' %}

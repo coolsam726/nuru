@@ -279,7 +279,7 @@ async def _lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Example App", lifespan=_lifespan)
+app = FastAPI(title="Nuru Demo App", lifespan=_lifespan)
 
 # ---------------------------------------------------------------------------
 # Shared async SQLite engine
@@ -338,35 +338,6 @@ class Product(SQLModel, table=True):
     def __str__(self) -> str:
         return f"{self.name} ({self.sku})"
 
-
-# ---------------------------------------------------------------------------
-# In-memory servers (ops panel only)
-# ---------------------------------------------------------------------------
-
-_servers = [
-    {
-        "id": 1,
-        "hostname": "web-01",
-        "region": "eu-west",
-        "status": "healthy",
-        "cpu": 23,
-    },
-    {
-        "id": 2,
-        "hostname": "web-02",
-        "region": "eu-west",
-        "status": "healthy",
-        "cpu": 41,
-    },
-    {"id": 3, "hostname": "db-01", "region": "us-east", "status": "warning", "cpu": 87},
-    {
-        "id": 4,
-        "hostname": "cache-01",
-        "region": "us-east",
-        "status": "healthy",
-        "cpu": 12,
-    },
-]
 
 # ---------------------------------------------------------------------------
 # /admin  —  UserResource
@@ -670,122 +641,6 @@ class OrderResource(Resource):
 
 
 # ---------------------------------------------------------------------------
-# /ops  —  ServerResource (in-memory)
-# ---------------------------------------------------------------------------
-
-
-class ServerResource(Resource):
-    label = "Server"
-    label_plural = "Servers"
-
-    table_columns = [
-        columns.Text("hostname", "Hostname", sortable=True),
-        columns.Text("region", "Region", sortable=True),
-        columns.Badge(
-            "status",
-            "Status",
-            colors={
-                "healthy": "green",
-                "warning": "amber",
-                "critical": "red",
-            },
-        ),
-        columns.Text("cpu", "CPU %"),
-    ]
-
-    form_fields = [
-        fields.Text("hostname", "Hostname", required=True),
-        fields.Select("region", "Region", options=["eu-west", "us-east", "ap-south"]),
-        fields.Select("status", "Status", options=["healthy", "warning", "critical"]),
-        fields.Number("cpu", "CPU %"),
-    ]
-
-    async def get_list(
-        self,
-        *,
-        page=1,
-        per_page=25,
-        search=None,
-        sort_by=None,
-        sort_dir="asc",
-        filters=None,
-    ):
-        data = list(_servers)
-        if search:
-            q = search.lower()
-            data = [s for s in data if q in s["hostname"].lower()]
-        if sort_by and sort_by in ("hostname", "region"):
-            data.sort(key=lambda s: s.get(sort_by, ""), reverse=(sort_dir == "desc"))
-        start = (page - 1) * per_page
-        return {"records": data[start : start + per_page], "total": len(data)}
-
-    async def get_record(self, id):
-        return next((s for s in _servers if str(s["id"]) == str(id)), None)
-
-    async def save_record(self, id, data):
-        if id is None:
-            new_id = max(s["id"] for s in _servers) + 1
-            record = {"id": new_id, **data}
-            _servers.append(record)
-            return record
-        for s in _servers:
-            if str(s["id"]) == str(id):
-                s.update(data)
-                return s
-
-    async def delete_record(self, id):
-        _servers[:] = [s for s in _servers if str(s["id"]) != str(id)]
-
-
-# ---------------------------------------------------------------------------
-# /db  —  ProductResource (SQLModel)
-# ---------------------------------------------------------------------------
-
-
-class ProductResource(Resource):
-    label = "Product"
-    label_plural = "Products"
-    model = Product
-    session_factory = _get_session
-    search_fields = ["name", "sku"]
-    can_delete = True
-
-    table_columns = [
-        columns.Text("name", "Name", sortable=True),
-        columns.Text("sku", "SKU", sortable=True),
-        columns.Currency("price", "Price", currency="USD"),
-        columns.Boolean("in_stock", "In Stock"),
-        columns.Currency("stock_quantity", "Stock Qty", currency=""),
-    ]
-
-    row_actions = [
-        Action(
-            "restock",
-            label="Restock",
-            handler="restock_product",
-            style="success",
-            icon="M12 4v16m8-8H4",
-            form_fields=[
-                fields.Number("quantity", "Quantity to add", required=True),
-            ],
-        ),
-    ]
-
-    async def restock_product(self, record_id, data, request):
-        qty = int(data.get("quantity") or 0)
-        if qty <= 0:
-            raise ValueError("Quantity must be positive")
-        async with _get_session() as session:
-            record = await session.get(Product, int(record_id))
-            if record is None:
-                raise ValueError(f"Product {record_id} not found")
-            record.stock_quantity = (record.stock_quantity or 0) + qty
-            record.in_stock = True
-            session.add(record)
-            await session.commit()
-
-
-# ---------------------------------------------------------------------------
 # Custom Page: Reports
 # ---------------------------------------------------------------------------
 
@@ -1005,15 +860,6 @@ admin_panel.register(OrderResource)
 admin_panel.register(RoleResource)
 admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
-
-ops_panel = AdminPanel(title="Ops", prefix="/ops", primary="var(--color-stone-500)")
-ops_panel.register(ServerResource)
-ops_panel.mount(app)
-
-db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="var(--color-stone-500)")
-db_panel.register(ProductResource)
-db_panel.mount(app)
-
 
 # ---------------------------------------------------------------------------
 # Role management resource (staff-facing CRUD for nuru_role)
