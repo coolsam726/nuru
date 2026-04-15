@@ -68,7 +68,13 @@ jobs:
               req  = urllib.request.Request(f"{base}{path}", data=data, headers=hdrs, method=method)
               with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
                   raw = r.read()
-                  return json.loads(raw) if raw.strip() else {}
+              if not raw or not raw.strip():
+                  return {}
+              try:
+                  return json.loads(raw)
+              except json.JSONDecodeError:
+                  print(f"Warning: non-JSON response from {method} {path}: {raw[:200]!r}", file=sys.stderr)
+                  return {}
 
           # Create a bash console
           console = api("POST", "/consoles/", {"executable": "bash", "arguments": ""})
@@ -93,7 +99,7 @@ jobs:
 
               # Send the install command
               activate = f"source {venv}/bin/activate && " if venv else ""
-              cmd = f"{activate}pip install --upgrade --quiet nuru && echo '__DONE__'\n"
+              cmd = f"{activate}pip install --upgrade --quiet nuru a2wsgi aiosqlite && echo '__DONE__'\n"
               api("POST", f"/consoles/{cid}/send_input/", {"input": cmd})
 
               # Poll up to 3 minutes for completion marker
