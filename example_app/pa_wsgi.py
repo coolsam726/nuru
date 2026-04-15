@@ -7,50 +7,37 @@ Place this file at:
 Web tab settings:
   Virtualenv:  /home/coolsam/.virtualenvs/nuru
   WSGI file:   /var/www/coolsam_pythonanywhere_com_wsgi.py
-
-How it works
-------------
-PythonAnywhere free accounts only support WSGI.
-FastAPI/nuru is ASGI.  `a2wsgi` bridges the gap.
-
-The FastAPI lifespan (DB schema creation + seeding) is driven in a
-background thread that owns a persistent event loop for the process
-lifetime.  `future.result(timeout=120)` blocks import until startup
-completes, so the first request arrives to a fully-ready app.
-
-Limitations of ASGI-on-WSGI (via a2wsgi)
------------------------------------------
-  - Works for standard HTTP traffic.
-  - No WebSocket or SSE support on free PA.
 """
 
-import sys, os, asyncio, threading
+import sys, os, asyncio
 
 # ── sys.path ──────────────────────────────────────────────────────────────────
 project_home = "/home/coolsam/nuru_demo"
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
-# ── DB path ───────────────────────────────────────────────────────────────────
+# ── DB path (must be absolute and writable on PA) ─────────────────────────────
 os.environ.setdefault("NURU_DB_PATH", f"{project_home}/example_db.sqlite3")
 
 # ── Import app ────────────────────────────────────────────────────────────────
 from example_app.main import app as _asgi_app  # noqa: E402
 
-# ── Persistent event loop in a daemon thread ──────────────────────────────────
-# a2wsgi will submit coroutines to this loop via run_coroutine_threadsafe.
-_loop = asyncio.new_event_loop()
-threading.Thread(target=_loop.run_forever, daemon=True).start()
+# ── Run lifespan startup eagerly (schema sync + seed) ────────────────────────
+# asyncio.run() creates a temporary loop, runs startup, then closes it.
+# Because SQLite is file-based, the tables and seeded data persist on disk.
+# Subsequent requests open fresh connections to the same file — this is fine.
+async def _run_startup():
+    ctx = _asgi_app.router.lifespan_context(_asgi_app)
+    await ctx.__aenter__()          # runs everything up to `yield` in _lifespan
+    # No __aexit__ — we intentionally leave the context open so any module-level
+    # state set during startup (e.g. sync_permissions cache) stays alive.
 
-# ── Run lifespan startup now, block until done ────────────────────────────────
-# Holding _lifespan_ctx open keeps the async engine alive for the process
-# lifetime; shutdown fires when the thread eventually joins on worker exit.
-_lifespan_ctx = _asgi_app.router.lifespan_context(_asgi_app)
-asyncio.run_coroutine_threadsafe(
-    _lifespan_ctx.__aenter__(), _loop
-).result(timeout=120)
+asyncio.run(_run_startup())
+
+# Prevent a2wsgi from running lifespan again on the first request.
+_asgi_app.router.lifespan_handler = None
 
 # ── WSGI application ──────────────────────────────────────────────────────────
 from a2wsgi import ASGIMiddleware  # noqa: E402
 
-application = ASGIMiddleware(_asgi_app, lifespan="off")
+application = ASGIMiddleware(_asgi_app)
