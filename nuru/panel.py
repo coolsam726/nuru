@@ -180,7 +180,7 @@ class AdminPanel:
             page = page_cls(panel=self)
             page._register_routes(self._router)
 
-    def _nav_entries(self) -> list[dict[str, Any]]:
+    def _nav_entries(self, has_perm: Any = None) -> list[dict[str, Any]]:
         from .page import DashboardPage, ProfilePage
         items: list[_NavItem] = list(self._nav_items)
 
@@ -196,6 +196,9 @@ class AdminPanel:
             if not getattr(resource_cls, "show_in_nav", True):
                 continue
             slug = resource_cls.slug if resource_cls.slug else resource_cls.label.lower().replace(" ", "-")
+            # Filter: skip resources the current user cannot list.
+            if has_perm is not None and not has_perm(f"{slug}:list"):
+                continue
             label = resource_cls.nav_label or (resource_cls.label_plural if resource_cls.label_plural else resource_cls.label + "s")
             icon_name = resource_cls.nav_icon or "folder"
             icon = resolve_icon(icon_name)
@@ -364,10 +367,57 @@ class AdminPanel:
             return None
         return await self.auth.get_current_user(request)
 
+    async def _render_error(
+        self,
+        status_code: int,
+        title: str,
+        message: str,
+        *,
+        request: Request | None = None,
+    ) -> "HTMLResponse":
+        """Render a styled error page and return an HTMLResponse with *status_code*."""
+        from fastapi.responses import HTMLResponse
+
+        user = None
+        if request is not None:
+            try:
+                user = await self._current_user(request)
+            except Exception:
+                pass
+        html = self._render(
+            "error.html",
+            {"error_code": status_code, "error_title": title, "error_message": message},
+            user=user,
+            request=request,
+        )
+        return HTMLResponse(html, status_code=status_code)
+
     def _render(self, template_name: str, context: dict, *, user: Any = None, request: Request | None = None) -> str:
         template = self._jinja_env.get_template(template_name)
         current_path = str(request.url.path) if request is not None else ""
-        return template.render(current_user=user, current_path=current_path, nav_items=self._nav_entries(), **context)
+
+        # Build a synchronous has_perm helper that templates can call directly.
+        # The permission checker must be synchronous (async checkers are handled
+        # at the route level via _user_allowed).  When auth is disabled, or no
+        # checker is configured, everything is visible.
+        checker = getattr(self, "permission_checker", None)
+        if self.auth is None or checker is None:
+            def has_perm(codename: str) -> bool:
+                return True
+        else:
+            def has_perm(codename: str) -> bool:  # type: ignore[misc]
+                try:
+                    return bool(checker(user, codename, None))
+                except Exception:
+                    return False
+
+        return template.render(
+            current_user=user,
+            current_path=current_path,
+            nav_items=self._nav_entries(has_perm=has_perm),
+            has_perm=has_perm,
+            **context,
+        )
 
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
@@ -401,5 +451,6 @@ class AdminPanel:
             "pages":              self._pages,
             "auth_enabled":       self.auth is not None,
             "extra_css":          self.extra_css,
-            "current_user":       None,   # overridden per-request via _render(user=...)
+            "has_perm":            lambda codename: True,  # overridden per-request in _render()
+            "current_user":        None,   # overridden per-request via _render(user=...)
         }

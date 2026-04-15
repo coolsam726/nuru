@@ -10,7 +10,7 @@ Run with:  uvicorn example_app.main:app --reload
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, RedirectResponse, Response
@@ -279,7 +279,7 @@ async def _lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Example App", lifespan=_lifespan)
+app = FastAPI(title="Nuru Demo App", lifespan=_lifespan)
 
 # ---------------------------------------------------------------------------
 # Shared async SQLite engine
@@ -340,37 +340,32 @@ class Product(SQLModel, table=True):
 
 
 # ---------------------------------------------------------------------------
-# In-memory servers (ops panel only)
-# ---------------------------------------------------------------------------
-
-_servers = [
-    {
-        "id": 1,
-        "hostname": "web-01",
-        "region": "eu-west",
-        "status": "healthy",
-        "cpu": 23,
-    },
-    {
-        "id": 2,
-        "hostname": "web-02",
-        "region": "eu-west",
-        "status": "healthy",
-        "cpu": 41,
-    },
-    {"id": 3, "hostname": "db-01", "region": "us-east", "status": "warning", "cpu": 87},
-    {
-        "id": 4,
-        "hostname": "cache-01",
-        "region": "us-east",
-        "status": "healthy",
-        "cpu": 12,
-    },
-]
-
-# ---------------------------------------------------------------------------
 # /admin  —  UserResource
 # ---------------------------------------------------------------------------
+
+
+class _UserView:
+    """Thin wrapper returned by UserResource.get_record.
+
+    Extends the raw User with:
+    - ``role_ids``  — list of str role IDs currently assigned (CheckboxGroup)
+    - ``roles_list``— comma-joined role names for detail view
+    - ``all_roles`` — list of {value, label} dicts for CheckboxGroup options
+    """
+
+    def __init__(self, user: User, role_ids: list[str], roles_list: str, all_roles: list[dict]) -> None:
+        self.id         = user.id
+        self.name       = user.name
+        self.email      = user.email
+        self.password   = user.password
+        self.role       = user.role
+        self.active     = user.active
+        self.role_ids   = role_ids
+        self.roles_list = roles_list
+        self.all_roles  = all_roles
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class UserResource(Resource):
@@ -452,18 +447,6 @@ class UserResource(Resource):
         ),
         columns.Boolean("active", "Active"),
     ]
-    detail_fields = [
-        fields.Fieldset(
-            fields=[
-                fields.Text("name", "Full name"),
-                fields.Email("email", "Email address"),
-                fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
-            ],
-            title="User Details",
-            description="Basic information about the user.",
-            cols=2,
-        )
-    ]
     form_fields = [
         fields.Section(
             col_span="full",
@@ -471,10 +454,48 @@ class UserResource(Resource):
             fields=[
                 fields.Text("name", "Full name", required=True, placeholder="Jane Doe"),
                 fields.Email("email", "Email", required=True),
-                fields.Select("role", "Role", options=["admin", "editor", "viewer"]),
+                fields.Select("role", "Display Role", options=["admin", "editor", "viewer"],
+                              help_text="Legacy display badge — actual access is controlled by Roles below."),
                 fields.Checkbox("active", "Active", help_text="Uncheck to deactivate"),
             ],
-        )
+        ),
+        fields.Fieldset(
+            title="Assigned Roles",
+            description="Select one or more roles to grant this user the associated permissions.",
+            col_span="full",
+            cols=1,
+            fields=[
+                fields.CheckboxGroup(
+                    key="role_ids",
+                    label="",
+                    options_attr="all_roles",
+                    col_span="full",
+                ),
+            ],
+        ),
+    ]
+
+    detail_fields = [
+        fields.Fieldset(
+            fields=[
+                fields.Text("name", "Full name"),
+                fields.Email("email", "Email address"),
+                fields.Select("role", "Display Role", options=["admin", "editor", "viewer"]),
+                fields.Checkbox("active", "Active"),
+            ],
+            title="User Details",
+            description="Basic information about the user.",
+            cols=2,
+        ),
+        fields.Fieldset(
+            title="Assigned Roles",
+            description="Roles currently granted to this user.",
+            col_span="full",
+            cols=1,
+            fields=[
+                fields.Text("roles_list", "Roles"),
+            ],
+        ),
     ]
 
     # Action handlers
@@ -521,6 +542,44 @@ class UserResource(Resource):
         subject = data.get("subject", "")
         body = data.get("body", "")
         print(f"[NOTICE] Subject={subject!r}  Body={body!r}")
+
+    async def get_record(self, id: Any) -> _UserView | None:
+        async with _get_session() as session:
+            user = await session.get(User, int(id))
+            if user is None:
+                return None
+            all_roles_rows = (await session.exec(sm_select(Role))).all()
+            all_roles = [
+                {"value": str(r.id), "label": r.name}
+                for r in sorted(all_roles_rows, key=lambda r: r.name)
+            ]
+            user_roles = (await session.exec(
+                sm_select(UserRole).where(UserRole.user_id == str(user.id))
+            )).all()
+            assigned_role_ids = [str(ur.role_id) for ur in user_roles]
+            role_names = [
+                r.name for r in all_roles_rows if str(r.id) in assigned_role_ids
+            ]
+            roles_list = ", ".join(sorted(role_names)) if role_names else "—"
+            return _UserView(user, assigned_role_ids, roles_list, all_roles)
+
+    async def after_save(self, record_id: Any, data: dict) -> None:
+        """Sync UserRole rows from the submitted ``role_ids`` list."""
+        selected_ids = {int(v) for v in (data.get("role_ids") or []) if v}
+        async with _get_session() as session:
+            user_id = str(record_id)
+            existing = (await session.exec(
+                sm_select(UserRole).where(UserRole.user_id == user_id)
+            )).all()
+            existing_role_ids = {ur.role_id for ur in existing}
+
+            for role_id in selected_ids - existing_role_ids:
+                session.add(UserRole(user_id=user_id, role_id=role_id))
+            for ur in existing:
+                if ur.role_id not in selected_ids:
+                    await session.delete(ur)
+
+            await session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -666,122 +725,6 @@ class OrderResource(Resource):
             existing = order.notes or ""
             order.notes = f"{existing}\n{note}".strip()
             session.add(order)
-            await session.commit()
-
-
-# ---------------------------------------------------------------------------
-# /ops  —  ServerResource (in-memory)
-# ---------------------------------------------------------------------------
-
-
-class ServerResource(Resource):
-    label = "Server"
-    label_plural = "Servers"
-
-    table_columns = [
-        columns.Text("hostname", "Hostname", sortable=True),
-        columns.Text("region", "Region", sortable=True),
-        columns.Badge(
-            "status",
-            "Status",
-            colors={
-                "healthy": "green",
-                "warning": "amber",
-                "critical": "red",
-            },
-        ),
-        columns.Text("cpu", "CPU %"),
-    ]
-
-    form_fields = [
-        fields.Text("hostname", "Hostname", required=True),
-        fields.Select("region", "Region", options=["eu-west", "us-east", "ap-south"]),
-        fields.Select("status", "Status", options=["healthy", "warning", "critical"]),
-        fields.Number("cpu", "CPU %"),
-    ]
-
-    async def get_list(
-        self,
-        *,
-        page=1,
-        per_page=25,
-        search=None,
-        sort_by=None,
-        sort_dir="asc",
-        filters=None,
-    ):
-        data = list(_servers)
-        if search:
-            q = search.lower()
-            data = [s for s in data if q in s["hostname"].lower()]
-        if sort_by and sort_by in ("hostname", "region"):
-            data.sort(key=lambda s: s.get(sort_by, ""), reverse=(sort_dir == "desc"))
-        start = (page - 1) * per_page
-        return {"records": data[start : start + per_page], "total": len(data)}
-
-    async def get_record(self, id):
-        return next((s for s in _servers if str(s["id"]) == str(id)), None)
-
-    async def save_record(self, id, data):
-        if id is None:
-            new_id = max(s["id"] for s in _servers) + 1
-            record = {"id": new_id, **data}
-            _servers.append(record)
-            return record
-        for s in _servers:
-            if str(s["id"]) == str(id):
-                s.update(data)
-                return s
-
-    async def delete_record(self, id):
-        _servers[:] = [s for s in _servers if str(s["id"]) != str(id)]
-
-
-# ---------------------------------------------------------------------------
-# /db  —  ProductResource (SQLModel)
-# ---------------------------------------------------------------------------
-
-
-class ProductResource(Resource):
-    label = "Product"
-    label_plural = "Products"
-    model = Product
-    session_factory = _get_session
-    search_fields = ["name", "sku"]
-    can_delete = True
-
-    table_columns = [
-        columns.Text("name", "Name", sortable=True),
-        columns.Text("sku", "SKU", sortable=True),
-        columns.Currency("price", "Price", currency="USD"),
-        columns.Boolean("in_stock", "In Stock"),
-        columns.Currency("stock_quantity", "Stock Qty", currency=""),
-    ]
-
-    row_actions = [
-        Action(
-            "restock",
-            label="Restock",
-            handler="restock_product",
-            style="success",
-            icon="M12 4v16m8-8H4",
-            form_fields=[
-                fields.Number("quantity", "Quantity to add", required=True),
-            ],
-        ),
-    ]
-
-    async def restock_product(self, record_id, data, request):
-        qty = int(data.get("quantity") or 0)
-        if qty <= 0:
-            raise ValueError("Quantity must be positive")
-        async with _get_session() as session:
-            record = await session.get(Product, int(record_id))
-            if record is None:
-                raise ValueError(f"Product {record_id} not found")
-            record.stock_quantity = (record.stock_quantity or 0) + qty
-            record.in_stock = True
-            session.add(record)
             await session.commit()
 
 
@@ -948,32 +891,151 @@ class ReportsPage(Page):
 # ---------------------------------------------------------------------------
 
 
-class RoleResource(Resource):
-    """Manage nuru roles from the admin panel."""
+class _RoleView:
+    """Thin wrapper returned by RoleResource.get_record.
 
-    label = "Role"
+    Extends the raw Role with:
+    - ``permission_ids``  — list of str IDs currently assigned (used by CheckboxGroup)
+    - ``permissions_list``— comma-joined codenames for the detail view Text field
+    - ``all_permissions`` — list of {value, label} dicts for CheckboxGroup options
+    """
+
+    def __init__(self, role: Role, codenames: list[str], all_perms: list[dict]) -> None:
+        self.id               = role.id
+        self.name             = role.name
+        self.description      = role.description
+        # M2M data consumed by the form
+        self.permission_ids   = [p["value"] for p in all_perms if p["label"] in codenames]
+        self.all_permissions  = all_perms
+        # Human-readable summary for the detail page
+        self.permissions_list = ", ".join(sorted(codenames)) if codenames else "—"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class RoleResource(Resource):
+    """Manage nuru roles — with per-role permission assignment."""
+
+    label        = "Role"
     label_plural = "Roles"
-    nav_sort = 50
-    nav_icon = "shield-check"
-    model = Role
+    nav_sort     = 50
+    nav_icon     = "shield-check"
+    model          = Role
     session_factory = _get_session
-    search_fields = ["name", "description"]
+    search_fields  = ["name", "description"]
 
     table_columns = [
-        columns.Text("name", "Role Name", sortable=True),
+        columns.Text("name",        "Role Name",   sortable=True),
         columns.Text("description", "Description"),
     ]
+
     form_fields = [
         fields.Section(
             title="Role Details",
             cols=2,
             col_span="full",
             fields=[
-                fields.Text("name", "Role Name", required=True, placeholder="e.g. Content Editor"),
+                fields.Text("name",        "Role Name",   required=True, placeholder="e.g. Content Editor"),
                 fields.Text("description", "Description", placeholder="What this role can do"),
             ],
-        )
+        ),
+        fields.Fieldset(
+            title="Permissions",
+            description="Select the permissions granted to users in this role. "
+                        "The ⭐ wildcard (*) grants everything — it cannot be removed via this UI; "
+                        "edit the database directly to revoke it.",
+            col_span="full",
+            cols=1,
+            fields=[
+                fields.CheckboxGroup(
+                    key="permission_ids",
+                    label="",
+                    options_attr="all_permissions",  # populated in get_record
+                    col_span="full",
+                ),
+            ],
+        ),
     ]
+
+    detail_fields = [
+        fields.Fieldset(
+            title="Role Details",
+            cols=2,
+            fields=[
+                fields.Text("name",        "Role Name"),
+                fields.Text("description", "Description"),
+            ],
+        ),
+        fields.Fieldset(
+            title="Assigned Permissions",
+            description="Codenames granted to users in this role.",
+            col_span="full",
+            cols=1,
+            fields=[
+                fields.Text("permissions_list", "Permissions"),
+            ],
+        ),
+    ]
+
+    async def get_record(self, id: Any) -> _RoleView | None:
+        async with _get_session() as session:
+            role = await session.get(Role, int(id))
+            if role is None:
+                return None
+            # All available permissions for the checkbox options.
+            all_perms_rows = (await session.exec(sm_select(Permission))).all()
+            all_perms = [
+                {"value": str(p.id), "label": p.codename}
+                for p in sorted(all_perms_rows, key=lambda p: p.codename)
+            ]
+            # Currently assigned codenames.
+            role_perms = (await session.exec(
+                sm_select(RolePermission).where(RolePermission.role_id == role.id)
+            )).all()
+            assigned_ids = {rp.permission_id for rp in role_perms}
+            codenames = [
+                p.codename for p in all_perms_rows if p.id in assigned_ids
+            ]
+            return _RoleView(role, codenames, all_perms)
+
+    async def after_save(self, record_id: Any, data: dict) -> None:
+        """Sync RolePermission rows from the submitted ``permission_ids`` list.
+
+        Safety rule: if the role currently holds the wildcard (*) permission,
+        it is silently re-added even if the user submitted without it.  This
+        prevents accidental super-admin lockout through the UI.  To intentionally
+        remove *, make the change directly in the database.
+        """
+        selected_ids = {int(v) for v in (data.get("permission_ids") or []) if v}
+        async with _get_session() as session:
+            role_id = int(record_id)
+            existing = (await session.exec(
+                sm_select(RolePermission).where(RolePermission.role_id == role_id)
+            )).all()
+            existing_ids = {rp.permission_id for rp in existing}
+
+            # Preserve any existing wildcard (*) permissions — they cannot be
+            # removed through the admin UI to guard against accidental lockout.
+            if existing_ids:
+                wildcard_perms = (await session.exec(
+                    sm_select(Permission).where(
+                        Permission.id.in_(existing_ids),
+                        Permission.codename == "*",
+                    )
+                )).all()
+                for wp in wildcard_perms:
+                    selected_ids.add(wp.id)
+
+            # Add newly selected.
+            for perm_id in selected_ids - existing_ids:
+                session.add(RolePermission(role_id=role_id, permission_id=perm_id))
+            # Remove deselected.
+            for rp in existing:
+                if rp.permission_id not in selected_ids:
+                    await session.delete(rp)
+
+            await session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -1005,15 +1067,6 @@ admin_panel.register(OrderResource)
 admin_panel.register(RoleResource)
 admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
-
-ops_panel = AdminPanel(title="Ops", prefix="/ops", primary="var(--color-stone-500)")
-ops_panel.register(ServerResource)
-ops_panel.mount(app)
-
-db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="var(--color-stone-500)")
-db_panel.register(ProductResource)
-db_panel.mount(app)
-
 
 # ---------------------------------------------------------------------------
 # Role management resource (staff-facing CRUD for nuru_role)

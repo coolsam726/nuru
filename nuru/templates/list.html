@@ -21,6 +21,7 @@
 
 {% block header_actions %}
   {% for action in resource.list_actions %}
+  {% if has_perm(resource.slug + ':action') %}
   <button type="button"
           data-action-trigger
           data-action-url="{{ panel_prefix }}/{{ resource.slug }}/action/{{ action.key }}"
@@ -33,8 +34,9 @@
     {{ render_icon(action.icon) }}
     {{ action.label }}
   </button>
+  {% endif %}
   {% endfor %}
-  {% if resource.can_create %}
+  {% if resource.can_create and has_perm(resource.slug + ':create') %}
   <a href="{{ panel_prefix }}/{{ resource.slug }}/new"
      class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:opacity-90 transition-opacity">
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

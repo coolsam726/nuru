@@ -22,7 +22,7 @@
 
 {% block header_actions %}
   {% if record_id %}
-    {% if resource.can_view %}
+    {% if resource.can_view and has_perm(resource.slug + ':view') %}
     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
        class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
               text-secondary-600 dark:text-secondary-300 bg-secondary-100 dark:bg-secondary-700
@@ -37,7 +37,7 @@
     </a>
     {% endif %}
     {% for action in resource.form_actions %}
-      {% if action.placement == 'header' %}
+      {% if action.placement == 'header' and has_perm(resource.slug + ':action') %}
       <button type="button"
               data-action-trigger
               data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"

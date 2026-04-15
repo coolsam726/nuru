@@ -344,13 +344,16 @@ class Resource:
         """
         if type(self).model is not None and type(self).session_factory is not None:
             async with type(self).session_factory() as session:
+                # Exclude list values (M2M / checkbox_group fields) — they are
+                # handled by after_save() and have no scalar column to write to.
+                scalar_data = {k: v for k, v in data.items() if not isinstance(v, list)}
                 if id is None:
-                    record = self.model(**data)
+                    record = self.model(**scalar_data)
                 else:
                     record = await session.get(self.model, self._coerce_pk(id))
                     if record is None:
                         raise ValueError(f"{self.model.__name__} #{id} not found")
-                    for k, v in data.items():
+                    for k, v in scalar_data.items():
                         setattr(record, k, v)
                 session.add(record)
                 await session.commit()
@@ -359,6 +362,15 @@ class Resource:
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement save_record()"
         )
+
+    async def after_save(self, record_id: Any, data: dict) -> None:
+        """Hook called after save_record succeeds.
+
+        Override in your subclass to handle M2M relationships or any
+        post-save side effects.  ``data`` is the full parsed form dict,
+        including any list-valued ``CheckboxGroup`` fields that were
+        deliberately excluded from the main ``save_record`` call.
+        """
 
     async def delete_record(self, id: Any) -> None:
         """Delete a record by primary key.
@@ -454,6 +466,9 @@ class Resource:
             key = field.key
             if field.field_type == "checkbox":
                 data[key] = submitted.get(key) == "true"
+            elif field.field_type == "checkbox_group":
+                # Multi-value: collect all submitted values for this key.
+                data[key] = form_data.getlist(key)
             elif key in submitted:
                 if key.startswith("_"):
                     continue
@@ -535,7 +550,7 @@ class Resource:
                 return redir
             user = await resource.panel._current_user(request)
             if not await resource._user_allowed(request, "list"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to view this resource.", request=request)
             ctx = await resource._fetch_list(
                 page=page, search=search,
                 sort_by=sort_by, sort_dir=sort_dir,
@@ -573,9 +588,9 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_create:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Creating records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "create"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to create records here.", request=request)
             user = await resource.panel._current_user(request)
             html = resource.panel._render("form.html", {
                 "resource": resource,
@@ -591,15 +606,16 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_create:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Creating records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "create"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to create records here.", request=request)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
             action = (await request.form()).get("_action", "save")
             try:
                 record = await resource.save_record(None, data)
                 saved_id = record["id"] if isinstance(record, dict) else getattr(record, "id", None)
+                await resource.after_save(saved_id, data)
                 if action == "save_and_continue" and saved_id:
                     return RedirectResponse(
                         url=f"{resource.panel.prefix}/{resource.slug}/{saved_id}?flash=created",
@@ -626,16 +642,16 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_view:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Viewing records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "view"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to view this record.", request=request)
             user = await resource.panel._current_user(request)
             try:
                 record = await resource.get_record(record_id)
                 if record is None:
-                    return HTMLResponse("Record not found", status_code=404)
+                    return await resource.panel._render_error(404, "Not Found", "The record you're looking for doesn't exist.", request=request)
             except NotImplementedError:
-                return HTMLResponse("Detail view not supported", status_code=501)
+                return await resource.panel._render_error(501, "Not Supported", "This resource does not support a detail view.", request=request)
             html = resource.panel._render("detail.html", {
                 "resource": resource,
                 "record": record,
@@ -652,14 +668,14 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_edit:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Editing records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "edit"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to edit this record.", request=request)
             user = await resource.panel._current_user(request)
             try:
                 record = await resource.get_record(record_id)
                 if record is None:
-                    return HTMLResponse("Record not found", status_code=404)
+                    return await resource.panel._render_error(404, "Not Found", "The record you're looking for doesn't exist.", request=request)
             except NotImplementedError:
                 record = None
             html = resource.panel._render("form.html", {
@@ -677,14 +693,15 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_edit:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Editing records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "edit"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to edit this record.", request=request)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
             action = (await request.form()).get("_action", "save")
             try:
                 await resource.save_record(record_id, data)
+                await resource.after_save(record_id, data)
                 if action == "save_and_continue":
                     return RedirectResponse(
                         url=f"{resource.panel.prefix}/{resource.slug}/{record_id}?flash=saved",
@@ -709,16 +726,16 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not resource.can_delete:
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "Deleting records is not allowed for this resource.", request=request)
             if not await resource._user_allowed(request, "delete"):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to delete this record.", request=request)
             try:
                 await resource.delete_record(record_id)
                 return HTMLResponse("", status_code=200)
             except NotImplementedError:
-                return HTMLResponse("Delete not implemented", status_code=501)
+                return await resource.panel._render_error(501, "Not Supported", "Delete is not implemented for this resource.", request=request)
             except Exception as exc:
-                return HTMLResponse(str(exc), status_code=500)
+                return await resource.panel._render_error(500, "Server Error", "An unexpected error occurred while deleting the record.", request=request)
 
         # ---- POST /resource/action/{key} ---- list-level action -------
         @router.post(
@@ -733,14 +750,14 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not await resource._user_allowed(request, "action", action_key):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to perform this action.", request=request)
             data = await resource.parse_action_form(request)
             try:
                 result = await resource._dispatch_action(action_key, None, data, request)
             except (LookupError, NotImplementedError) as exc:
-                return HTMLResponse(str(exc), status_code=501)
+                return await resource.panel._render_error(501, "Not Supported", str(exc), request=request)
             except Exception as exc:
-                return HTMLResponse(str(exc), status_code=500)
+                return await resource.panel._render_error(500, "Server Error", "An unexpected error occurred while running this action.", request=request)
             if isinstance(result, str):
                 return RedirectResponse(url=result, status_code=303)
             from fastapi.responses import Response
@@ -764,16 +781,16 @@ class Resource:
             if (redir := await resource.panel._require_login(request)):
                 return redir
             if not await resource._user_allowed(request, "action", action_key):
-                return HTMLResponse("Not allowed", status_code=403)
+                return await resource.panel._render_error(403, "Access Denied", "You don't have permission to perform this action.", request=request)
             data = await resource.parse_action_form(request)
             try:
                 result = await resource._dispatch_action(
                     action_key, record_id, data, request
                 )
             except (LookupError, NotImplementedError) as exc:
-                return HTMLResponse(str(exc), status_code=501)
+                return await resource.panel._render_error(501, "Not Supported", str(exc), request=request)
             except Exception as exc:
-                return HTMLResponse(str(exc), status_code=500)
+                return await resource.panel._render_error(500, "Server Error", "An unexpected error occurred while running this action.", request=request)
             if isinstance(result, str):
                 return RedirectResponse(url=result, status_code=303)
             from fastapi.responses import Response
