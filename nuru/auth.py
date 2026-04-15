@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hmac
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import Request
 from fastapi.responses import Response
@@ -40,6 +40,18 @@ class AuthBackend(ABC):
 
     def clear_session(self, response: Response) -> None:
         """Remove the session cookie from *response* on logout."""
+
+    async def get_session_user_id(self, username: str) -> str:
+        """Return the value to store in the session cookie after a successful login.
+
+        The default implementation stores the *username* string itself, which
+        is correct for :class:`SimpleAuthBackend`.
+
+        Override in database-backed backends to look up and return the user's
+        primary key so that ``get_current_user`` can perform a PK-based lookup
+        rather than a username search on every request.
+        """
+        return username
 
 
 class SimpleAuthBackend(AuthBackend):
@@ -114,67 +126,229 @@ class SimpleAuthBackend(AuthBackend):
 
 
 # ---------------------------------------------------------------------------
-# Basic role/permission helper
+# Default (non-database) permission checker
 #
-# Provide a conservative, easily-replaceable default permission checker that
-# understands a small role hierarchy (admin > editor > viewer). Backends that
-# integrate with a user database may return richer user objects (with a
-# ``role`` attribute) and can supply a custom permission checker to
-# ``AdminPanel`` during construction.
+# Works entirely from the ``_permissions`` set cached on the user dict by
+# DatabaseAuthBackend.get_current_user.  If the user has no ``_permissions``
+# key (e.g. when using SimpleAuthBackend which returns only a username dict),
+# the single-user fallback grants full access so that simple deployments
+# require zero extra config.
+#
+# The codename format is ``{resource_slug}:{action}``, e.g. ``users:list``.
+# Wildcards: ``*`` (superuser), ``{slug}:*``, ``*:{action}``.
 # ---------------------------------------------------------------------------
 
 
-ROLE_RANK: dict[str, int] = {
-    "viewer": 10,
-    "editor": 20,
-    "admin": 30,
-}
+def default_permission_checker(
+    user: Any | None,
+    codename: str,
+    resource: object | None = None,
+) -> bool:
+    """Evaluate *codename* against the authenticated *user*.
 
+    When paired with :class:`DatabaseAuthBackend` the user dict carries
+    ``_permissions`` and this function performs a pure set-membership check
+    with wildcard support.
 
-def default_permission_checker(user: Any | None, action: str, resource: object | None = None) -> bool:
-    """
-    Default permission policy.
-
-    - If *user* is None, deny access.
-    - If *user* exposes a ``role`` attribute or mapping key, use the role
-      rank to determine permission: admins can do everything, editors can
-      create/edit but not necessarily delete, viewers can only view/list.
-    - If *user* contains no role information (e.g. the built-in
-      ``SimpleAuthBackend`` returns a simple dict with only a username),
-      treat the session as an admin for compatibility with single-user
-      setups.
-
-    This function is intentionally simple and meant to be replaced by a
-    project-specific checker for production deployments.
+    When paired with :class:`SimpleAuthBackend` the user dict contains only
+    ``username`` and no ``_permissions`` key — in that case all access is
+    granted (single-user / internal admin pattern).
     """
     if user is None:
         return False
 
-    # Extract role from object or mapping
-    role = None
-    try:
-        if isinstance(user, dict):
-            role = user.get("role")
-        else:
-            role = getattr(user, "role", None)
-    except Exception:
-        role = None
+    # Fetch the cached permission set.
+    if isinstance(user, dict):
+        perms: set[str] | None = user.get("_permissions")  # type: ignore[assignment]
+    else:
+        perms = getattr(user, "_permissions", None)
 
-    # No role -> assume single-user admin (compatibility)
-    if not role:
+    # No _permissions key → single-user backend: grant everything.
+    if perms is None:
         return True
 
-    rank = ROLE_RANK.get(str(role), 0)
+    # Superuser wildcard.
+    if "*" in perms:
+        return True
 
-    if action in ("view", "list"):
-        return rank >= ROLE_RANK.get("viewer", 10)
-    if action in ("create", "edit"):
-        return rank >= ROLE_RANK.get("editor", 20)
-    if action in ("delete",):
-        return rank >= ROLE_RANK.get("admin", 30)
-    if action.startswith("action:"):
-        # Generic actions require at least editor by default
-        return rank >= ROLE_RANK.get("editor", 20)
+    if codename in perms:
+        return True
 
-    # Unknown actions — be conservative and deny.
+    parts = codename.split(":", 1)
+    if len(parts) == 2:
+        slug, action = parts
+        if f"{slug}:*" in perms:
+            return True
+        if f"*:{action}" in perms:
+            return True
+
     return False
+
+
+# ---------------------------------------------------------------------------
+# Database-backed authentication backend
+# ---------------------------------------------------------------------------
+
+
+class DatabaseAuthBackend(AuthBackend):
+    """Multi-user auth backend that authenticates against a database and
+    loads permissions via nuru's role/permission tables.
+
+    Requires the following nuru tables to exist in the database:
+    ``nuru_permission``, ``nuru_role``, ``nuru_role_permission``,
+    ``nuru_user_role``.  Call ``await panel.sync_permissions(session_factory)``
+    or ``import nuru.roles`` before ``sync_schema`` to ensure the tables are
+    created.
+
+    Usage::
+
+        from passlib.context import CryptContext
+        from nuru.auth import DatabaseAuthBackend
+        from nuru.roles import db_permission_checker
+
+        _pwd = CryptContext(schemes=["bcrypt"])
+
+        panel = AdminPanel(
+            auth=DatabaseAuthBackend(
+                user_model=User,
+                session_factory=get_session,
+                username_field="email",
+                verify_password=_pwd.verify,
+                secret_key=settings.SECRET_KEY,
+            ),
+            permission_checker=db_permission_checker,
+        )
+
+    The user dict returned by ``get_current_user`` includes:
+
+    * ``id``         — str(user.pk)
+    * ``username``   — value of *username_field*
+    * ``_permissions`` — ``set[str]`` of resolved permission codenames
+    * any extra fields listed in *extra_fields*
+
+    .. warning::
+        Never store plain-text passwords in production.  Pass a proper
+        ``verify_password`` callable (e.g. from passlib or cryptography).
+    """
+
+    COOKIE_NAME = "ap_session"
+
+    def __init__(
+        self,
+        *,
+        user_model: Any,
+        session_factory: Any,
+        username_field: str = "username",
+        password_field: str = "password",
+        verify_password: Callable[[str, str], bool] | None = None,
+        secret_key: str,
+        max_age: int = 86_400,
+        extra_fields: list[str] | None = None,
+    ) -> None:
+        self._user_model = user_model
+        self._session_factory = session_factory
+        self._username_field = username_field
+        self._password_field = password_field
+        self._verify_password = verify_password
+        self._signer = TimestampSigner(secret_key)
+        self._max_age = max_age
+        self._extra_fields = extra_fields or []
+
+    # ------------------------------------------------------------------
+    # AuthBackend interface
+    # ------------------------------------------------------------------
+
+    async def authenticate(self, username: str, password: str) -> bool:
+        """Return ``True`` if *username* / *password* are valid credentials."""
+        user = await self._fetch_user_by_username(username)
+        if user is None:
+            return False
+        stored = getattr(user, self._password_field, None)
+        if stored is None:
+            return False
+        if self._verify_password is not None:
+            return bool(self._verify_password(password, stored))
+        # Fallback: constant-time plain-text compare (dev only).
+        return hmac.compare_digest(password, str(stored))
+
+    async def get_current_user(self, request: Request) -> dict | None:
+        """Unsign the session cookie, load the user from the DB, resolve
+        their role permissions, and return an enriched user dict."""
+        token = request.cookies.get(self.COOKIE_NAME)
+        if not token:
+            return None
+        try:
+            user_id = self._signer.unsign(token, max_age=self._max_age).decode()
+        except (BadSignature, SignatureExpired):
+            return None
+
+        user = await self._fetch_user_by_id(user_id)
+        if user is None:
+            return None
+
+        from .roles import get_user_permissions
+        perms = await get_user_permissions(user_id, self._session_factory)
+
+        user_dict: dict[str, Any] = {
+            "id": user_id,
+            "username": getattr(user, self._username_field, user_id),
+            "_permissions": perms,
+        }
+        for field in self._extra_fields:
+            val = getattr(user, field, None)
+            if val is not None:
+                user_dict[field] = val
+        return user_dict
+
+    async def get_session_user_id(self, username: str) -> str:
+        """Return str(user.pk) so the signed cookie stores the PK, not the
+        username string."""
+        user = await self._fetch_user_by_username(username)
+        if user is None:
+            return username  # should not happen, but degrade gracefully
+        try:
+            pk_cols = list(self._user_model.__table__.primary_key.columns)
+            pk_name = pk_cols[0].key if pk_cols else "id"
+        except AttributeError:
+            pk_name = "id"
+        return str(getattr(user, pk_name, username))
+
+    def set_session(self, response: Response, user_id: str) -> None:
+        token = self._signer.sign(user_id).decode()
+        response.set_cookie(
+            self.COOKIE_NAME,
+            token,
+            httponly=True,
+            samesite="lax",
+            max_age=self._max_age,
+        )
+
+    def clear_session(self, response: Response) -> None:
+        response.delete_cookie(self.COOKIE_NAME)
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    async def _fetch_user_by_username(self, username: str) -> Any | None:
+        from sqlmodel import select
+        async with self._session_factory() as session:
+            stmt = select(self._user_model).where(
+                getattr(self._user_model, self._username_field) == username
+            )
+            return (await session.exec(stmt)).first()
+
+    async def _fetch_user_by_id(self, user_id: str) -> Any | None:
+        """Fetch by primary key, trying int coercion first."""
+        async with self._session_factory() as session:
+            try:
+                pk_cols = list(self._user_model.__table__.primary_key.columns)
+                pk_name = pk_cols[0].key if pk_cols else "id"
+                pk_type = pk_cols[0].type.python_type if pk_cols else str
+            except (AttributeError, NotImplementedError):
+                pk_name, pk_type = "id", str
+            try:
+                coerced_id = pk_type(user_id)
+            except (ValueError, TypeError):
+                coerced_id = user_id  # type: ignore[assignment]
+            return await session.get(self._user_model, coerced_id)

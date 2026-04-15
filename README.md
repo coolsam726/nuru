@@ -164,6 +164,8 @@ class UserResource(Resource):
 
 ## Authentication
 
+### Simple (single-user)
+
 ```python
 from nuru import AdminPanel
 from nuru.auth import SimpleAuthBackend
@@ -176,6 +178,119 @@ panel = AdminPanel(
         password="secret",
         secret_key="change-me-in-production",
     ),
+)
+```
+
+`SimpleAuthBackend` signs a session cookie with `itsdangerous`. Because there is only one user with no `_permissions` key, the built-in `default_permission_checker` grants **full access** — no permission setup required.
+
+---
+
+## Roles & Permissions
+
+Nuru includes a Spatie-style Role/Permission system for multi-user panels.
+
+### How it works
+
+| Concept | Description |
+|---|---|
+| **Permission** | Fixed codename scoped to a resource+action, e.g. `users:list`, `orders:delete` |
+| **Role** | User-defined group of permissions (many-to-many) |
+| **UserRole** | Which roles a user holds (many-to-many, user identified by `str(pk)`) |
+
+At runtime, nuru checks **permissions** — not role names, which can change freely.
+
+### Codename format
+
+`{resource_slug}:{action}` — e.g.:
+
+| Codename | Meaning |
+|---|---|
+| `users:list` | Browse the Users list page |
+| `users:create` | Create a new User |
+| `users:edit` | Edit an existing User |
+| `users:view` | View User detail |
+| `users:delete` | Delete a User |
+| `users:action` | Run any row/list action on Users |
+| `users:action:export_csv` | Run the specific `export_csv` action only |
+| `users:*` | All actions on Users |
+| `*` | Superuser — everything |
+
+### Setup
+
+```python
+import nuru.roles  # registers the 4 nuru_* tables with SQLModel.metadata
+from nuru import AdminPanel, DatabaseAuthBackend, db_permission_checker
+from passlib.context import CryptContext
+
+_pwd = CryptContext(schemes=["bcrypt"])
+
+panel = AdminPanel(
+    title="My App",
+    prefix="/admin",
+    auth=DatabaseAuthBackend(
+        user_model=User,
+        session_factory=get_session,
+        username_field="email",
+        password_field="password",
+        verify_password=_pwd.verify,   # omit for plaintext (dev only)
+        secret_key="change-me-in-production",
+        extra_fields=["name"],         # extra User fields to expose in templates
+    ),
+    permission_checker=db_permission_checker,
+)
+```
+
+At startup, sync the schema **and** upsert permission rows:
+
+```python
+from nuru.migrations import sync_schema
+
+@app.on_event("startup")
+async def on_startup():
+    await sync_schema(engine, SQLModel.metadata)   # creates nuru_* tables too
+    await panel.sync_permissions(get_session)      # upserts permission codenames
+```
+
+### Seeding roles programmatically
+
+```python
+from nuru.roles import Permission, Role, RolePermission, UserRole
+
+async def seed_roles(session):
+    admin_role = Role(name="Super Admin", description="Full access")
+    viewer_role = Role(name="Read Only",  description="View only")
+    session.add_all([admin_role, viewer_role])
+    await session.flush()
+
+    star = (await session.exec(select(Permission).where(Permission.codename == "*"))).first()
+    session.add(RolePermission(role_id=admin_role.id, permission_id=star.id))
+
+    view_perms = (await session.exec(
+        select(Permission).where(Permission.codename.in_(["users:list", "users:view"]))
+    )).all()
+    for p in view_perms:
+        session.add(RolePermission(role_id=viewer_role.id, permission_id=p.id))
+
+    # Assign a role to a user
+    session.add(UserRole(user_id=str(user.id), role_id=admin_role.id))
+    await session.commit()
+```
+
+### Custom permission checker
+
+Pass any `(user, codename, resource) -> bool` callable (sync or async) to override the built-in logic:
+
+```python
+async def my_checker(user, codename, resource):
+    if user is None:
+        return False
+    if user.get("is_superuser"):
+        return True
+    return codename in user.get("_permissions", set())
+
+panel = AdminPanel(
+    auth=...,
+    permission_checker=my_checker,
 )
 ```
 
@@ -292,11 +407,12 @@ app.mount("/admin/static", StaticFiles(directory="my_app/static"), name="admin-s
 - ✅ **HTMX interactions** — live search, sort, pagination without page reloads
 - ✅ **Actions** — row actions, list actions, form actions, confirm modals, action forms
 - ✅ **SQLModel integration** — auto-CRUD and auto-generated columns/fields
-- ✅ **Auth** — signed-cookie session, `SimpleAuthBackend`, pluggable `AuthBackend`
+- ✅ **Auth** — signed-cookie session, `SimpleAuthBackend`, `DatabaseAuthBackend`, pluggable `AuthBackend`
+- ✅ **Roles & Permissions** — `Permission`, `Role`, `RolePermission`, `UserRole` tables; `db_permission_checker`; `panel.sync_permissions()`
 - ✅ **Dark mode** — built-in, localStorage-persisted
 - ✅ **Responsive** — mobile sidebar, Tailwind CSS
 
 ## What's coming
 
 - **Phase 5** — Dashboard widgets: stat cards, line charts, pie charts
-- **Phase 6** — Multi-user auth and role-based access control
+- **Phase 6** — Role management UI (permission checkbox grid, user-role assignment from admin panel)

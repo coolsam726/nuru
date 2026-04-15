@@ -213,20 +213,39 @@ class Resource:
             self.label_plural = self.label + "s"
 
     async def _user_allowed(self, request: Request, action: str, action_key: str | None = None) -> bool:
-        """Invoke the panel's permission checker for *action* (or action_key).
+        """Check whether the current user may perform *action* on this resource.
 
-        Returns ``True`` if allowed, ``False`` otherwise.  The checker may be
-        synchronous or async; both are supported.
+        Codename format: ``{resource_slug}:{action}`` (e.g. ``users:list``).
+
+        For named actions, two codenames are tried in order so that operators
+        can grant blanket action access (``orders:action``) or lock it to
+        specific keys (``orders:action:export_csv``):
+
+        1. ``{slug}:action:{action_key}`` — specific named action
+        2. ``{slug}:action``              — generic action bucket
+
+        The checker may be synchronous or async; both are supported.
+        Auth disabled → always allowed.
         """
+        if self.panel.auth is None:
+            return True
+
         user = await self.panel._current_user(request)
-        act = action if action_key is None else f"action:{action_key}"
         checker = getattr(self.panel, "permission_checker", None)
         if checker is None:
             return True
-        res = checker(user, act, self)
-        if inspect.isawaitable(res):
-            res = await res
-        return bool(res)
+
+        async def _check(codename: str) -> bool:
+            res = checker(user, codename, self)
+            if inspect.isawaitable(res):
+                res = await res
+            return bool(res)
+
+        if action_key is not None:
+            # Try specific key first, then generic action bucket.
+            return await _check(f"{self.slug}:action:{action_key}") or await _check(f"{self.slug}:action")
+
+        return await _check(f"{self.slug}:{action}")
 
     @property
     def all_row_actions(self) -> list:

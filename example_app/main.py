@@ -21,7 +21,14 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker as _asm,
 )
 
-from nuru import AdminPanel, Page, Resource, SimpleAuthBackend, columns, fields
+import nuru.roles  # registers Permission, Role, RolePermission, UserRole with SQLModel.metadata
+from nuru import (
+    AdminPanel, Page, Resource,
+    SimpleAuthBackend, DatabaseAuthBackend,
+    db_permission_checker,
+    Permission, Role, RolePermission, UserRole,
+    columns, fields,
+)
 from nuru.actions import Action
 
 
@@ -29,10 +36,72 @@ from nuru.actions import Action
 async def _lifespan(app: FastAPI):
     from nuru.migrations import sync_schema
 
+    # Creates both application tables AND nuru_permission / nuru_role / etc.
     await sync_schema(_engine, SQLModel.metadata)
+    # Upsert permission rows for every registered resource.
+    await admin_panel.sync_permissions(_get_session)
 
+    # ── Seed roles, permissions, and admin users ───────────────────────────
+    async with _get_session() as session:
+        if not (await session.exec(sm_select(Role))).first():
+            # 1. Create roles.
+            super_admin = Role(name="Super Admin", description="Full system access")
+            editor      = Role(name="Content Editor", description="Can create and edit content")
+            read_only   = Role(name="Read Only",      description="View-only access")
+            session.add_all([super_admin, editor, read_only])
+            await session.flush()
+
+            # 2. Assign permissions to roles.
+            star_perm = (await session.exec(
+                sm_select(Permission).where(Permission.codename == "*")
+            )).first()
+            if star_perm:
+                session.add(RolePermission(role_id=super_admin.id, permission_id=star_perm.id))
+
+            editor_codenames = [
+                "user:list", "user:view", "user:create", "user:edit",
+                "order:list", "order:view", "order:create", "order:edit",
+                "user:action", "order:action",
+            ]
+            editor_perms = (await session.exec(
+                sm_select(Permission).where(Permission.codename.in_(editor_codenames))
+            )).all()
+            for p in editor_perms:
+                session.add(RolePermission(role_id=editor.id, permission_id=p.id))
+
+            viewer_codenames = [
+                "user:list", "user:view",
+                "order:list", "order:view",
+            ]
+            viewer_perms = (await session.exec(
+                sm_select(Permission).where(Permission.codename.in_(viewer_codenames))
+            )).all()
+            for p in viewer_perms:
+                session.add(RolePermission(role_id=read_only.id, permission_id=p.id))
+
+            await session.commit()
+
+    # ── Seed demo admin users (if table is empty) ────────────────────────
     async with _get_session() as session:
         if not (await session.exec(sm_select(User))).first():
+            # Two panel login accounts (plaintext passwords — dev only!).
+            admin_user  = User(name="Admin User",  email="admin@acme.com",  password="secret",    role="admin",  active=True)
+            viewer_user = User(name="Viewer User", email="viewer@acme.com", password="viewer123", role="viewer", active=True)
+            session.add_all([admin_user, viewer_user])
+            await session.flush()
+
+            # Assign admin_user → Super Admin role, viewer_user → Read Only.
+            super_admin = (await session.exec(
+                sm_select(Role).where(Role.name == "Super Admin")
+            )).first()
+            read_only = (await session.exec(
+                sm_select(Role).where(Role.name == "Read Only")
+            )).first()
+            if super_admin:
+                session.add(UserRole(user_id=str(admin_user.id), role_id=super_admin.id))
+            if read_only:
+                session.add(UserRole(user_id=str(viewer_user.id), role_id=read_only.id))
+
             session.add_all(
                 [
                     User(
@@ -236,6 +305,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = SMField(default=None, primary_key=True)
     name: str
     email: str
+    password: Optional[str] = None  # plaintext for demo; hash with bcrypt in production
     role: str = "viewer"
     active: bool = True
 
@@ -873,19 +943,66 @@ class ReportsPage(Page):
 # Panel mounts
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Role management resource
+# ---------------------------------------------------------------------------
+
+
+class RoleResource(Resource):
+    """Manage nuru roles from the admin panel."""
+
+    label = "Role"
+    label_plural = "Roles"
+    nav_sort = 50
+    nav_icon = "shield-check"
+    model = Role
+    session_factory = _get_session
+    search_fields = ["name", "description"]
+
+    table_columns = [
+        columns.Text("name", "Role Name", sortable=True),
+        columns.Text("description", "Description"),
+    ]
+    form_fields = [
+        fields.Section(
+            title="Role Details",
+            cols=2,
+            col_span="full",
+            fields=[
+                fields.Text("name", "Role Name", required=True, placeholder="e.g. Content Editor"),
+                fields.Text("description", "Description", placeholder="What this role can do"),
+            ],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Panel mounts
+# ---------------------------------------------------------------------------
+
 admin_panel = AdminPanel(
     title="Acme Admin",
     prefix="/admin",
     per_page=10,
-    auth=SimpleAuthBackend(
-        username="admin",
-        password="secret",
+    # DatabaseAuthBackend: looks up users from DB, loads role-based permissions.
+    # Login: admin@acme.com / secret  (Super Admin — full access)
+    #        viewer@acme.com / viewer123  (Read Only — list & view only)
+    auth=DatabaseAuthBackend(
+        user_model=User,
+        session_factory=_get_session,
+        username_field="email",
+        password_field="password",
+        # No verify_password → plain-text compare via hmac.compare_digest (dev only).
+        # In production: verify_password=passlib_ctx.verify
         secret_key="dev-secret-key-change-in-production",
+        extra_fields=["name", "role"],
     ),
+    permission_checker=db_permission_checker,
     template_dirs=[_EXAMPLE_TEMPLATES],
 )
 admin_panel.register(UserResource)
 admin_panel.register(OrderResource)
+admin_panel.register(RoleResource)
 admin_panel.register_page(ReportsPage)
 admin_panel.mount(app)
 
@@ -896,6 +1013,12 @@ ops_panel.mount(app)
 db_panel = AdminPanel(title="DB Panel", prefix="/db", primary="var(--color-stone-500)")
 db_panel.register(ProductResource)
 db_panel.mount(app)
+
+
+# ---------------------------------------------------------------------------
+# Role management resource (staff-facing CRUD for nuru_role)
+# ---------------------------------------------------------------------------
+# (registered with admin_panel above)
 
 
 # ---------------------------------------------------------------------------
