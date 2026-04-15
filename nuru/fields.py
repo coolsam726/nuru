@@ -152,3 +152,22 @@ class Time(Field):
 class Hidden(Field):
     field_type: str = "hidden"
     input_type: str = "hidden"
+
+
+@dataclass
+class CheckboxGroup(Field):
+    """Multi-select field rendered as clickable pill/tag buttons.
+
+    ``options`` — list of ``{value, label}`` dicts or plain strings.
+    ``options_attr`` — if set, the options list is read from
+    ``record.<options_attr>`` at render time instead of from ``field.options``.
+    This lets you populate choices dynamically in ``get_record`` without
+    needing async calls inside a template.
+
+    The form submits one checkbox value per selected option under the same
+    ``name``. ``parse_form`` collects these into a Python list for you.
+    """
+    field_type: str = "checkbox_group"
+    input_type: str = "checkbox_group"
+    options: list = field(default_factory=list)
+    options_attr: str = ""  # read choices from record.<options_attr> when non-empty

@@ -1,0 +1,44 @@
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.label }}
+    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  {# Resolve options: from record attribute (dynamic) or field.options (static) #}
+  {% if field.options_attr %}
+    {% set opts = record | field_value(field.options_attr) %}
+  {% else %}
+    {% set opts = field.options %}
+  {% endif %}
+
+  {# current is a list of selected values (strings) #}
+  {% set selected_vals = current if (current is iterable and current is not string) else [] %}
+
+  <div class="flex flex-wrap gap-2">
+    {% for opt in opts %}
+      {% set opt_value = (opt.value if opt is mapping else opt) | string %}
+      {% set opt_label = opt.label if opt is mapping else opt %}
+      {% set is_selected = opt_value in selected_vals %}
+      {#
+        has-[:checked]: — pure-CSS toggle: browser applies these classes whenever
+        the nested <input type="checkbox"> is checked.  Works on initial render
+        (via the `checked` attribute) and on user interaction without any JS.
+      #}
+      <label class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer border transition-colors select-none
+                    has-[:checked]:bg-primary has-[:checked]:text-white has-[:checked]:border-primary
+                    {% if is_selected %}bg-primary text-white border-primary{% else %}bg-secondary-50 text-secondary-600 border-secondary-200 dark:bg-secondary-700 dark:text-secondary-300 dark:border-secondary-600 hover:border-primary hover:text-primary dark:hover:text-primary-300{% endif %}">
+        <input type="checkbox" name="{{ field.key }}" value="{{ opt_value }}"
+               {% if is_selected %}checked{% endif %} class="sr-only">
+        {{ opt_label }}
+      </label>
+    {% else %}
+      <p class="text-sm text-secondary-400 dark:text-secondary-500 italic">No options available.</p>
+    {% endfor %}
+  </div>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1.5">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1.5">{{ field.help_text }}</p>
+  {% endif %}
+</div>

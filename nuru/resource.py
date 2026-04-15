@@ -344,13 +344,16 @@ class Resource:
         """
         if type(self).model is not None and type(self).session_factory is not None:
             async with type(self).session_factory() as session:
+                # Exclude list values (M2M / checkbox_group fields) — they are
+                # handled by after_save() and have no scalar column to write to.
+                scalar_data = {k: v for k, v in data.items() if not isinstance(v, list)}
                 if id is None:
-                    record = self.model(**data)
+                    record = self.model(**scalar_data)
                 else:
                     record = await session.get(self.model, self._coerce_pk(id))
                     if record is None:
                         raise ValueError(f"{self.model.__name__} #{id} not found")
-                    for k, v in data.items():
+                    for k, v in scalar_data.items():
                         setattr(record, k, v)
                 session.add(record)
                 await session.commit()
@@ -359,6 +362,15 @@ class Resource:
         raise NotImplementedError(
             f"{self.__class__.__name__} must implement save_record()"
         )
+
+    async def after_save(self, record_id: Any, data: dict) -> None:
+        """Hook called after save_record succeeds.
+
+        Override in your subclass to handle M2M relationships or any
+        post-save side effects.  ``data`` is the full parsed form dict,
+        including any list-valued ``CheckboxGroup`` fields that were
+        deliberately excluded from the main ``save_record`` call.
+        """
 
     async def delete_record(self, id: Any) -> None:
         """Delete a record by primary key.
@@ -454,6 +466,9 @@ class Resource:
             key = field.key
             if field.field_type == "checkbox":
                 data[key] = submitted.get(key) == "true"
+            elif field.field_type == "checkbox_group":
+                # Multi-value: collect all submitted values for this key.
+                data[key] = form_data.getlist(key)
             elif key in submitted:
                 if key.startswith("_"):
                     continue
@@ -600,6 +615,7 @@ class Resource:
             try:
                 record = await resource.save_record(None, data)
                 saved_id = record["id"] if isinstance(record, dict) else getattr(record, "id", None)
+                await resource.after_save(saved_id, data)
                 if action == "save_and_continue" and saved_id:
                     return RedirectResponse(
                         url=f"{resource.panel.prefix}/{resource.slug}/{saved_id}?flash=created",
@@ -685,6 +701,7 @@ class Resource:
             action = (await request.form()).get("_action", "save")
             try:
                 await resource.save_record(record_id, data)
+                await resource.after_save(record_id, data)
                 if action == "save_and_continue":
                     return RedirectResponse(
                         url=f"{resource.panel.prefix}/{resource.slug}/{record_id}?flash=saved",
