@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}Reports — {{ panel_title }}{% endblock %}
+{% block title %}Library Reports — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
   <nav class="flex flex-wrap items-center gap-1 text-sm text-zinc-400 dark:text-zinc-500">
@@ -12,7 +12,7 @@
 
 {% block page_heading %}
   <div>
-    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Reports</h1>
+    <h1 class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Library Reports</h1>
     <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">Custom <code class="font-mono text-xs bg-zinc-100 dark:bg-zinc-700 px-1 rounded">Page</code> showcasing <code class="font-mono text-xs bg-zinc-100 dark:bg-zinc-700 px-1 rounded">detail_grid</code>, <code class="font-mono text-xs bg-zinc-100 dark:bg-zinc-700 px-1 rounded">table_widget</code>, and <code class="font-mono text-xs bg-zinc-100 dark:bg-zinc-700 px-1 rounded">form_widget</code> partials.</p>
   </div>
 {% endblock %}
@@ -68,25 +68,11 @@
   </section>
 
   {# ═══════════════════════════════════════════════════════════════════
-     2. Role breakdown — Fieldset inside detail_grid
+     2. (reserved — add more stats here as needed)
      ═══════════════════════════════════════════════════════════════════ #}
-  <section>
-    <h2 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-      User breakdown
-      <span class="font-normal text-zinc-400 normal-case tracking-normal ml-1">Fieldset inside <code class="font-mono text-[11px] bg-zinc-100 dark:bg-zinc-700 px-1 rounded">detail_grid</code></span>
-    </h2>
-    {%- set _fields = role_fields %}
-    {%- set _form_cols = 2 %}
-    {%- set record = role_counts %}
-    {% include "partials/detail_grid.html" %}
-  </section>
 
   {# ═══════════════════════════════════════════════════════════════════
-     3. Recent orders — partials/table_widget.html
+     3. Recent checkouts — partials/table_widget.html
      ═══════════════════════════════════════════════════════════════════ #}
   <section>
     <h2 class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -94,14 +80,14 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
       </svg>
-      Recent orders
+      Recent checkouts
       <span class="font-normal text-zinc-400 normal-case tracking-normal ml-1">via <code class="font-mono text-[11px] bg-zinc-100 dark:bg-zinc-700 px-1 rounded">partials/table_widget.html</code></span>
     </h2>
-    {%- set _columns = order_columns %}
-    {%- set _rows    = recent_orders %}
-    {%- set _empty_message = "No orders yet." %}
+    {%- set _columns = checkout_columns %}
+    {%- set _rows    = recent_checkouts %}
+    {%- set _empty_message = "No checkouts yet." %}
     {% include "partials/table_widget.html" %}
-    <p class="mt-2 text-xs text-zinc-400 dark:text-zinc-500">Showing the 8 most recent orders.</p>
+    <p class="mt-2 text-xs text-zinc-400 dark:text-zinc-500">Showing the 10 most recent checkouts.</p>
   </section>
 
   {# ═══════════════════════════════════════════════════════════════════

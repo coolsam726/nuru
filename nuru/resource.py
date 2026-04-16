@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, ClassVar, Union, get_args, get_origin, TYPE_CHECKING
+from datetime import date, datetime
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from .icons import resolve_icon
 import inspect
 
@@ -147,6 +148,23 @@ class Resource:
     model:           ClassVar[Any] = None
     session_factory: ClassVar[Any] = None   # Callable[[], AsyncContextManager[AsyncSession]]
     search_fields:   ClassVar[list[str]] = []
+    # SQLAlchemy loader options applied to the automatic get_list query, e.g.:
+    #   from sqlalchemy.orm import selectinload
+    #   load_options = [selectinload(Book.author), selectinload(Book.subject)]
+    load_options:    ClassVar[list] = []
+
+    # ------------------------------------------------------------------
+    # Options endpoint — used by BelongsTo fields to populate their selectors.
+    #
+    #   options_value_field — attr on each record to use as the option value;
+    #                         defaults to the model's primary key.
+    #   options_label_field — attr on each record to use as the option label;
+    #                         defaults to str(record).
+    #   options_per_page    — max records returned by GET /options (default 200).
+    # ------------------------------------------------------------------
+    options_value_field: ClassVar[str] = ""
+    options_label_field: ClassVar[str] = ""
+    options_per_page:    ClassVar[int] = 200
 
     # ------------------------------------------------------------------
     # Auto-build columns/fields from SQLModel annotations when model is set
@@ -280,7 +298,7 @@ class Resource:
         self,
         *,
         page: int = 1,
-        per_page: int = 25,
+        per_page: int = 10,
         search: str | None = None,
         sort_by: str | None = None,
         sort_dir: str = "asc",
@@ -314,6 +332,8 @@ class Resource:
                     query = query.order_by(
                         col_attr.desc() if sort_dir == "desc" else col_attr.asc()
                     )
+                for opt in type(self).load_options:
+                    query = query.options(opt)
                 query   = query.offset((page - 1) * per_page).limit(per_page)
                 records = (await session.exec(query)).all()
                 return {"records": records, "total": total}
@@ -347,6 +367,36 @@ class Resource:
                 # Exclude list values (M2M / checkbox_group fields) — they are
                 # handled by after_save() and have no scalar column to write to.
                 scalar_data = {k: v for k, v in data.items() if not isinstance(v, list)}
+                # Coerce date/datetime string values into Python objects so
+                # SQLModel / SQLAlchemy inserts the correct types. Form inputs
+                # submit ISO date strings (YYYY-MM-DD) and datetimes in
+                # ISO format; convert them here before constructing the model.
+                for k, v in list(scalar_data.items()):
+                    if v is None:
+                        continue
+                    # Empty strings should be treated as NULL
+                    if v == "":
+                        scalar_data[k] = None
+                        continue
+                    try:
+                        ann = type(self).model.model_fields[k].annotation
+                    except Exception:
+                        ann = None
+                    if ann is None:
+                        continue
+                    inner = _unwrap_optional(ann)
+                    name = getattr(inner, "__name__", "")
+                    if name == "date" and isinstance(v, str):
+                        try:
+                            scalar_data[k] = date.fromisoformat(v)
+                        except Exception:
+                            # Leave as-is; DB will raise a helpful error later
+                            pass
+                    elif name == "datetime" and isinstance(v, str):
+                        try:
+                            scalar_data[k] = datetime.fromisoformat(v)
+                        except Exception:
+                            pass
                 if id is None:
                     record = self.model(**scalar_data)
                 else:
@@ -371,6 +421,41 @@ class Resource:
         including any list-valued ``CheckboxGroup`` fields that were
         deliberately excluded from the main ``save_record`` call.
         """
+
+    async def get_options(self, *, q: str | None = None) -> list[dict]:
+        """Return ``[{"value": ..., "label": ...}]`` for BelongsTo field selectors.
+
+        Called by the ``GET /{slug}/options`` JSON endpoint.  Override this
+        method in your subclass for full control: apply extra filters, order
+        differently, or source records from anywhere.
+
+        The default implementation calls :meth:`get_list` using the supplied
+        search query and maps each record through ``options_value_field`` and
+        ``options_label_field``.  Adjust those class-level variables instead
+        of overriding when only the attribute names need changing.
+        """
+        try:
+            result = await self.get_list(
+                page=1,
+                per_page=type(self).options_per_page,
+                search=q or None,
+            )
+        except NotImplementedError:
+            return []
+
+        pk = self._pk_name()
+        value_attr = type(self).options_value_field or pk
+        label_attr = type(self).options_label_field
+
+        out: list[dict] = []
+        for rec in result.get("records", []):
+            v = getattr(rec, value_attr, None)
+            lbl = getattr(rec, label_attr, None) if label_attr else str(rec)
+            out.append({
+                "value": str(v)   if v   is not None else "",
+                "label": str(lbl) if lbl is not None else "",
+            })
+        return out
 
     async def delete_record(self, id: Any) -> None:
         """Delete a record by primary key.
@@ -579,7 +664,8 @@ class Resource:
                 page=page, search=search,
                 sort_by=sort_by, sort_dir=sort_dir,
             )
-            html = resource.panel._render("partials/table.html", ctx)
+            user = await resource.panel._current_user(request)
+            html = resource.panel._render("partials/table.html", ctx, user=user)
             return HTMLResponse(html)
 
         # ---- GET /resource/new ---- blank create form ----------------
@@ -633,6 +719,21 @@ class Resource:
                     "errors": {"__all__": str(exc)},
                 }, user=user)
                 return HTMLResponse(html, status_code=422)
+
+        # ---- GET /resource/options ---- JSON list for BelongsTo selectors -
+        # Registered BEFORE /{record_id} so the literal "options" path
+        # doesn't get captured as a primary key value.
+        @router.get(f"{prefix}/options", response_model=None, include_in_schema=False)
+        async def options_endpoint(
+            request: Request, q: str | None = None
+        ) -> JSONResponse:
+            if await resource.panel._require_login(request):
+                return JSONResponse([], status_code=401)
+            try:
+                data = await resource.get_options(q=q)
+            except Exception:
+                data = []
+            return JSONResponse(data)
 
         # ---- GET /resource/{id}/view ---- read-only detail page --------
         @router.get(f"{prefix}/{{record_id}}/view", response_class=HTMLResponse, response_model=None, include_in_schema=False)

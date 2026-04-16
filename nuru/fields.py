@@ -125,9 +125,51 @@ class Textarea(Field):
 
 @dataclass
 class Select(Field):
+    """Versatile select / combobox field.
+
+    **Static options** — pass a list of strings or ``{"value": ..., "label": ...}``
+    dicts::
+
+        Select("status", options=["draft", "published", "archived"])
+        Select("status", options=[{"value": "1", "label": "Active"}, ...])
+
+    **Multiple** — allow picking several values (submits as a list)::
+
+        Select("tags", multiple=True, options=[...])
+
+    **Relationship (model-based combobox)** — point directly at a SQLModel class;
+    the panel queries the model via a built-in ``/_model_search`` endpoint without
+    requiring a matching Resource to exist::
+
+        Select("author_id", "Author",
+               model=Author,           # SQLModel class reference
+               value_field="id",       # attr used as the FK value (default: model PK)
+               label_field="name",     # attr shown as the option label
+               relationship="author")  # attr on *this* record holding the pre-loaded
+                                       # relation — used for display in the detail view
+
+    ``search_fields`` lists additional model columns to include in the server-side
+    ``ilike`` search; ``label_field`` is always searched.
+
+    **Detail view display** — set ``relationship`` to the pre-loaded relation
+    attribute on your record so the human-readable label is shown instead of
+    the raw FK value::
+
+        # record.author.name is rendered in the detail view
+        Select("author_id", label_field="name", relationship="author")
+    """
     field_type: str = "select"
     input_type: str = "select"
     options: list = field(default_factory=list)
+    multiple: bool = False
+    # ── Relationship combobox ────────────────────────────────────────────
+    model: Any = None               # SQLModel class to query directly
+    value_field: str = ""           # attr used as option value (defaults to model PK)
+    label_field: str = ""           # attr used as option label (defaults to str(record))
+    search_fields: list = field(default_factory=list)  # extra columns for ilike search
+    relationship: str = ""          # attr on *this* record holding the pre-loaded relation
+    remote_search: bool = False     # fetch with ?q=<query> on each keystroke instead of
+                                    # loading all options upfront and filtering client-side
 
 
 @dataclass
@@ -159,15 +201,15 @@ class CheckboxGroup(Field):
     """Multi-select field rendered as clickable pill/tag buttons.
 
     ``options`` — list of ``{value, label}`` dicts or plain strings.
-    ``options_attr`` — if set, the options list is read from
-    ``record.<options_attr>`` at render time instead of from ``field.options``.
-    This lets you populate choices dynamically in ``get_record`` without
-    needing async calls inside a template.
+    ``options_attr`` — if set, options are read from ``record.<options_attr>``
+    at render time (dynamic choices set in ``get_record``).
 
     The form submits one checkbox value per selected option under the same
-    ``name``. ``parse_form`` collects these into a Python list for you.
+    ``name``. ``parse_form`` collects these into a Python list.
     """
     field_type: str = "checkbox_group"
     input_type: str = "checkbox_group"
     options: list = field(default_factory=list)
-    options_attr: str = ""  # read choices from record.<options_attr> when non-empty
+    options_attr: str = ""
+
+
