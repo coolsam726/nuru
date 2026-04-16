@@ -22,8 +22,7 @@
 {% set _lf = field.label_field or '' %}
 {% set _search_url = panel_prefix ~ '/_model_search?model=' ~ field.model.__name__ ~ '&value_field=' ~ _vf ~ ('&label_field=' ~ _lf if _lf else '') %}
 
-<div x-data='nuruCombobox({{ current | tojson }}, {{ _search_url | tojson }}, {{ field.remote_search | tojson }})'
-     @click.outside="open = false">
+<div x-data='nuruCombobox({{ current | tojson }}, {{ _search_url | tojson }}, {{ field.remote_search | tojson }})'>
 
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
     {{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
@@ -41,9 +40,11 @@
     <div x-show="!initialising" x-cloak class="flex items-center relative">
       <input
         type="text"
+        x-ref="input"
         :value="displayText()"
         @input="onInput($event)"
-        @focus="open = true; _filter()"
+        @focus="open = true; (remote ? _remoteFetch() : _filter())"
+        @blur="open = false"
         @keydown.escape="open = false"
         @keydown.enter.prevent="filtered.length === 1 && pick(filtered[0])"
         placeholder="{{ field.placeholder or ('Search ' ~ field.label ~ '…') }}"
@@ -63,7 +64,7 @@
 
       <button type="button"
               x-show="value && !fetching"
-              @click.prevent="clear()"
+              @mousedown.prevent="clear()"
               aria-label="Clear selection"
               class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary-400
                      hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors">
@@ -73,38 +74,45 @@
       </button>
     </div>
 
-    {# Dropdown list #}
-    <div x-show="open && filtered.length > 0"
-         x-cloak
-         x-transition:enter="transition ease-out duration-100"
-         x-transition:enter-start="opacity-0 -translate-y-1"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-75"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 -translate-y-1"
-         class="absolute left-0 right-0 top-full mt-1 z-40 max-h-56 overflow-y-auto
-                rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-600
-                bg-white dark:bg-secondary-800 py-1">
-      <template x-for="opt in filtered" :key="opt.value">
-        <button type="button"
-                @click.prevent="pick(opt)"
-                :class="String(opt.value) === value
-                          ? 'bg-primary/10 text-primary dark:text-primary font-medium'
-                          : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700/60'"
-                class="w-full text-left px-3 py-2 text-sm transition-colors">
-          <span x-text="opt.label"></span>
-        </button>
-      </template>
-    </div>
+    {# Dropdown — teleported to <body> to escape any overflow:hidden ancestor.
+       @mousedown.prevent on options keeps focus on the text input (preventing
+       @blur from firing before pick() runs). #}
+    <template x-teleport="body">
+      <div x-show="open"
+           :style="`position:fixed;top:${dropY}px;left:${dropX}px;width:${dropW}px;z-index:9999;`">
 
-    {# "No results" nudge #}
-    <div x-show="open && !fetching && filtered.length === 0"
-         x-cloak
-         class="absolute left-0 right-0 top-full mt-1 z-40 rounded-lg shadow-lg border
-                border-secondary-200 dark:border-secondary-600 bg-white dark:bg-secondary-800
-                px-3 py-2 text-sm text-secondary-400 dark:text-secondary-500 italic">
-      No options found
-    </div>
+        <div x-show="filtered.length > 0"
+             x-cloak
+             x-transition:enter="transition ease-out duration-100"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-75"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-1"
+             class="max-h-56 overflow-y-auto rounded-lg shadow-lg border
+                    border-secondary-200 dark:border-secondary-600
+                    bg-white dark:bg-secondary-800 py-1">
+          <template x-for="opt in filtered" :key="opt.value">
+            <button type="button"
+                    @mousedown.prevent="pick(opt)"
+                    :class="String(opt.value) === value
+                              ? 'bg-primary/10 text-primary dark:text-primary font-medium'
+                              : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700/60'"
+                    class="w-full text-left px-3 py-2 text-sm transition-colors">
+              <span x-text="opt.label"></span>
+            </button>
+          </template>
+        </div>
+
+        <div x-show="!fetching && filtered.length === 0"
+             x-cloak
+             class="rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-600
+                    bg-white dark:bg-secondary-800 px-3 py-2 text-sm
+                    text-secondary-400 dark:text-secondary-500 italic">
+          No options found
+        </div>
+      </div>
+    </template>
   </div>
 
   {% if has_error %}
@@ -116,7 +124,9 @@
 
 {% else %}
 
-{# ── Static options — plain native <select> ──────────────────────────────── #}
+{# If `native=True` render a plain <select>, otherwise use the combobox
+   component even for static options. #}
+{% if field.native %}
 <div>
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
     {{ field.label }}
@@ -146,5 +156,95 @@
     <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
   {% endif %}
 </div>
+{% else %}
+
+{# Combobox for static/options array source #}
+{% set _opts = field.options or [] %}
+<div x-data='nuruCombobox({{ current | tojson }}, {{ _opts | tojson }}, false)'>
+
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  {# Hidden input carries the value on form submit #}
+  <input type="hidden" name="{{ field.key }}" :value="value">
+
+  <div class="relative">
+    <div x-show="initialising"
+         class="animate-pulse h-9 w-full rounded-lg bg-secondary-100 dark:bg-secondary-700"></div>
+
+    <div x-show="!initialising" x-cloak class="flex items-center relative">
+      <input
+        type="text"
+        x-ref="input"
+        :value="displayText()"
+        @input="onInput($event)"
+        @focus="open = true; _filter()"
+        @blur="open = false"
+        @keydown.escape="open = false"
+        @keydown.enter.prevent="filtered.length === 1 && pick(filtered[0])"
+        placeholder="{{ field.placeholder or ('Select ' ~ field.label ~ '…') }}"
+        autocomplete="off"
+        {% if field.required %}required x-bind:required="!value"{% endif %}
+        class="{{ input_class }} pr-8"
+        style="--tw-ring-color: var(--color-primary-500);">
+
+      <button type="button"
+              x-show="value"
+              @mousedown.prevent="clear()"
+              aria-label="Clear selection"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary-400
+                     hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <template x-teleport="body">
+      <div x-show="open"
+           :style="`position:fixed;top:${dropY}px;left:${dropX}px;width:${dropW}px;z-index:9999;`">
+
+        <div x-show="filtered.length > 0"
+             x-cloak
+             x-transition:enter="transition ease-out duration-100"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-75"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-1"
+             class="max-h-56 overflow-y-auto rounded-lg shadow-lg border
+                    border-secondary-200 dark:border-secondary-600
+                    bg-white dark:bg-secondary-800 py-1">
+          <template x-for="opt in filtered" :key="opt.value">
+            <button type="button"
+                    @mousedown.prevent="pick(opt)"
+                    :class="String(opt.value) === value
+                              ? 'bg-primary/10 text-primary dark:text-primary font-medium'
+                              : 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700/60'"
+                    class="w-full text-left px-3 py-2 text-sm transition-colors">
+              <span x-text="opt.label"></span>
+            </button>
+          </template>
+        </div>
+
+        <div x-show="!fetching && filtered.length === 0"
+             x-cloak
+             class="rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-600
+                    bg-white dark:bg-secondary-800 px-3 py-2 text-sm
+                    text-secondary-400 dark:text-secondary-500 italic">
+          No options found
+        </div>
+      </div>
+    </template>
+  </div>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
+  {% endif %}
+</div>
+{% endif %}
 
 {% endif %}

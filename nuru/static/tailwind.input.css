@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@plugin "flowbite/plugin";
+
 /* Scan nuru templates and the example app for utility class names */
 @source "../templates/**/*.html";
 @source "../../example_app/**/*.py";
+@source "../integrations/**/*.html";
+@source "../node_modules/flowbite";
+@source "../../node_modules/flowbite-datepicker";
+
+
 
 /* Class-based dark mode — toggled via <html class="dark"> */
 @variant dark (&:where(.dark, .dark *));
@@ -105,3 +112,5 @@
   --color-success-900: var(--color-green-900);
   --color-success-950: var(--color-green-950);
 }
+
+@import "./flowbite.nuru.css";

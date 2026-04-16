@@ -35,6 +35,15 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker as _asm,
 )
 
+from nuru.components import (
+    register_components,
+    Timepicker,
+    Radio,
+    Toggle,
+    RadioButtons,
+)
+from nuru.components.types import RadioOption
+from nuru.integrations.flowbite import FlowbiteDatepicker, register_flowbite
 import nuru.roles
 from nuru import (
     AdminPanel,
@@ -1112,6 +1121,40 @@ class BookResource(Resource):
                 ),
             ],
         ),
+        fields.Section(
+            title="Extras",
+            cols=2,
+            col_span="full",
+            fields=[
+                # Demo the use of the new fields
+                Radio(
+                    "demo_radio",
+                    "Demo radio",
+                    options=["Option 1", "Option 2", "Option 3"],
+                ),
+                Toggle(
+                    "demo_toggle",
+                    "Demo toggle",
+                    help_text="Just a toggle for demonstration purposes.",
+                ),
+                Timepicker(
+                    "demo_timepicker",
+                    "Demo timepicker",
+                    help_text="A simple timepicker input.",
+                ),
+                RadioButtons(
+                    "demo_radiobuttons",
+                    "Demo radio buttons",
+                    options=[
+                        {"value": "vue", "label": "Vue.js", "description": "A progressive JavaScript framework.", "image": "https://vuejs.org/images/logo.png"},
+                        {"value": "react", "label": "React", "description": "A JavaScript library for building user interfaces.", "image": "https://reactjs.org/logo-og.png"},
+                        {"value": "angular", "label": "Angular", "description": "A platform for building mobile and desktop web applications.", "image": "https://angular.io/assets/images/logos/angular/angular.png"},
+                        {"value": "svelte", "label": "Svelte", "description": "Cybernetically enhanced web apps.", "image": "https://svelte.dev/svelte-logo-horizontal.svg"},
+                    ],
+                    col_span='full'
+                )
+            ],
+        ),
     ]
 
     detail_fields = [
@@ -1433,7 +1476,7 @@ class CheckoutResource(Resource):
                     relationship="book",
                     required=True,
                     help_text="Search by title or ISBN.",
-                    remote_search=True
+                    remote_search=True,
                 ),
                 fields.Select(
                     "member_id",
@@ -1443,15 +1486,17 @@ class CheckoutResource(Resource):
                     relationship="member",
                     required=True,
                     help_text="Search by name or member number.",
-                    remote_search=True
+                    remote_search=True,
                 ),
-                fields.Date(
+                FlowbiteDatepicker(
                     "issued_on",
                     "Issued on",
                     help_text="Date the book was handed to the member.",
                 ),
-                fields.Date("due_date", "Due date", help_text="Expected return date."),
-                fields.Date(
+                FlowbiteDatepicker(
+                    "due_date", "Due date", help_text="Expected return date."
+                ),
+                FlowbiteDatepicker(
                     "returned_on",
                     "Returned on",
                     help_text="Leave blank if not yet returned.",
@@ -1459,7 +1504,12 @@ class CheckoutResource(Resource):
                 fields.Select(
                     "status",
                     "Status",
-                    options=["issued", "returned", "overdue", "lost"],
+                    options=lambda record=None: [
+                        {"value": "issued", "label": "Issued"},
+                        {"value": "returned", "label": "Returned"},
+                        {"value": "overdue", "label": "Overdue"},
+                        {"value": "lost", "label": "Lost"},
+                    ],
                     help_text="Current state of this checkout.",
                 ),
             ],
@@ -1515,9 +1565,9 @@ class CheckoutResource(Resource):
                     label_field="name",
                     relationship="member",
                 ),
-                fields.Date("issued_on", "Issued on"),
-                fields.Date("due_date", "Due date"),
-                fields.Date("returned_on", "Returned on"),
+                FlowbiteDatepicker("issued_on", "Issued on"),
+                FlowbiteDatepicker("due_date", "Due date"),
+                FlowbiteDatepicker("returned_on", "Returned on"),
                 fields.Select(
                     "status",
                     "Status",
@@ -2054,6 +2104,8 @@ admin_panel = AdminPanel(
     template_dirs=[_EXAMPLE_TEMPLATES],
 )
 
+register_flowbite(admin_panel)
+register_components(admin_panel)
 admin_panel.register_page(ReportsPage)
 admin_panel.register(AuthorResource)
 admin_panel.register(SubjectResource)

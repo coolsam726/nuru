@@ -90,6 +90,7 @@ class AdminPanel:
         permission_checker: Any | None = None,
         template_dirs: list[str | Path] | None = None,
         extra_css: list[str] | str | None = None,
+        extra_js: list[str] | str | None = None,
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
@@ -113,6 +114,12 @@ class AdminPanel:
             self.extra_css = [extra_css]
         else:
             self.extra_css = list(extra_css)
+        if extra_js is None:
+            self.extra_js: list[str] = []
+        elif isinstance(extra_js, str):
+            self.extra_js = [extra_js]
+        else:
+            self.extra_js = list(extra_js)
 
         # Derive a safe identifier from the prefix for naming purposes.
         # "/admin" → "admin", "/staff/panel" → "staff_panel"
@@ -139,6 +146,23 @@ class AdminPanel:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def add_extra_js(self, url: str) -> None:
+        """Append a JS URL to load on every panel page (idempotent)."""
+        if url not in self.extra_js:
+            self.extra_js.append(url)
+            self._jinja_env.globals["extra_js"] = list(self.extra_js)
+
+    def add_template_dir(self, path: "str | Path") -> None:
+        """Prepend a template directory so its partials take priority."""
+        from jinja2 import ChoiceLoader
+        existing = self._jinja_env.loader
+        new_loader = FileSystemLoader(str(path))
+        if isinstance(existing, ChoiceLoader):
+            loaders = [new_loader] + list(existing.loaders)
+        else:
+            loaders = [new_loader, existing]
+        self._jinja_env.loader = ChoiceLoader(loaders)
 
     def register(self, resource_cls: type[Resource]) -> None:
         """Register a Resource class with this panel."""
@@ -325,10 +349,25 @@ class AdminPanel:
                 out: list[dict] = []
                 for rec in records:
                     v = getattr(rec, vf, None)
-                    lbl = getattr(rec, lf, None) if lf else str(rec)
+                    # Determine a sensible label. If a label_field was
+                    # requested but its value is empty/None, fall back to
+                    # `str(rec)` or the value field so the combobox doesn't
+                    # render blank options.
+                    if lf and hasattr(rec, lf):
+                        candidate = getattr(rec, lf, None)
+                        if candidate is None or (isinstance(candidate, str) and candidate.strip() == ""):
+                            candidate = str(rec)
+                            if not candidate:
+                                candidate = str(v) if v is not None else ""
+                        lbl = str(candidate)
+                    else:
+                        lbl = str(rec)
+                        if lbl is None or lbl == "":
+                            lbl = str(v) if v is not None else ""
+
                     out.append({
                         "value": str(v)   if v   is not None else "",
-                        "label": str(lbl) if lbl is not None else "",
+                        "label": lbl,
                     })
                 return _JSONResponse(out)
             except Exception:
@@ -528,13 +567,51 @@ class AdminPanel:
                 except Exception:
                     return False
 
-        return template.render(
-            current_user=user,
-            current_path=current_path,
-            nav_items=self._nav_entries(has_perm=has_perm),
-            has_perm=has_perm,
-            **context,
-        )
+        # If any fields expose `options` as a callable, invoke them at
+        # render-time so templates receive a concrete list. We do this
+        # temporarily (mutate -> render -> restore) to avoid permanently
+        # altering the Resource definition object.
+        import inspect
+
+        originals: list[tuple[object, object]] = []
+        resource = context.get("resource")
+        record = context.get("record")
+        try:
+            if resource is not None and hasattr(resource, "_flat_form_fields"):
+                for field in resource._flat_form_fields:
+                    opts = getattr(field, "options", None)
+                    if callable(opts):
+                        try:
+                            sig = inspect.signature(opts)
+                            # prefer calling with the current record if the
+                            # callable accepts a parameter
+                            if len(sig.parameters) == 0:
+                                new_opts = opts()
+                            else:
+                                new_opts = opts(record)
+                        except Exception:
+                            # on any error, skip resolving this callable
+                            continue
+                        # skip awaitables (we don't run async callables here)
+                        if hasattr(new_opts, "__await__"):
+                            continue
+                        originals.append((field, opts))
+                        field.options = new_opts
+
+            return template.render(
+                current_user=user,
+                current_path=current_path,
+                nav_items=self._nav_entries(has_perm=has_perm),
+                has_perm=has_perm,
+                **context,
+            )
+        finally:
+            # restore any mutated options
+            for field, orig in originals:
+                try:
+                    field.options = orig
+                except Exception:
+                    pass
 
     def _template_globals(self) -> dict:
         """Values injected into every template automatically."""
@@ -568,6 +645,7 @@ class AdminPanel:
             "pages":              self._pages,
             "auth_enabled":       self.auth is not None,
             "extra_css":          self.extra_css,
+            "extra_js":           self.extra_js,
             "has_perm":            lambda codename: True,  # overridden per-request in _render()
             "current_user":        None,   # overridden per-request via _render(user=...)
         }

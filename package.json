@@ -7,6 +7,10 @@
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",
+    "flowbite": "^4.0.1",
     "tailwindcss": "^4.1.0"
+  },
+  "dependencies": {
+    "flowbite-datepicker": "^2.0.0"
   }
 }
