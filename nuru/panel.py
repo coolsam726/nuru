@@ -274,6 +274,31 @@ class AdminPanel:
 
             model_cls, session_factory = entry
 
+            # Require that the caller has list permission for the Resource
+            # that exposes this model. This prevents unauthorised users from
+            # enumerating model options via the search endpoint.
+            try:
+                # Find the Resource class that is wired to this model.
+                resource_slug = None
+                for resource_cls in panel._resources:
+                    if getattr(resource_cls, "model", None) is model_cls:
+                        resource_slug = getattr(resource_cls, "slug", None) or resource_cls.__name__.lower()
+                        break
+
+                checker = getattr(panel, "permission_checker", None)
+                if panel.auth is not None and checker is not None:
+                    user = await panel._current_user(request)
+                    # permission_checker may be sync or async
+                    res = checker(user, f"{resource_slug}:list", None) if resource_slug else False
+                    import inspect
+                    if inspect.isawaitable(res):
+                        res = await res
+                    if not res:
+                        return _JSONResponse([])
+            except Exception:
+                # On any error during permission checking, refuse silently.
+                return _JSONResponse([])
+
             # Resolve the primary key column name.
             try:
                 pk_cols = list(model_cls.__table__.primary_key.columns)
