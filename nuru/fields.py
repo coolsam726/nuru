@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable, List
 
 
 @dataclass
@@ -160,7 +160,7 @@ class Select(Field):
     """
     field_type: str = "select"
     input_type: str = "select"
-    options: list = field(default_factory=list)
+    options: list|Callable[[Any], list[dict[str, str]]] = field(default_factory=list)
     multiple: bool = False
     # ── Relationship combobox ────────────────────────────────────────────
     model: Any = None               # SQLModel class to query directly
@@ -168,6 +168,10 @@ class Select(Field):
     label_field: str = ""           # attr used as option label (defaults to str(record))
     search_fields: list = field(default_factory=list)  # extra columns for ilike search
     relationship: str = ""          # attr on *this* record holding the pre-loaded relation
+    native: bool = False             # when True, render a native <select> instead of the combobox
+    # `options` may be a static list or a callable that returns a list of
+    # {"value":..., "label":...} dicts. If callable, it will be invoked
+    # at render time to produce the initial option set.
     remote_search: bool = False     # fetch with ?q=<query> on each keystroke instead of
                                     # loading all options upfront and filtering client-side
 
@@ -212,4 +216,70 @@ class CheckboxGroup(Field):
     options: list = field(default_factory=list)
     options_attr: str = ""
 
+
+# ---------------------------------------------------------------------------
+# Flowbite-backed aliases
+# If the Flowbite integration is present we prefer its Field dataclasses so
+# users can `from nuru.fields import Datepicker` and get the Flowbite
+# implementation. Fall back to lightweight local dataclasses when the
+# integration isn't available (keeps imports safe for minimal installs).
+try:
+    from nuru.integrations.flowbite import FlowbiteDatepicker as Datepicker  # type: ignore
+    from nuru.integrations.flowbite import FlowbiteDateRangePicker as DateRangePicker  # type: ignore
+    from nuru.components import register_components  # type: ignore
+    from nuru.components import Radio, Toggle, RadioButtons, Timepicker  # type: ignore
+except Exception:
+    @dataclass
+    class Datepicker(Field):
+        field_type: str = "flowbite_datepicker"
+        input_type: str = "text"
+        date_format: str = "yyyy-mm-dd"
+        autohide: bool = True
+        buttons: bool = False
+        orientation: str = "bottom"
+        title: str = ""
+        min_date: str = ""
+        max_date: str = ""
+
+
+    @dataclass
+    class DateRangePicker(Field):
+        field_type: str = "flowbite_daterangepicker"
+        input_type: str = "text"
+        date_format: str = "yyyy-mm-dd"
+        autohide: bool = True
+        buttons: bool = False
+        orientation: str = "bottom"
+        title: str = ""
+        min_date: str = ""
+        max_date: str = ""
+        start_placeholder: str = "Start date"
+        end_placeholder: str = "End date"
+
+    @dataclass
+    class Radio(Field):
+        field_type: str = "radio"
+        input_type: str = "radio"
+        options: list = field(default_factory=list)
+        inline: bool = True
+        
+    @dataclass
+    class Toggle(Field):
+        field_type: str = "toggle"
+        input_type: str = "checkbox"
+        on_label: str = "On"
+        off_label: str = "Off"
+        
+    @dataclass
+    class RadioButtons(Field):
+        field_type: str = "radio_buttons"
+        input_type: str = "radio"
+        options: list = field(default_factory=list)
+        
+    @dataclass
+    class Timepicker(Field):
+        field_type: str = "timepicker"
+        input_type: str = "text"
+        time_format: str = "HH:MM"
+        placeholder: str = "HH:MM"
 

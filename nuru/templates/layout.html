@@ -29,12 +29,16 @@
   <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
   {% endif %}
 
-  {# Alpine.js 3.x — deferred so inline alpine:init listeners fire first #}
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-
   <link rel="stylesheet" href="{{ panel_prefix }}/static/tailwind.css">
   {% for css_url in extra_css %}
   <link rel="stylesheet" href="{{ css_url }}">
+  {% endfor %}
+
+  {# Alpine.js 3.x — deferred so inline alpine:init listeners fire after CSS #}
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+  {% for js_url in extra_js %}
+  <script defer src="{{ js_url }}"></script>
   {% endfor %}
 
   <style>
@@ -677,23 +681,58 @@ Catalyst-inspired layout
         open:        false,
         initialising: true,  // hides the input until the first fetch completes
         fetching:     false,  // shows the spinner during remote keypress fetches
-        _timer:      null,
+        _timer:        null,
+        _scrollHandler: null,
+        dropX: 0, dropY: 0, dropW: 0,
 
         init() {
-          // Both modes: fetch on init to populate the initial list and resolve
-          // the label for an existing value.
+          // Always wire open-watcher first so dropdown is positioned for
+          // both inline-array and URL-based sources.
+          this.$watch('open', v => {
+            if (v) {
+              this._updateDropPos();
+              this._scrollHandler = () => this._updateDropPos();
+              window.addEventListener('scroll', this._scrollHandler, { passive: true, capture: true });
+              window.addEventListener('resize', this._scrollHandler, { passive: true });
+            } else {
+              if (this._scrollHandler) {
+                window.removeEventListener('scroll', this._scrollHandler, { capture: true });
+                window.removeEventListener('resize', this._scrollHandler);
+                this._scrollHandler = null;
+              }
+            }
+          });
+
+          // Support two kinds of `url`: a URL (string) or an inline
+          // options array. If `url` is a string we fetch; otherwise
+          // treat it as the initial dataset.
+          const isUrl = typeof url === 'string';
+          if (!isUrl) {
+            const data = Array.isArray(url) ? url : [];
+            this.initialising = false;
+            this.remote = false;
+            this.options = data.slice();
+            this.filtered = data.slice();
+            if (this.value) {
+              const match = data.find(o => String(o.value) === this.value);
+              if (match) this.label = match.label;
+            }
+            this.$watch('query', () => this._filter());
+            return;
+          }
+
+          // url is a string: fetch initial page and wire up remote behaviour.
           fetch(url)
             .then(r => r.ok ? r.json() : [])
             .catch(() => [])
             .then(data => {
               this.initialising = false;
+              this.remote = remote;
               if (this.value) {
                 const match = data.find(o => String(o.value) === this.value);
                 if (match) this.label = match.label;
               }
               if (remote) {
-                // Remote mode: the initial page is the starting list;
-                // thereafter each query hits the server.
                 this.filtered = data;
                 this.$watch('query', () => this._remoteFilter());
               } else {
@@ -718,12 +757,30 @@ Catalyst-inspired layout
           this._timer = setTimeout(() => {
             const q = this.query.trim();
             this.fetching = true;
+            // Only perform remote fetches when `url` is a string.
+            if (typeof url !== 'string') return;
             const sep = url.includes('?') ? '&' : '?';
             fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
               .then(r => r.ok ? r.json() : [])
               .catch(() => [])
               .then(data => { this.filtered = data; this.fetching = false; });
           }, 300);
+        },
+
+        // Immediate server-side fetch — used when the user focuses the
+        // input and we want the first page of results without waiting for
+        // the debounce timer.
+        _remoteFetch() {
+          clearTimeout(this._timer);
+          const q = this.query.trim();
+          this.fetching = true;
+          // Only perform remote fetches when `url` is a string.
+          if (typeof url !== 'string') return;
+          const sep = url.includes('?') ? '&' : '?';
+          fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
+            .then(r => r.ok ? r.json() : [])
+            .catch(() => [])
+            .then(data => { this.filtered = data; this.fetching = false; });
         },
 
         pick(opt) {
@@ -748,6 +805,20 @@ Catalyst-inspired layout
         onInput(e) {
           this.query = e.target.value;
           this.open  = true;
+        },
+
+        _updateDropPos() {
+          // Compute fixed viewport coords from the text input so the
+          // teleported dropdown renders directly below it regardless of
+          // any overflow:hidden ancestor.
+          this.$nextTick(() => {
+            const input = this.$refs.input;
+            if (!input) return;
+            const r = input.getBoundingClientRect();
+            this.dropX = Math.round(r.left);
+            this.dropY = Math.round(r.bottom + 4);
+            this.dropW = Math.round(r.width);
+          });
         },
       }));
 

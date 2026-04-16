@@ -110,6 +110,40 @@ class OrderResource(Resource):
     ]
 ```
 
+## Select / Combobox options
+
+`Select` fields support three option sources:
+
+- **Relationship / model (remote URL):** Point `Select` at a SQLModel class to enable the combobox which queries the built-in `/_model_search` endpoint. Example:
+
+```python
+fields.Select(
+    "author_id",
+    "Author",
+    model=Author,           # SQLModel class
+    label_field="name",
+    relationship="author",  # pre-loaded relation attr for detail display
+)
+```
+
+- **Static list:** Provide a concrete list of strings or `{value,label}` dicts for a native `<select>`.
+
+```python
+fields.Select("status", "Status", options=["draft", "published", "archived"])
+```
+
+- **Callable options:** Pass a callable that returns a list of `{value,label}` dicts. The callable is invoked at render time so templates receive concrete option data.
+
+```python
+def dynamic_options(record=None):
+    # record is the current record being edited (or None for new)
+    return [{"value": "a", "label": "Alpha"}, {"value": "b", "label": "Beta"}]
+
+fields.Select("kind", "Kind", options=dynamic_options)
+```
+
+Note: callable options are executed synchronously at render time; async callables are not invoked.
+
 ## Actions
 
 ```python

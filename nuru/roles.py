@@ -96,8 +96,8 @@ class RolePermission(SQLModel, table=True):
 
     __tablename__ = "nuru_role_permission"  # type: ignore[assignment]
 
-    role_id: int = Field(foreign_key="nuru_role.id", primary_key=True)
-    permission_id: int = Field(foreign_key="nuru_permission.id", primary_key=True)
+    role_id: int|None = Field(foreign_key="nuru_role.id", primary_key=True)
+    permission_id: int|None = Field(foreign_key="nuru_permission.id", primary_key=True)
 
 
 class UserRole(SQLModel, table=True):

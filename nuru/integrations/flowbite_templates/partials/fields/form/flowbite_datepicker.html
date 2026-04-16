@@ -1,0 +1,62 @@
+{#
+  ── Flowbite single-date datepicker (form) ────────────────────────────────
+  Requires: Flowbite JS loaded (added automatically by register_flowbite).
+  The datepicker data attribute triggers auto-init when the page loads.
+
+  Field attrs:
+    field.date_format  — e.g. "yyyy-mm-dd" (ISO default)
+    field.autohide     — bool
+    field.buttons      — bool (Today / Clear)
+    field.orientation  — "bottom" | "top" | "bottom right" etc.
+    field.title        — optional calendar header text
+    field.min_date     — optional lower bound (same format as date_format)
+    field.max_date     — optional upper bound
+
+  Context (from macros/form_item.html):
+    current      — current value (date / str / None)
+    has_error    — bool
+    errors       — dict
+    input_class  — Tailwind input classes
+#}
+{% set _current_val = current | string if current is not none and current != '' and current != 'None' else '' %}
+
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  <div class="relative">
+    {# Calendar icon — left inset #}
+    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
+      <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" aria-hidden="true"
+           xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
+      </svg>
+    </div>
+
+    <input
+      datepicker
+      datepicker-format="{{ field.date_format }}"
+      {% if field.autohide %}datepicker-autohide{% endif %}
+      {% if field.buttons %}datepicker-buttons{% endif %}
+      {% if field.orientation %}datepicker-orientation="{{ field.orientation }}"{% endif %}
+      {% if field.title %}datepicker-title="{{ field.title }}"{% endif %}
+      {% if field.min_date %}datepicker-min-date="{{ field.min_date }}"{% endif %}
+      {% if field.max_date %}datepicker-max-date="{{ field.max_date }}"{% endif %}
+      type="text"
+      name="{{ field.key }}"
+      value="{{ _current_val }}"
+      placeholder="{{ field.placeholder if field.placeholder else field.date_format }}"
+      {% if field.required %}required{% endif %}
+      autocomplete="off"
+      class="{{ input_class }} ps-9"
+      style="--tw-ring-color: var(--color-primary-500);"
+    >
+  </div>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+  {% elif field.help_text %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
+  {% endif %}
+</div>
