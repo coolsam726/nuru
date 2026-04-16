@@ -1,15 +1,41 @@
+{% if field.relationship %}
+  {#
+    Relationship mode — resolve the pre-loaded related object from the record.
+    field.relationship — attr on the record holding the related obj (e.g. "author")
+    field.label_field  — attr on the related obj used as the label  (e.g. "name")
+  #}
+  {% if field.relationship %}
+    {% set _related = record | field_value(field.relationship) %}
+    {% if _related is not none and _related != '' %}
+      {% if field.label_field %}
+        {% set _display = _related | field_value(field.label_field) %}
+      {% else %}
+        {% set _display = _related | string %}
+      {% endif %}
+    {% else %}
+      {% set _display = value %}
+    {% endif %}
+  {% else %}
+    {% set _display = value %}
+  {% endif %}
+{% else %}
+  {% set _display = value %}
+{% endif %}
+
 {% if in_section %}
 <div class="{{ span_class }} px-5 py-4">
   <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.label }}</dt>
   <dd class="text-sm text-secondary-900 dark:text-secondary-100 mt-0.5">
-    {% if value is not none and value != '' %}
-      {% set badge_col = none %}
-      {% for col in resource.table_columns %}
-        {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}{% set badge_col = col %}{% endif %}
-      {% endfor %}
-      {% if badge_col %}
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ badge_col.css_classes(value) }}">{{ value }}</span>
-      {% else %}{{ value }}{% endif %}
+    {% if _display is not none and _display != '' %}
+      {% if not field.relationship %}
+        {% set badge_col = none %}
+        {% for col in resource.table_columns %}
+          {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}{% set badge_col = col %}{% endif %}
+        {% endfor %}
+        {% if badge_col %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ badge_col.css_classes(_display) }}">{{ _display }}</span>
+        {% else %}{{ _display }}{% endif %}
+      {% else %}{{ _display }}{% endif %}
     {% else %}<span class="text-secondary-400 dark:text-secondary-500 italic">—</span>{% endif %}
   </dd>
 </div>
@@ -17,20 +43,24 @@
 <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
   <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.label }}</dt>
   <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-secondary-900 dark:text-secondary-100">
-    {% if value is not none and value != '' %}
-      {% set badge_col = none %}
-      {% for col in resource.table_columns %}
-        {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}
-          {% set badge_col = col %}
+    {% if _display is not none and _display != '' %}
+      {% if not field.relationship %}
+        {% set badge_col = none %}
+        {% for col in resource.table_columns %}
+          {% if col.key == field.key and col.__class__.__name__ == 'Badge' %}
+            {% set badge_col = col %}
+          {% endif %}
+        {% endfor %}
+        {% if badge_col %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                       {{ badge_col.css_classes(_display) }}">
+            {{ _display }}
+          </span>
+        {% else %}
+          {{ _display }}
         {% endif %}
-      {% endfor %}
-      {% if badge_col %}
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                     {{ badge_col.css_classes(value) }}">
-          {{ value }}
-        </span>
       {% else %}
-        {{ value }}
+        {{ _display }}
       {% endif %}
     {% else %}
       <span class="text-secondary-400 dark:text-secondary-500 italic">—</span>

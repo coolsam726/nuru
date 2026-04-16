@@ -36,13 +36,18 @@ class _NavItem:
 def _field_value(record: Any, key: str) -> Any:
     """
     Jinja2 filter: extract a field value from either a dict or an ORM object.
-    Usage in templates: {{ record | field_value('email') }}
+    Supports dot-notation traversal, e.g. 'author.name'.
+    Usage in templates: {{ record | field_value('author.name') }}
     """
-    if record is None:
-        return ""
-    if isinstance(record, dict):
-        return record.get(key, "")
-    return getattr(record, key, "")
+    obj = record
+    for part in key.split("."):
+        if obj is None:
+            return ""
+        if isinstance(obj, dict):
+            obj = obj.get(part, "")
+        else:
+            obj = getattr(obj, part, "")
+    return obj
 
 
 class AdminPanel:
@@ -167,6 +172,22 @@ class AdminPanel:
         from .page import DashboardPage, ProfilePage
         if self.auth is not None:
             self._add_login_routes()
+
+        # Build the model registry: maps model class name → (model_cls, session_factory).
+        # Only models wired to a registered Resource are allowed through the search
+        # endpoint — this prevents arbitrary model enumeration.
+        self._model_registry: dict[str, tuple] = {}
+        for resource_cls in self._resources:
+            m = getattr(resource_cls, "model", None)
+            sf = getattr(resource_cls, "session_factory", None)
+            if m is not None and sf is not None:
+                self._model_registry[m.__name__] = (m, sf)
+
+        # ── GET /_model_search — generic JSON search for model-based Select fields ──
+        # Queried directly by the combobox template; resolves options from the model
+        # layer without requiring a matching Resource.
+        self._add_model_search_route()
+
         # Register built-in pages unless the user has overridden them
         registered_slugs = {cls.slug for cls in self._pages}
         if "" not in registered_slugs:
@@ -216,6 +237,77 @@ class AdminPanel:
 
         items.sort(key=lambda item: (item.sort, item.label.lower(), item.href))
         return [item.__dict__ for item in items]
+
+    def _add_model_search_route(self) -> None:
+        """Register GET /_model_search — the portable combobox search endpoint.
+
+        The ``Select(model=MyModel)`` field template calls this endpoint to
+        populate its dropdown.  Only models that are attached to a registered
+        Resource are accessible, preventing enumeration of arbitrary models.
+
+        Query params:
+            model       — exact class name of the SQLModel (e.g. ``"Author"``)
+            q           — optional search string (ilike on label_field)
+            value_field — attr to use as the option value  (default: PK)
+            label_field — attr to use as the option label  (default: str())
+            per_page    — max rows returned                 (default: 200)
+        """
+        panel = self
+        from fastapi.responses import JSONResponse as _JSONResponse
+
+        @self._router.get("/_model_search", response_model=None, include_in_schema=False)
+        async def model_search_endpoint(
+            request: Request,
+            model: str,
+            q: str | None = None,
+            value_field: str = "",
+            label_field: str = "",
+            per_page: int = 200,
+        ) -> _JSONResponse:
+            if await panel._require_login(request):
+                return _JSONResponse([], status_code=401)
+
+            entry = panel._model_registry.get(model)
+            if entry is None:
+                # Model not registered — refuse silently to avoid leaking schema.
+                return _JSONResponse([])
+
+            model_cls, session_factory = entry
+
+            # Resolve the primary key column name.
+            try:
+                pk_cols = list(model_cls.__table__.primary_key.columns)
+                pk_name = pk_cols[0].key if pk_cols else "id"
+            except AttributeError:
+                pk_name = "id"
+
+            vf = value_field or pk_name
+            lf = label_field or ""
+
+            try:
+                from sqlalchemy import or_
+                from sqlmodel import select as _select
+
+                async with session_factory() as session:
+                    query = _select(model_cls)
+                    if q and lf and hasattr(model_cls, lf):
+                        query = query.where(
+                            getattr(model_cls, lf).ilike(f"%{q}%")
+                        )
+                    query = query.limit(per_page)
+                    records = (await session.exec(query)).all()
+
+                out: list[dict] = []
+                for rec in records:
+                    v = getattr(rec, vf, None)
+                    lbl = getattr(rec, lf, None) if lf else str(rec)
+                    out.append({
+                        "value": str(v)   if v   is not None else "",
+                        "label": str(lbl) if lbl is not None else "",
+                    })
+                return _JSONResponse(out)
+            except Exception:
+                return _JSONResponse([])
 
     def _add_login_routes(self) -> None:
         """Add GET /login, POST /login, and GET /logout routes."""

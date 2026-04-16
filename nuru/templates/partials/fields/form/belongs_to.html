@@ -1,28 +1,21 @@
-{% if field.model %}
 {#
-  ── Model-based relationship combobox ────────────────────────────────────────
-  Queries the model directly via the panel's GET /_model_search endpoint.
-  The nuruCombobox Alpine component is registered in layout.html's alpine:init
-  listener — nothing extra is needed here.
-
-  Field attrs:
-    field.model        — SQLModel class  (provides the model name in the URL)
-    field.value_field  — attr used as FK value  (default: 'id')
-    field.label_field  — attr shown as label    (default: str(record))
-    field.relationship — attr on *this* record for detail-view display only
+  Deprecated — kept for backward compatibility only.
+  BelongsTo() now returns a Select instance (field_type="select"),
+  so this template is only reached by legacy code. Delegate to select.html.
+#}
+{% include "partials/fields/form/select.html" %}
 
   Context variables (injected by macros/form_item.html):
+    field        — BelongsTo instance
     current      — current FK value (int / str / None)
     has_error    — bool
-    errors       — dict { field_key: message }
-    input_class  — pre-built Tailwind input classes
+    errors       — dict {field_key: message}
+    input_class  — pre-built Tailwind border/bg class string
     panel_prefix — URL prefix of this admin panel
 #}
-{% set _vf = field.value_field or 'id' %}
-{% set _lf = field.label_field or '' %}
-{% set _search_url = panel_prefix ~ '/_model_search?model=' ~ field.model.__name__ ~ '&value_field=' ~ _vf ~ ('&label_field=' ~ _lf if _lf else '') %}
+{% set _options_url = panel_prefix ~ '/' ~ field.resource_slug ~ '/options' %}
 
-<div x-data='nuruCombobox({{ current | tojson }}, {{ _search_url | tojson }}, {{ field.remote_search | tojson }})'
+<div x-data="belongsToField({{ current | string | tojson }}, {{ _options_url | tojson }})"
      @click.outside="open = false">
 
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
@@ -32,13 +25,15 @@
   {# Hidden input carries the FK value on form submit #}
   <input type="hidden" name="{{ field.key }}" :value="value">
 
+  {# ── Combobox wrapper ─────────────────────────────────── #}
   <div class="relative">
-    {# Loading skeleton — shown only during the initial fetch #}
-    <div x-show="initialising"
+
+    {# Loading skeleton #}
+    <div x-show="loading"
          class="animate-pulse h-9 w-full rounded-lg bg-secondary-100 dark:bg-secondary-700"></div>
 
     {# Search input + clear button #}
-    <div x-show="!initialising" x-cloak class="flex items-center relative">
+    <div x-show="!loading" x-cloak class="flex items-center relative">
       <input
         type="text"
         :value="displayText()"
@@ -52,17 +47,9 @@
         class="{{ input_class }} pr-8"
         style="--tw-ring-color: var(--color-primary-500);">
 
-      {# Spinner shown during remote fetches (not the initial load) #}
-      <div x-show="fetching"
-           class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-        <svg class="w-3.5 h-3.5 animate-spin text-secondary-400" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-        </svg>
-      </div>
-
+      {# Clear button — only shown when something is selected #}
       <button type="button"
-              x-show="value && !fetching"
+              x-show="value"
               @click.prevent="clear()"
               aria-label="Clear selection"
               class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary-400
@@ -98,7 +85,7 @@
     </div>
 
     {# "No results" nudge #}
-    <div x-show="open && !fetching && filtered.length === 0"
+    <div x-show="open && !loading && filtered.length === 0"
          x-cloak
          class="absolute left-0 right-0 top-full mt-1 z-40 rounded-lg shadow-lg border
                 border-secondary-200 dark:border-secondary-600 bg-white dark:bg-secondary-800
@@ -107,44 +94,10 @@
     </div>
   </div>
 
+  {# Validation error / help text #}
   {% if has_error %}
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
   {% elif field.help_text %}
     <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
   {% endif %}
 </div>
-
-{% else %}
-
-{# ── Static options — plain native <select> ──────────────────────────────── #}
-<div>
-  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-    {{ field.label }}
-    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
-  </label>
-  <select
-    name="{{ field.key }}"
-    {% if field.required %}required{% endif %}
-    {% if field.multiple %}multiple{% endif %}
-    class="{{ input_class }}"
-    style="--tw-ring-color: var(--color-primary-500);"
-  >
-    {% if not field.multiple %}<option value="">— Select —</option>{% endif %}
-    {% for opt in field.options %}
-      {% set opt_value = opt.value if opt is mapping else opt %}
-      {% set opt_label = opt.label if opt is mapping else opt %}
-      {% set is_selected = (current == opt_value) if not field.multiple
-                           else (opt_value in current) %}
-      <option value="{{ opt_value }}" {% if is_selected %}selected{% endif %}>
-        {{ opt_label }}
-      </option>
-    {% endfor %}
-  </select>
-  {% if has_error %}
-    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
-  {% elif field.help_text %}
-    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
-  {% endif %}
-</div>
-
-{% endif %}
