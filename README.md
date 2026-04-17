@@ -433,20 +433,68 @@ from starlette.staticfiles import StaticFiles
 app.mount("/admin/static", StaticFiles(directory="my_app/static"), name="admin-static")
 ```
 
+## Forms API
+
+### TextInput — the canonical single-line input
+
+`TextInput` is the modern base class for all single-line text inputs.  `Email`
+and `Password` inherit from it; `Text` is kept as a backwards-compatible alias.
+
+```python
+from nuru.forms import TextInput
+
+# Fluent factory — returns the correct concrete type
+TextInput.make("email").email().label("Email").required().placeholder("you@example.com")
+TextInput.make("secret").password().label("Password").required()
+
+# In-place fluent style (also works)
+TextInput("username").label("Username").max_length(64).required()
+```
+
+`Field.make()` is available on **every** field class (it lives on the base
+`Field`).  Calling `.email()` or `.password()` on a factory-created instance
+returns a concrete `Email` / `Password` instance with all fluent settings copied
+over.
+
+### Server-side field validation
+
+Nuru validates every form submission on the server before calling
+`save_record()`.  Validation errors are returned as field-level messages inside
+the existing form UI (HTTP 422, no separate error page).
+
+Validators are declared fluently on each `Field`:
+
+| Validator | How to enable | What it checks |
+|---|---|---|
+| required | `.required()` | Non-empty value present |
+| max_length | `.max_length(n)` | String length ≤ n characters |
+| email | `.email()` (or `add_validator("email")`) | Basic RFC-style `user@host.tld` pattern |
+| url | `.url()` (or `add_validator("url")`) | Has scheme + netloc via `urlparse` |
+| numeric | `add_validator("numeric")` | Value is float-coercible |
+| integer | `add_validator("integer")` | Value is int-coercible (no decimals) |
+
+The same validation also fires for **Action modal fields** (`Action.form_fields`)
+before the action handler is called.
+
 ## What's shipped
 
 - ✅ **Core CRUD** — tables, forms, detail views
 - ✅ **Typed columns** — `Text`, `Badge`, `Currency`, `DateTime`, `Boolean`
-- ✅ **Typed fields** — `Text`, `Email`, `Password`, `Number`, `Textarea`, `Select`, `Checkbox`, `Date`, `Time`, `Hidden`
+- ✅ **Typed fields** — `TextInput` (+ legacy `Text`), `Email`, `Password`, `Number`, `Textarea`, `Select`, `Checkbox`, `Date`, `Time`, `Hidden`, `DatePicker`, `DateTimePicker`, `TimePicker`
+- ✅ **Field.make() factory** — fluent factory with `.email()`, `.password()`, `.url()`, `.numeric()`, `.integer()` convenience methods
+- ✅ **Server-side validation** — required, max_length, email, url, numeric, integer; field-level errors in the form UI
+- ✅ **Alpine.js 3.x** — all client-side interactivity (sidebar, theme toggle, dialog, combobox) powered by Alpine; plain JS removed
 - ✅ **HTMX interactions** — live search, sort, pagination without page reloads
 - ✅ **Actions** — row actions, list actions, form actions, confirm modals, action forms
 - ✅ **SQLModel integration** — auto-CRUD and auto-generated columns/fields
 - ✅ **Auth** — signed-cookie session, `SimpleAuthBackend`, `DatabaseAuthBackend`, pluggable `AuthBackend`
-- ✅ **Roles & Permissions** — `Permission`, `Role`, `RolePermission`, `UserRole` tables; `db_permission_checker`; `panel.sync_permissions()`
+- ✅ **Roles & Permissions** — `Permission`, `Role`, `RolePermission`, `UserRole` tables; `db_permission_checker`; `panel.sync_permissions()`; role/permission assignment API
+- ✅ **Role management UI** — permission checkbox grid and user-role assignment directly from the admin panel
 - ✅ **Dark mode** — built-in, localStorage-persisted
 - ✅ **Responsive** — mobile sidebar, Tailwind CSS
+- ✅ **Components** — `Radio`, `RadioButtons`, `Toggle`, `Timepicker` via `nuru.components`
 
 ## What's coming
 
-- **Phase 5** — Dashboard widgets: stat cards, line charts, pie charts
-- **Phase 6** — Role management UI (permission checkbox grid, user-role assignment from admin panel)
+- **Dashboard widgets** — stat cards, line charts, pie charts
+
