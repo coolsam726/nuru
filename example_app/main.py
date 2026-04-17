@@ -865,6 +865,7 @@ class AuthorResource(Resource):
     options_label_field = "name"
 
     table_columns = [
+        columns.Image("avatar", "Photo", url_prefix="/admin/uploads"),
         columns.Text("name", "Name", sortable=True),
         columns.Text("nationality", "Nationality", sortable=True),
         columns.Text("email", "Email"),

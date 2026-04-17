@@ -98,3 +98,38 @@ class Boolean(Column):
 
     def is_true(self, value: Any) -> bool:
         return bool(value)
+
+
+@dataclass
+class Image(Column):
+    """Render a stored file server-ID (relative path) as a circular thumbnail.
+
+    Args:
+        url_prefix: URL prefix that, combined with the stored value, gives the
+            full public URL of the image.  Defaults to the empty string — in
+            that case you must pass an absolute URL or configure the prefix
+            at build time.
+        size: Tailwind size token applied to ``w-*`` and ``h-*`` (default ``8``
+            → 32 px).
+        rounded: CSS class for the shape (default ``rounded-full`` = circle).
+        placeholder_icon: SVG path data to use when no image is stored.
+    """
+    url_prefix: str = ""
+    size: str = "8"
+    rounded: str = "rounded-full"
+    # Default placeholder: a simple person silhouette path
+    placeholder_icon: str = (
+        "M16 7a4 4 0 11-8 0 4 4 0 018 0z"
+        "M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+    )
+
+    def get_url(self, value: Any) -> str | None:
+        """Return the absolute URL for *value*, or None when empty."""
+        if not value or str(value).strip() == "":
+            return None
+        v = str(value).strip()
+        if v.startswith(("http://", "https://", "/")):
+            return v
+        prefix = self.url_prefix.rstrip("/")
+        return f"{prefix}/{v}"
+
