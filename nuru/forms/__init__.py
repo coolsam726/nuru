@@ -22,6 +22,7 @@ from .timepicker import TimePicker
 from .hidden import Hidden
 from .section import Section, Fieldset
 from .file_upload import FileUpload
+from .image_entry import ImageEntry
 
 __all__ = [
     "Field",
@@ -41,4 +42,5 @@ __all__ = [
     "Section",
     "Fieldset",
     "FileUpload",
+    "ImageEntry",
 ]

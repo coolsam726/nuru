@@ -102,7 +102,7 @@ class Author(SQLModel, table=True):
     nationality: Optional[str] = None
     birth_date: Optional[date] = None
     bio: Optional[str] = None
-    avatar: Optional[str] = None   # FilePond server ID (relative path under uploads/)
+    avatar: Optional[str] = None  # FilePond server ID (relative path under uploads/)
     active: bool = True
     books: list["Book"] = Relationship(
         back_populates="author"
@@ -157,7 +157,7 @@ class Member(SQLModel, table=True):
     joined_on: Optional[date] = None
     active: bool = True
     notes: Optional[str] = None
-    avatar: Optional[str] = None   # FilePond server ID (relative path under uploads/)
+    avatar: Optional[str] = None  # FilePond server ID (relative path under uploads/)
     checkouts: list["Checkout"] = Relationship(
         back_populates="member"
     )  # for back_populates in Checkout.member_id
@@ -865,7 +865,12 @@ class AuthorResource(Resource):
     options_label_field = "name"
 
     table_columns = [
-        columns.Image("avatar", "Photo", url_prefix="/admin/uploads", img_class='size-10 rounded-lg object-cover p-0.5'),
+        columns.Image(
+            "avatar",
+            "Photo",
+            url_prefix="uploads",
+            img_class='size-10 rounded-lg object-cover p-0.5'
+        ),
         columns.Text("name", "Name", sortable=True),
         columns.Text("nationality", "Nationality", sortable=True),
         columns.Text("email", "Email"),
@@ -913,10 +918,11 @@ class AuthorResource(Resource):
                 .label("Author photo")
                 .image()
                 .directory("authors")
-                .accept_file_types(["image/jpeg", "image/png", "image/webp"])
+                .accept_file_types(["image/jpeg", "image/png", "image/webp", "image/svg"])
                 .max_file_size(5 * 1024 * 1024)
                 .image_crop_aspect_ratio("1:1")
                 .col_span("full")
+                .input_class("w-20 h-20")
                 .help_text("Square photo works best. Max 5 MB (JPEG, PNG, WebP)."),
             ],
             title="Photo",
@@ -927,6 +933,11 @@ class AuthorResource(Resource):
     detail_fields = [
         forms.Section(
             [
+                forms.ImageEntry("avatar")
+                    .label("Photo")
+                    .avatar()
+                    .url_prefix("/admin/uploads")
+                    .col_span("full"),
                 forms.TextInput.make("name").label("Full name"),
                 forms.TextInput.make("email").email().label("Email"),
                 forms.TextInput.make("nationality").label("Nationality"),
@@ -1569,7 +1580,8 @@ class CheckoutResource(Resource):
                 .accept_file_types(["application/pdf", "image/jpeg", "image/png"])
                 .max_file_size(10 * 1024 * 1024)
                 .col_span("full")
-                .help_text("Attach a scanned returns slip, damage report, or agreement (PDF/image, max 10 MB). Optional."),
+                .help_text(
+                    "Attach a scanned returns slip, damage report, or agreement (PDF/image, max 10 MB). Optional."),
             ],
             title="Attachment",
             col_span="full",
@@ -2008,14 +2020,14 @@ class ReportsPage(Page):
         }
 
         kpi_fields = [
-            forms.TextInput.make("total_books", "Books in catalogue"),
-            forms.TextInput.make("available_books", "Currently available"),
-            forms.TextInput.make("total_members", "Registered members"),
-            forms.TextInput.make("active_members", "Active members"),
-            forms.TextInput.make("issued_now", "Books currently out"),
-            forms.TextInput.make("overdue", "Overdue checkouts"),
-            forms.TextInput.make("total_fines", "Total fines (KES)"),
-            forms.TextInput.make("unpaid_fines", "Unpaid fines (KES)"),
+            forms.TextInput.make("total_books").label("Total books"),
+            forms.TextInput.make("available_books").label("Currently available"),
+            forms.TextInput.make("total_members").label("Registered members"),
+            forms.TextInput.make("active_members").label("Active members"),
+            forms.TextInput.make("issued_now").label("Books currently out"),
+            forms.TextInput.make("overdue").label("Overdue checkouts"),
+            forms.TextInput.make("total_fines").label("Total fines (KES)"),
+            forms.TextInput.make("unpaid_fines").label("Unpaid fines (KES)"),
         ]
 
         recent_checkouts = sorted(all_checkouts, key=lambda c: c.id or 0, reverse=True)[
@@ -2041,14 +2053,9 @@ class ReportsPage(Page):
         ]
 
         note_fields = [
-            forms.TextInput.make("author", "Your name", required=True, placeholder="Jane Doe"),
-            forms.Textarea(
-                "message",
-                "Note",
-                required=True,
-                col_span="full",
-                placeholder="Write a quick message for staff...",
-            ),
+            forms.TextInput("author").label("Your name").required().placeholder("Jane Doe"),
+            forms.Textarea("message").label("Note")
+            .required().col_span("full").placeholder("Write a quick message for staff..."),
         ]
         note_columns = [
             columns.Text("author", "Staff member"),
@@ -2127,10 +2134,9 @@ admin_panel.register(StaffUserResource)
 admin_panel.register(RoleResource)
 admin_panel.mount(app)
 
-
-@app.get("/")
-async def root():
-    return {
-        "app": "Kibrary — Nuru Library Demo",
-        "admin": "/admin  (admin@kibrary.org / secret)",
-    }
+# @app.get("/")
+# async def root():
+#     return {
+#         "app": "Kibrary — Nuru Library Demo",
+#         "admin": "/admin  (admin@kibrary.org / secret)",
+#     }

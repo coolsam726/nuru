@@ -1,0 +1,65 @@
+{#
+  Detail partial for file_upload fields.
+  - If the field has _image_preview=True and the stored value looks like an image, render a thumbnail.
+  - Otherwise show the filename as a download link (or plain text).
+#}
+{% set _is_image = field._image_preview is defined and field._image_preview %}
+{% set _parsed = field.parse_value(value) if value else [] %}
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">{{ field.get_label() }}</dt>
+  <dd>
+    {% if _parsed %}
+      {% for _sid in _parsed %}
+        {% if _is_image %}
+          <img src="/admin/uploads/{{ _sid }}"
+               alt="{{ field.get_label() }}"
+               class="w-24 h-24 rounded-lg object-cover ring-1 ring-secondary-200 dark:ring-secondary-600 mb-1">
+        {% else %}
+          <a href="/admin/uploads/{{ _sid }}"
+             target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+            </svg>
+            {{ _sid.split('/')[-1] }}
+          </a>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <span class="text-secondary-400 dark:text-secondary-500 italic text-sm">—</span>
+    {% endif %}
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
+  <dd class="mt-1 sm:mt-0 sm:col-span-2">
+    {% if _parsed %}
+      <div class="flex flex-wrap gap-2">
+        {% for _sid in _parsed %}
+          {% if _is_image %}
+            <img src="/admin/uploads/{{ _sid }}"
+                 alt="{{ field.get_label() }}"
+                 class="w-24 h-24 rounded-lg object-cover ring-1 ring-secondary-200 dark:ring-secondary-600">
+          {% else %}
+            <a href="/admin/uploads/{{ _sid }}"
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+              </svg>
+              {{ _sid.split('/')[-1] }}
+            </a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <span class="text-secondary-400 dark:text-secondary-500 italic">—</span>
+    {% endif %}
+  </dd>
+</div>
+{% endif %}
+

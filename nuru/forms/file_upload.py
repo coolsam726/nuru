@@ -235,5 +235,7 @@ class FileUpload(Field):
             cfg["allowReorder"] = True
         if not self._can_preview:
             cfg["allowImagePreview"] = False
+        else:
+            cfg["allowImagePreview"] = True
         return cfg
 
