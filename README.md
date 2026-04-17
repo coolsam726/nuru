@@ -498,3 +498,54 @@ before the action handler is called.
 
 - **Dashboard widgets** — stat cards, line charts, pie charts
 
+## Feature plan (roadmap)
+
+The following is a prioritized plan for the next phases of Nuru. It lists features, a short design summary for each, and recommended first steps so we can make incremental, testable progress.
+
+1) Fields (high priority)
+   - File upload (`nuru/forms/file.py`) — pluggable storage backend, preview, direct (AJAX) and form-submit modes. Implement a simple `LocalFileBackend` and a `{prefix}/_upload` endpoint. Store file reference (path/URL) on the record and provide secure preview URLs.
+   - Image upload — build on `File`, add optional thumbnail generation (Pillow optional dependency) and image previews.
+   - Repeater — repeatable sub-forms; recommend JSON-backed client state (Alpine) to simplify server parsing and validation.
+   - CheckboxList / Multi-select — renderable as either native `<select multiple>` or checkbox groups, returning lists of values.
+   - Markdown & Rich text editors — thin integrations (Markdown textarea + live preview; optional Quill/Tiptap integration for rich HTML output). Provide server-side sanitization hooks.
+
+2) Reactivity (client + server)
+   - Alpine-powered reactive form store: expose `form` as an Alpine object (`x-data`) so fields can bind via `x-model="form[key]"`.
+   - Declarative field-level rules: `depends_on`, `visible_when`, `compute`, `set_on_change`. These render as Alpine bindings (x-show, x-bind etc.) for immediate UX and are mirrored with lightweight server-side checks to prevent bypass.
+   - Server mirror: simple rule DSL (tuples or callables) enforced during `Resource._validate_fields` to ensure hidden/disabled fields cannot be abused.
+
+3) Actions & UX improvements
+   - Action modal validation UX — return JSON `{errors: {...}}` (HTTP 422) on validation failure and display inline errors inside the Alpine modal instead of rendering a full error page.
+   - Support for long-running action handlers (background job hooks, optional task queue integration).
+
+4) Widgets & Dashboard
+   - Widget API for stat cards and charts, pluggable chart adapters (default: Chart.js via CDN). Widgets register with the panel and render on a dashboard grid.
+
+5) Polishing, Tests & Docs
+   - Add unit and integration tests for all new fields and validation flows (examples under `tests/`).
+   - Expand docs with examples showing File/Image uploads, Repeater, and reactive field rules.
+
+Recommended first task
+
+Start with the `File` upload field. It unlocks image uploads and establishes patterns for storage, previews, and validation.
+
+Minimal implementation checklist for `File`:
+- Add `nuru/forms/file.py` with `File` field class (accept, multiple, max_size).
+- Add `nuru/storage/local.py` `LocalFileBackend` implementing `save_upload(fileobj, filename) -> dict(url,path,meta)`.
+- Expose `AdminPanel(upload_backend=...)` option and default to `LocalFileBackend` with a safe project-local uploads directory.
+- Add an upload endpoint at `/{prefix}/_upload` that accepts multipart uploads and returns JSON `{url,path,meta}` for direct/AJAX uploads.
+- Add `components/partials/fields/form/file.html` — Alpine-powered preview and optional direct upload integration.
+- Update `resource.parse_form` to detect `UploadFile` objects and call `panel.upload_backend.save_upload` before validation/saving.
+- Add tests: `tests/test_file_field.py` for form-submit and direct upload, and validation (content type, max size).
+
+Timeline (rough)
+- File upload (basic) + tests: 1–2 days
+- Image upload + thumbnails: 1 day (+ Pillow)
+- Repeater: 1–2 days
+- Reactive rules + server mirror: 2–3 days
+
+How I can proceed
+
+If you'd like I can implement the `File` field now (local-only backend to start). Confirm if you want the uploads directory to be inside the project (default) or point at a specific absolute path. I will then create the files, run tests, and push the changes to the current branch.
+
+
