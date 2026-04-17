@@ -11,8 +11,7 @@
 {%- endmacro %}
 {% if in_section %}
 <div class="{{ span_class }} px-5 py-4">
-  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">{{ field.label
-    }}</dt>
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">{{ field.get_label() }}</dt>
   <dd>
     {% set vals = value if (value is iterable and value is not string) else ([value] if value else []) %}
     <div class="flex flex-wrap gap-1.5">
@@ -24,7 +23,7 @@
 </div>
 {% else %}
 <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
-  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.label }}</dt>
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
   <dd class="mt-1 sm:mt-0 sm:col-span-2">
     {% set vals = value if (value is iterable and value is not string) else ([value] if value else []) %}
     <div class="flex flex-wrap gap-1.5">

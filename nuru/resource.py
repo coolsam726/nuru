@@ -548,12 +548,22 @@ class Resource:
         submitted = dict(form_data)
 
         for field in self._flat_form_fields:
-            key = field.key
-            if field.field_type == "checkbox":
+            key = field.get_key()
+            if field.get_field_type() == "checkbox":
                 data[key] = submitted.get(key) == "true"
-            elif field.field_type == "checkbox_group":
+            elif field.get_field_type() == "checkbox_group":
                 # Multi-value: collect all submitted values for this key.
                 data[key] = form_data.getlist(key)
+            elif field.get_field_type() == "datetimepicker":
+                # Submits as two keys: {key}_date and {key}_time.
+                date_val = submitted.get(f"{key}_date", "") or ""
+                time_val = submitted.get(f"{key}_time", "") or ""
+                if date_val and time_val:
+                    data[key] = f"{date_val} {time_val}"
+                elif date_val:
+                    data[key] = date_val
+                else:
+                    data[key] = None
             elif key in submitted:
                 if key.startswith("_"):
                     continue
@@ -569,8 +579,8 @@ class Resource:
         """Flatten form_fields, expanding any Section containers into their fields."""
         flat = []
         for item in self.form_fields:
-            if getattr(item, "is_section", False):
-                flat.extend(item.fields)
+            if item.is_section_field():
+                flat.extend(item.get_fields())
             else:
                 flat.append(item)
         return flat

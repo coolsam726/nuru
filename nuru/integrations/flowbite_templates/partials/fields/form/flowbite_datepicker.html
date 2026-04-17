@@ -22,7 +22,7 @@
 
 <div>
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-    {{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+    {{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
   </label>
 
   <div class="relative">
@@ -36,18 +36,18 @@
 
     <input
       datepicker
-      datepicker-format="{{ field.date_format }}"
-      {% if field.autohide %}datepicker-autohide{% endif %}
-      {% if field.buttons %}datepicker-buttons{% endif %}
-      {% if field.orientation %}datepicker-orientation="{{ field.orientation }}"{% endif %}
-      {% if field.title %}datepicker-title="{{ field.title }}"{% endif %}
-      {% if field.min_date %}datepicker-min-date="{{ field.min_date }}"{% endif %}
-      {% if field.max_date %}datepicker-max-date="{{ field.max_date }}"{% endif %}
+      datepicker-format="{{ field.get_date_format() }}"
+      {% if field.is_autohide() %}datepicker-autohide{% endif %}
+      {% if field.has_buttons() %}datepicker-buttons{% endif %}
+      {% if field.get_orientation() %}datepicker-orientation="{{ field.get_orientation() }}"{% endif %}
+      {% if field.get_picker_title() %}datepicker-title="{{ field.get_picker_title() }}"{% endif %}
+      {% if field.get_min_date() %}datepicker-min-date="{{ field.get_min_date() }}"{% endif %}
+      {% if field.get_max_date() %}datepicker-max-date="{{ field.get_max_date() }}"{% endif %}
       type="text"
-      name="{{ field.key }}"
+      name="{{ field.get_key() }}"
       value="{{ _current_val }}"
-      placeholder="{{ field.placeholder if field.placeholder else field.date_format }}"
-      {% if field.required %}required{% endif %}
+      placeholder="{{ field.get_placeholder() if field.get_placeholder() else field.get_date_format() }}"
+      {% if field.is_required() %}required{% endif %}
       autocomplete="off"
       class="{{ input_class }} ps-9"
       style="--tw-ring-color: var(--color-primary-500);"
@@ -55,8 +55,8 @@
   </div>
 
   {% if has_error %}
-    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
-  {% elif field.help_text %}
-    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
   {% endif %}
 </div>

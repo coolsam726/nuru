@@ -1,13 +1,13 @@
 {# Detail rendering for Fieldset — bordered box with floating legend #}
 {% from "partials/macros/detail_item.html" import render_item with context %}
-{% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
-{% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
-<fieldset class="{{ _section_span }} border border-secondary-200 dark:border-secondary-700 rounded-xl overflow-hidden {{ item.css_class }}">
-  {% if item.title %}
-  <legend class="ml-6 px-2 text-sm font-medium text-secondary-600 dark:text-secondary-300">{{ item.title }}</legend>
+{% set _section_span = _span_map[item.get_col_span()] if item.get_col_span() in _span_map else "" %}
+{% set cols_class = _cols_map[item.get_cols()] if item.get_cols() in _cols_map else "grid-cols-1" %}
+<fieldset class="{{ _section_span }} border border-secondary-200 dark:border-secondary-700 rounded-xl overflow-hidden {{ item.get_css_class() }}">
+  {% if item.get_title() %}
+  <legend class="ml-6 px-2 text-sm font-medium text-secondary-600 dark:text-secondary-300">{{ item.get_title() }}</legend>
   {% endif %}
-  {% if item.description %}<p class="px-6 text-xs text-secondary-400 dark:text-secondary-500 mb-2">{{ item.description }}</p>{% endif %}
+  {% if item.get_description() %}<p class="px-6 text-xs text-secondary-400 dark:text-secondary-500 mb-2">{{ item.get_description() }}</p>{% endif %}
   <div class="grid {{ cols_class }} gap-0 divide-x divide-secondary-100 dark:divide-secondary-700">
-    {% for child in item.fields %}{{ render_item(child, inside_section=True) }}{% endfor %}
+    {% for child in item.get_fields() %}{{ render_item(child, inside_section=True) }}{% endfor %}
   </div>
 </fieldset>

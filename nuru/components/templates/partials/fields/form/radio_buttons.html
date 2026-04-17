@@ -1,6 +1,6 @@
 {# Flowbite-style selectable radio cards with optional title/description/icon/image #}
 <div>
-  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
 
   <ul class="select-none flex flex-col gap-4 md:flex-row md:flex-wrap md:items-stretch w-full">
     {% for opt in field.options %}
@@ -26,7 +26,7 @@
 
       {% set input_id = field.key ~ "-" ~ loop.index0 %}
       <li class="w-full md:flex-1 md:min-w-[220px]">
-        <input type="radio" id="{{ input_id }}" name="{{ field.key }}" value="{{ value }}" class="hidden peer" {% if current == value %}checked{% endif %} {% if field.required %}required{% endif %}>
+        <input type="radio" id="{{ input_id }}" name="{{ field.key }}" value="{{ value }}" class="hidden peer" {% if current == value %}checked{% endif %} {% if field.is_required() %}required{% endif %}>
         <label for="{{ input_id }}" class="flex flex-col h-full items-start justify-between w-full p-5 text-body bg-neutral-primary-soft border border-secondary-200 rounded-base cursor-pointer peer-checked:hover:bg-brand-softer peer-checked:border-brand-subtle peer-checked:bg-brand-softer hover:bg-neutral-secondary-medium peer-checked:text-fg-brand-strong">
           <div class="flex items-center gap-3 flex-wrap w-full">
             {% if icon %}
@@ -48,7 +48,7 @@
 
   {% if has_error %}
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
-  {% elif field.help_text %}
-    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
   {% endif %}
 </div>

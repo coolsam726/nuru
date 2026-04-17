@@ -1,15 +1,15 @@
 {# Detail rendering for flat Section — no card chrome, optional title only #}
 {% from "partials/macros/detail_item.html" import render_item with context %}
-{% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
-{% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
-<div class="{{ _section_span }} {{ item.css_class }}">
-  {% if item.title %}
+{% set _section_span = _span_map[item.get_col_span()] if item.get_col_span() in _span_map else "" %}
+{% set cols_class = _cols_map[item.get_cols()] if item.get_cols() in _cols_map else "grid-cols-1" %}
+<div class="{{ _section_span }} {{ item.get_css_class() }}">
+  {% if item.get_title() %}
   <div class="mb-3">
-    <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-200">{{ item.title }}</h3>
-    {% if item.description %}<p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">{{ item.description }}</p>{% endif %}
+    <h3 class="text-sm font-semibold text-secondary-700 dark:text-secondary-200">{{ item.get_title() }}</h3>
+    {% if item.get_description() %}<p class="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">{{ item.get_description() }}</p>{% endif %}
   </div>
   {% endif %}
   <div class="grid {{ cols_class }} gap-5">
-    {% for child in item.fields %}{{ render_item(child, inside_section=True) }}{% endfor %}
+    {% for child in item.get_fields() %}{{ render_item(child, inside_section=True) }}{% endfor %}
   </div>
 </div>

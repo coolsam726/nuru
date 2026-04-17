@@ -1,6 +1,6 @@
 {% if in_section %}
 <div class="{{ span_class }} px-5 py-4">
-  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.label }}</dt>
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.get_label() }}</dt>
   <dd class="text-sm mt-0.5">
     {% if value %}
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
@@ -15,7 +15,7 @@
 </div>
 {% else %}
 <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
-  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.label }}</dt>
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
   <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm">
     {% if value %}
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium

@@ -10,19 +10,19 @@
     {{ render_item(item) }}
 #}
 {% macro render_item(item) %}
-  {% if item.is_section %}
-    {% include ["partials/sections/form/" + item.section_type + ".html",
+  {% if item.is_section_field() %}
+    {% include ["partials/sections/form/" + item.get_section_type() + ".html",
                 "partials/sections/form/styled.html"] %}
-  {% elif item.field_type != 'hidden' %}
+  {% elif item.get_field_type() != 'hidden' %}
     {# ── Plain field ─────────────────────────────────────────── #}
     {% set field = item %}
-    {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
-    {% set current = record | field_value(field.key) if record else '' %}
-    {% set has_error = errors and field.key in errors %}
+    {% set span_class = _span_map[field.get_col_span()] if field.get_col_span() in _span_map else "" %}
+    {% set current = record | field_value(field.get_key()) if record else '' %}
+    {% set has_error = errors and field.get_key() in errors %}
     {% set base_input = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent dark:bg-secondary-700 dark:text-secondary-100 dark:placeholder-secondary-400 " %}
     {% set input_class = base_input + ("border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20" if has_error else "border-secondary-200 dark:border-secondary-600") %}
-    <div class="{{ span_class }} {{ field.css_class }}">
-      {% include ["partials/fields/form/" + field.field_type + ".html", "partials/fields/form/input.html"] %}
+    <div class="{{ span_class }} {{ field.get_css_class() }}">
+      {% include ["partials/fields/form/" + field.get_field_type() + ".html", "partials/fields/form/input.html"] %}
     </div>
   {% endif %}
 {% endmacro %}

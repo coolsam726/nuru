@@ -579,7 +579,10 @@ class AdminPanel:
         try:
             if resource is not None and hasattr(resource, "_flat_form_fields"):
                 for field in resource._flat_form_fields:
-                    opts = getattr(field, "options", None)
+                    getter = getattr(field, "get_options", None)
+                    if getter is None:
+                        continue
+                    opts = getter()
                     if callable(opts):
                         try:
                             sig = inspect.signature(opts)
@@ -595,8 +598,8 @@ class AdminPanel:
                         # skip awaitables (we don't run async callables here)
                         if hasattr(new_opts, "__await__"):
                             continue
-                        originals.append((field, opts))
-                        field.options = new_opts
+                        originals.append((field, opts))  # save original callable
+                        field.options(new_opts)
 
             return template.render(
                 current_user=user,
@@ -609,7 +612,7 @@ class AdminPanel:
             # restore any mutated options
             for field, orig in originals:
                 try:
-                    field.options = orig
+                    field.options(orig)
                 except Exception:
                     pass
 

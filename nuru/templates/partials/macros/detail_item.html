@@ -14,23 +14,23 @@
     {{ render_item(item) }}
 #}
 {% macro render_item(item, inside_section=False) %}
-  {% if item.is_section %}
-    {% include ["partials/sections/detail/" + item.section_type + ".html",
+  {% if item.is_section_field() %}
+    {% include ["partials/sections/detail/" + item.get_section_type() + ".html",
                 "partials/sections/detail/styled.html"] %}
-  {% elif item.field_type != 'hidden' %}
+  {% elif item.get_field_type() != 'hidden' %}
     {# ── Plain field ─────────────────────────────────────────── #}
     {% set field = item %}
-    {% set value = record | field_value(field.key) %}
-    {% set span_class = _span_map[field.col_span] if field.col_span in _span_map else "" %}
+    {% set value = record | field_value(field.get_key()) %}
+    {% set span_class = _span_map[field.get_col_span()] if field.get_col_span() in _span_map else "" %}
     {% if inside_section %}
       {# No wrapper — the partial controls its own layout #}
       {% set in_section = True %}
-      {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+      {% include ["partials/fields/detail/" + field.get_field_type() + ".html", "partials/fields/detail/input.html"] %}
     {% else %}
       {# Top-level: wrap in a grid-cell div #}
       {% set in_section = _bare_in_section %}
-      <div class="{{ span_class }} {{ field.css_class }}">
-        {% include ["partials/fields/detail/" + field.field_type + ".html", "partials/fields/detail/input.html"] %}
+      <div class="{{ span_class }} {{ field.get_css_class() }}">
+        {% include ["partials/fields/detail/" + field.get_field_type() + ".html", "partials/fields/detail/input.html"] %}
       </div>
     {% endif %}
   {% endif %}

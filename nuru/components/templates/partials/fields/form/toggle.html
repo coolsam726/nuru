@@ -1,5 +1,5 @@
 <div>
-  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.label }}{% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
 
   <label class="inline-flex items-center cursor-pointer">
     <input type="checkbox" name="{{ field.key }}" value="1" {% if current %}checked{% endif %} class="sr-only peer">
@@ -9,7 +9,7 @@
 
   {% if has_error %}
     <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
-  {% elif field.help_text %}
-    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.help_text }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
   {% endif %}
 </div>
