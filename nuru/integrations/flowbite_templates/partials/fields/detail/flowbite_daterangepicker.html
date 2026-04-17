@@ -2,8 +2,8 @@
 {% set _start = '' %}
 {% set _end   = '' %}
 {% if value is mapping %}
-  {% set _start = value.get(field.key ~ '_start', '') | string %}
-  {% set _end   = value.get(field.key ~ '_end',   '') | string %}
+  {% set _start = value.get(field.get_key() ~ '_start', '') | string %}
+  {% set _end   = value.get(field.get_key() ~ '_end',   '') | string %}
 {% elif value is not none %}
   {% set _start = value | string %}
 {% endif %}
@@ -12,7 +12,7 @@
 
 {% if in_section %}
 <div class="{{ span_class }} px-5 py-4">
-  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.label }}</dt>
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.get_label() }}</dt>
   <dd class="text-sm text-secondary-900 dark:text-secondary-100">
     {% if _start or _end %}
       {{ _start or '?' }} → {{ _end or '?' }}
@@ -23,7 +23,7 @@
 </div>
 {% else %}
 <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
-  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.label }}</dt>
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
   <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-secondary-900 dark:text-secondary-100">
     {% if _start or _end %}
       {{ _start or '?' }} → {{ _end or '?' }}

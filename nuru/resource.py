@@ -219,6 +219,80 @@ class Resource:
         except (KeyError, TypeError, ValueError):
             return id
 
+    def _validate_fields(self, fields: list, data: dict) -> dict:
+        """Validate a mapping of submitted form data against a list of Field
+        instances. Returns a dict mapping field keys to error messages. Empty
+        dict means no errors.
+        """
+        import re
+        from urllib.parse import urlparse
+
+        errors: dict = {}
+
+        for field in fields:
+            key = field.get_key()
+            val = data.get(key)
+
+            # Required check
+            if field.is_required():
+                if val is None or (isinstance(val, str) and val.strip() == ""):
+                    errors[key] = "This field is required."
+                    continue
+
+            # Skip further checks on empty/None values
+            if val is None or (isinstance(val, str) and val == ""):
+                continue
+
+            # max_length
+            max_len = getattr(field, "get_max_length", lambda: None)()
+            if max_len is not None and isinstance(val, str) and len(val) > max_len:
+                errors[key] = f"Must be at most {max_len} characters."
+                continue
+
+            # Validator keywords
+            validators = list(getattr(field, "get_validators", lambda: [])() or [])
+
+            # Email
+            if "email" in validators:
+                # Basic email pattern — server-side check (not exhaustive)
+                if not isinstance(val, str) or re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", val) is None:
+                    errors[key] = "Enter a valid email address."
+                    continue
+
+            # URL
+            if "url" in validators:
+                try:
+                    p = urlparse(val)
+                    if not p.scheme or not p.netloc:
+                        errors[key] = "Enter a valid URL."
+                        continue
+                except Exception:
+                    errors[key] = "Enter a valid URL."
+                    continue
+
+            # Numeric / integer
+            if "numeric" in validators or field.get_field_type() == "number":
+                try:
+                    float(val)
+                except Exception:
+                    errors[key] = "Enter a numeric value."
+                    continue
+
+            if "integer" in validators:
+                try:
+                    if isinstance(val, str) and val.strip() == "":
+                        raise ValueError()
+                    intval = int(float(val))
+                    if float(intval) != float(val):
+                        # e.g. '3.5' -> not integer
+                        errors[key] = "Enter an integer value."
+                        continue
+                except Exception:
+                    errors[key] = "Enter an integer value."
+                    continue
+
+        return errors
+
     # ------------------------------------------------------------------
     # Internal setup
     # ------------------------------------------------------------------
@@ -548,12 +622,22 @@ class Resource:
         submitted = dict(form_data)
 
         for field in self._flat_form_fields:
-            key = field.key
-            if field.field_type == "checkbox":
+            key = field.get_key()
+            if field.get_field_type() == "checkbox":
                 data[key] = submitted.get(key) == "true"
-            elif field.field_type == "checkbox_group":
+            elif field.get_field_type() == "checkbox_group":
                 # Multi-value: collect all submitted values for this key.
                 data[key] = form_data.getlist(key)
+            elif field.get_field_type() == "datetimepicker":
+                # Submits as two keys: {key}_date and {key}_time.
+                date_val = submitted.get(f"{key}_date", "") or ""
+                time_val = submitted.get(f"{key}_time", "") or ""
+                if date_val and time_val:
+                    data[key] = f"{date_val} {time_val}"
+                elif date_val:
+                    data[key] = date_val
+                else:
+                    data[key] = None
             elif key in submitted:
                 if key.startswith("_"):
                     continue
@@ -569,8 +653,8 @@ class Resource:
         """Flatten form_fields, expanding any Section containers into their fields."""
         flat = []
         for item in self.form_fields:
-            if getattr(item, "is_section", False):
-                flat.extend(item.fields)
+            if item.is_section_field():
+                flat.extend(item.get_fields())
             else:
                 flat.append(item)
         return flat
@@ -697,6 +781,16 @@ class Resource:
                 return await resource.panel._render_error(403, "Access Denied", "You don't have permission to create records here.", request=request)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
+            # Server-side validation
+            errors = resource._validate_fields(resource._flat_form_fields, data)
+            if errors:
+                html = resource.panel._render("form.html", {
+                    "resource": resource,
+                    "record": data,
+                    "record_id": None,
+                    "errors": errors,
+                }, user=user)
+                return HTMLResponse(html, status_code=422)
             action = (await request.form()).get("_action", "save")
             try:
                 record = await resource.save_record(None, data)
@@ -799,6 +893,17 @@ class Resource:
                 return await resource.panel._render_error(403, "Access Denied", "You don't have permission to edit this record.", request=request)
             user = await resource.panel._current_user(request)
             data = await resource.parse_form(request)
+            # Server-side validation
+            errors = resource._validate_fields(resource._flat_form_fields, data)
+            if errors:
+                html = resource.panel._render("form.html", {
+                    "resource": resource,
+                    "record": data,
+                    "record_id": record_id,
+                    "errors": errors,
+                    "flash": None,
+                }, user=user)
+                return HTMLResponse(html, status_code=422)
             action = (await request.form()).get("_action", "save")
             try:
                 await resource.save_record(record_id, data)
@@ -853,6 +958,19 @@ class Resource:
             if not await resource._user_allowed(request, "action", action_key):
                 return await resource.panel._render_error(403, "Access Denied", "You don't have permission to perform this action.", request=request)
             data = await resource.parse_action_form(request)
+            # Validate action form fields if present
+            action_obj = None
+            for lst in (resource.row_actions, resource.list_actions, resource.form_actions):
+                for a in lst:
+                    if a.key == action_key:
+                        action_obj = a
+                        break
+                if action_obj:
+                    break
+            if action_obj and getattr(action_obj, "form_fields", None):
+                errors = resource._validate_fields(action_obj.form_fields, data)
+                if errors:
+                    return await resource.panel._render_error(422, "Validation Error", str(errors), request=request)
             try:
                 result = await resource._dispatch_action(action_key, None, data, request)
             except (LookupError, NotImplementedError) as exc:
@@ -884,6 +1002,19 @@ class Resource:
             if not await resource._user_allowed(request, "action", action_key):
                 return await resource.panel._render_error(403, "Access Denied", "You don't have permission to perform this action.", request=request)
             data = await resource.parse_action_form(request)
+            # Validate action form fields if present
+            action_obj = None
+            for lst in (resource.row_actions, resource.list_actions, resource.form_actions):
+                for a in lst:
+                    if a.key == action_key:
+                        action_obj = a
+                        break
+                if action_obj:
+                    break
+            if action_obj and getattr(action_obj, "form_fields", None):
+                errors = resource._validate_fields(action_obj.form_fields, data)
+                if errors:
+                    return await resource.panel._render_error(422, "Validation Error", str(errors), request=request)
             try:
                 result = await resource._dispatch_action(
                     action_key, record_id, data, request

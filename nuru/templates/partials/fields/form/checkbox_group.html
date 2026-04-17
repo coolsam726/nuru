@@ -1,16 +1,16 @@
 <div>
-  {% if field.label %}
+  {% if field.get_label() %}
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-    {{ field.label }}
-    {% if field.required %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+    {{ field.get_label() }}
+    {% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
   </label>
   {% endif %}
 
-  {# Resolve options: from record attribute (dynamic) or field.options (static) #}
-  {% if field.options_attr %}
-    {% set opts = record | field_value(field.options_attr) %}
+  {# Resolve options: from record attribute (dynamic) or field.get_options() (static) #}
+  {% if field.get_options_attr() %}
+    {% set opts = record | field_value(field.get_options_attr()) %}
   {% else %}
-    {% set opts = field.options %}
+    {% set opts = field.get_options() %}
   {% endif %}
 
   {# current is a list of selected values (strings) #}
@@ -28,7 +28,7 @@
         without any JS and avoids CSS specificity fights with base classes.
       #}
       <label class="inline-flex items-center cursor-pointer select-none">
-        <input type="checkbox" name="{{ field.key }}" value="{{ opt_value }}"
+        <input type="checkbox" name="{{ field.get_key() }}" value="{{ opt_value }}"
                {% if is_selected %}checked{% endif %} class="peer sr-only">
         <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors
                      {% if is_wildcard %}
@@ -57,9 +57,10 @@
     {% endfor %}
   </div>
 
-  {% if has_error %}
-    <p class="text-xs text-red-600 dark:text-red-400 mt-1.5">{{ errors[field.key] }}</p>
-  {% elif field.help_text %}
-    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1.5">{{ field.help_text }}</p>
-  {% endif %}
+  
+    {% if has_error %}
+      <p class="text-xs text-red-600 dark:text-red-400 mt-1.5">{{ errors[field.get_key()] }}</p>
+    {% elif field.get_help_text() %}
+      <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1.5">{{ field.get_help_text() }}</p>
+    {% endif %}
 </div>

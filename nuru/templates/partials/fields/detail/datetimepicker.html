@@ -1,0 +1,31 @@
+{# Detail view for DateTimePicker — displays date and time portions #}
+{% set _key = field.get_key() %}
+{% set _date_val = '' %}
+{% set _time_val = '' %}
+{% if value is mapping %}
+  {% set _date_val = value.get(_key ~ '_date', '') | string %}
+  {% set _time_val = value.get(_key ~ '_time', '') | string %}
+{% elif value is not none and value != '' and value != 'None' %}
+  {% set _parts = value | string | split(' ') %}
+  {% set _date_val = _parts[0] %}
+  {% set _time_val = _parts[1] if _parts | length > 1 else '' %}
+{% endif %}
+{% if _date_val == 'None' %}{% set _date_val = '' %}{% endif %}
+{% if _time_val == 'None' %}{% set _time_val = '' %}{% endif %}
+{% set _display = (_date_val ~ ' ' ~ _time_val) | trim if _date_val or _time_val else '' %}
+
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.get_label() }}</dt>
+  <dd class="text-sm text-secondary-900 dark:text-secondary-100">
+    {% if _display %}{{ _display }}{% else %}<span class="text-secondary-400 dark:text-secondary-500 italic">—</span>{% endif %}
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
+  <dd class="mt-1 sm:mt-0 sm:col-span-2 text-sm text-secondary-900 dark:text-secondary-100">
+    {% if _display %}{{ _display }}{% else %}<span class="text-secondary-400 dark:text-secondary-500 italic">—</span>{% endif %}
+  </dd>
+</div>
+{% endif %}

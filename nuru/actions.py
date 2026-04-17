@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, field as dc_field
+from dataclasses import dataclass, field as dc_field
 from .fields import Field
 
 # ---------------------------------------------------------------------------
@@ -167,4 +167,22 @@ class Action:
 
     def fields_json(self) -> str:
         """JSON-serialise ``form_fields`` for the ``data-action-fields`` HTML attribute."""
-        return json.dumps([asdict(f) for f in self.form_fields])
+        result = []
+        for f in self.form_fields:
+            d: dict = {
+                "key":        f.get_key(),
+                "label":      f.get_label(),
+                "field_type": f.get_field_type(),
+                "input_type": f.get_input_type(),
+                "required":   f.is_required(),
+                "placeholder": f.get_placeholder(),
+                "help_text":  f.get_help_text(),
+                "options":    [],
+            }
+            if hasattr(f, "get_options"):
+                opts = f.get_options()
+                if callable(opts):
+                    opts = []
+                d["options"] = opts
+            result.append(d)
+        return json.dumps(result)

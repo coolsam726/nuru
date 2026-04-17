@@ -1,11 +1,11 @@
 {# Form rendering for Fieldset — <fieldset>/<legend> with bordered box #}
 {% from "partials/macros/form_item.html" import render_item with context %}
-{% set _section_span = _span_map[item.col_span] if item.col_span in _span_map else "" %}
-{% set cols_class = _cols_map[item.cols] if item.cols in _cols_map else "grid-cols-1" %}
-<fieldset class="{{ _section_span }} border border-secondary-200 dark:border-secondary-700 rounded-xl px-5 pt-2 pb-5 {{ item.css_class }}">
-  {% if item.title %}<legend class="px-2 text-sm font-medium text-secondary-600 dark:text-secondary-300">{{ item.title }}</legend>{% endif %}
-  {% if item.description %}<p class="text-xs text-secondary-400 dark:text-secondary-500 mb-3 mt-1">{{ item.description }}</p>{% endif %}
+{% set _section_span = _span_map[item.get_col_span()] if item.get_col_span() in _span_map else "" %}
+{% set cols_class = _cols_map[item.get_cols()] if item.get_cols() in _cols_map else "grid-cols-1" %}
+<fieldset class="{{ _section_span }} border border-secondary-200 dark:border-secondary-700 rounded-xl px-5 pt-2 pb-5 {{ item.get_css_class() }}">
+  {% if item.get_title() %}<legend class="px-2 text-sm font-medium text-secondary-600 dark:text-secondary-300">{{ item.get_title() }}</legend>{% endif %}
+  {% if item.get_description() %}<p class="text-xs text-secondary-400 dark:text-secondary-500 mb-3 mt-1">{{ item.get_description() }}</p>{% endif %}
   <div class="grid {{ cols_class }} gap-4 mt-3">
-    {% for child in item.fields %}{{ render_item(child) }}{% endfor %}
+    {% for child in item.get_fields() %}{{ render_item(child) }}{% endfor %}
   </div>
 </fieldset>

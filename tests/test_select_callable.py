@@ -13,7 +13,7 @@ def test_callable_options_rendered_in_form():
         slug = "dummies"
 
         form_fields = [
-            fields.Select("kind", "Kind", options= lambda record = None: [
+            fields.Select("kind").label("Kind").options([
                 {"value": "a", "label": "Alpha"},
                 {"value": "b", "label": "Beta"},
             ])

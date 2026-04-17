@@ -43,7 +43,7 @@ from nuru.components import (
     RadioButtons,
 )
 from nuru.components.types import RadioOption
-from nuru.integrations.flowbite import FlowbiteDatepicker, register_flowbite
+from nuru.integrations.flowbite import register_flowbite
 import nuru.roles
 from nuru import (
     AdminPanel,
@@ -57,10 +57,10 @@ from nuru import (
     UserRole,
     columns,
     fields,
+    forms,
 )
 from sqlalchemy.orm import selectinload
 from nuru.actions import Action
-
 
 # ---------------------------------------------------------------------------
 # Engine & session factory
@@ -598,7 +598,7 @@ async def _lifespan(app: FastAPI):
                     ),
                     *[
                         Book(
-                            isbn=f"978-000000{100+i:04d}",
+                            isbn=f"978-000000{100 + i:04d}",
                             title=f"Library Acquisition {i}",
                             author_id=None,
                             subject_id=subjects.get("REF"),
@@ -712,7 +712,7 @@ async def _lifespan(app: FastAPI):
                         Member(
                             name=f"Member {i}",
                             email=f"member{i}@email.com",
-                            member_number=f"MBR-{100+i:03d}",
+                            member_number=f"MBR-{100 + i:03d}",
                             membership="standard",
                             joined_on=date(2023, 1, 1),
                             active=True,
@@ -869,55 +869,61 @@ class AuthorResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput
+                .make("name")
+                .label("Full name")
+                .required()
+                .placeholder("e.g. Chinua Achebe"),
+                forms.TextInput.make("email")
+                .email()
+                .label("Email")
+                .required()
+                .placeholder("author@example.com"),
+                forms.TextInput.make("nationality")
+                .label("Nationality")
+                .placeholder("e.g. Nigerian"),
+                forms.DatePicker("birth_date").label("Date of birth"),
+                forms.Checkbox.make("active")
+                .label("Active")
+                .help_text("Uncheck to hide from the catalogue."),
+            ],
             title="Identity",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text(
-                    "name", "Full name", required=True, placeholder="e.g. Chinua Achebe"
-                ),
-                fields.Email("email", "Email", placeholder="author@example.com"),
-                fields.Text("nationality", "Nationality", placeholder="e.g. Nigerian"),
-                fields.Date("birth_date", "Date of birth"),
-                fields.Checkbox(
-                    "active", "Active", help_text="Uncheck to hide from the catalogue."
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("bio")
+                .label("Short bio")
+                .col_span("full")
+                .placeholder("A sentence or two about this author..."),
+            ],
             title="Biography",
             col_span="full",
-            fields=[
-                fields.Textarea(
-                    "bio",
-                    "Short bio",
-                    col_span="full",
-                    placeholder="A sentence or two about this author...",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name").label("Full name"),
+                forms.TextInput.make("email").email().label("Email"),
+                forms.TextInput.make("nationality").label("Nationality"),
+                forms.DatePicker("birth_date").label("Date of birth"),
+                forms.Checkbox.make("active").label("Active"),
+            ],
             title="Identity",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("name", "Full name"),
-                fields.Email("email", "Email"),
-                fields.Text("nationality", "Nationality"),
-                fields.Date("birth_date", "Date of birth"),
-                fields.Checkbox("active", "Active"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("bio").label("Biography").col_span("full"),
+            ],
             title="Biography",
             col_span="full",
-            fields=[
-                fields.Textarea("bio", "Biography", col_span="full"),
-            ],
         ),
     ]
 
@@ -946,61 +952,55 @@ class SubjectResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name")
+                .label("Subject name")
+                .required()
+                .placeholder("e.g. African Literature"),
+                forms.TextInput.make("code")
+                .label("Short code")
+                .required()
+                .placeholder("e.g. AFL")
+                .help_text("Used for shelf labels."),
+                forms.Select.make("floor")
+                .label("Library floor")
+                .options(lambda record: [
+                    {"value": f"G", "label": "Ground (G)"},
+                    {"value": f"1st", "label": "First (1st)"},
+                    {"value": f"2nd", "label": "Second (2nd)"},
+                    {"value": f"3rd", "label": "Third (3rd)"},
+                    {"value": f"Basement", "label": "Basement"},
+                ])
+                .help_text("Physical floor in the building."),
+                forms.Checkbox.make("active")
+                .label("Active")
+                .help_text("Inactive subjects are hidden from the public catalogue."),
+                forms.Textarea("description")
+                .label("Description")
+                .col_span("full")
+                .placeholder("What kinds of books live here?"),
+            ],
             title="Shelf Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text(
-                    "name",
-                    "Subject name",
-                    required=True,
-                    placeholder="e.g. African Literature",
-                ),
-                fields.Text(
-                    "code",
-                    "Short code",
-                    required=True,
-                    placeholder="e.g. AFL",
-                    help_text="Used for shelf labels.",
-                ),
-                fields.Select(
-                    "floor",
-                    "Library floor",
-                    options=["G", "1st", "2nd", "3rd", "Basement"],
-                    help_text="Physical floor in the building.",
-                ),
-                fields.Checkbox(
-                    "active",
-                    "Active",
-                    help_text="Inactive subjects are hidden from the public catalogue.",
-                ),
-                fields.Textarea(
-                    "description",
-                    "Description",
-                    col_span="full",
-                    placeholder="What kinds of books live here?",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name").label("Subject name"),
+                forms.TextInput.make("code").label("Short code"),
+                forms.Select.make("floor")
+                .label("Library floor")
+                .options(["G", "1st", "2nd", "3rd", "Basement"]),
+                forms.Checkbox.make("active").label("Active"),
+                forms.Textarea("description").label("Description").col_span("full"),
+            ],
             title="Shelf Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("name", "Subject name"),
-                fields.Text("code", "Short code"),
-                fields.Select(
-                    "floor",
-                    "Library floor",
-                    options=["G", "1st", "2nd", "3rd", "Basement"],
-                ),
-                fields.Checkbox("active", "Active"),
-                fields.Textarea("description", "Description", col_span="full"),
-            ],
         ),
     ]
 
@@ -1017,17 +1017,17 @@ class _BookView:
 
     def __init__(self, book: Book, author: Author | None, subject: Subject | None):
         for attr in (
-            "id",
-            "isbn",
-            "title",
-            "author_id",
-            "subject_id",
-            "year",
-            "edition",
-            "copies",
-            "available",
-            "location",
-            "notes",
+                "id",
+                "isbn",
+                "title",
+                "author_id",
+                "subject_id",
+                "year",
+                "edition",
+                "copies",
+                "available",
+                "location",
+                "notes",
         ):
             setattr(self, attr, getattr(book, attr))
         self.author = author
@@ -1058,147 +1058,152 @@ class BookResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("title")
+                .label("Title")
+                .required()
+                .col_span("full")
+                .placeholder("e.g. Things Fall Apart"),
+                forms.Text.make("isbn")
+                .label("ISBN")
+                .required()
+                .placeholder("978-..."),
+                forms.Number("year")
+                .label("Publication year")
+                .placeholder("e.g. 1958"),
+                forms.Select.make("author_id")
+                .label("Author")
+                .model(Author, label_field="name")
+                .relationship("author")
+                .help_text("Start typing to search authors."),
+                forms.Select.make("subject_id")
+                .label("Subject")
+                .model(Subject, label_field="name")
+                .relationship("subject")
+                .help_text("The shelf this book belongs to."),
+                forms.TextInput.make("edition")
+                .label("Edition")
+                .placeholder("e.g. 2nd, Revised"),
+                forms.TextInput.make("location")
+                .label("Shelf location")
+                .placeholder("e.g. AFL-A1"),
+            ],
             title="Catalogue Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text(
-                    "title",
-                    "Title",
-                    required=True,
-                    col_span="full",
-                    placeholder="e.g. Things Fall Apart",
-                ),
-                fields.Text("isbn", "ISBN", required=True, placeholder="978-..."),
-                fields.Number("year", "Publication year", placeholder="e.g. 1958"),
-                fields.Select(
-                    "author_id",
-                    "Author",
-                    model=Author,
-                    label_field="name",
-                    relationship="author",
-                    help_text="Start typing to search authors.",
-                ),
-                fields.Select(
-                    "subject_id",
-                    "Subject",
-                    model=Subject,
-                    label_field="name",
-                    relationship="subject",
-                    help_text="The shelf this book belongs to.",
-                ),
-                fields.Text("edition", "Edition", placeholder="e.g. 2nd, Revised"),
-                fields.Text("location", "Shelf location", placeholder="e.g. AFL-A1"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Number("copies")
+                .label("Number of copies")
+                .help_text("Total physical copies held."),
+                forms.Checkbox.make("available")
+                .label("Available for checkout")
+                .help_text(
+                    "Uncheck if all copies are out or the book is being repaired."
+                ),
+            ],
             title="Inventory",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Number(
-                    "copies",
-                    "Number of copies",
-                    help_text="Total physical copies held.",
-                ),
-                fields.Checkbox(
-                    "available",
-                    "Available for checkout",
-                    help_text="Uncheck if all copies are out or the book is being repaired.",
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes")
+                .label("Notes")
+                .col_span("full")
+                .placeholder("Condition notes, acquisition info, etc."),
+            ],
             title="Internal Notes",
             col_span="full",
-            fields=[
-                fields.Textarea(
-                    "notes",
-                    "Notes",
-                    col_span="full",
-                    placeholder="Condition notes, acquisition info, etc.",
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                # Demo the use of the new fields
+                Radio("demo_radio")
+                .label("Demo radio")
+                .options(["Option 1", "Option 2", "Option 3"]),
+                Toggle("demo_toggle")
+                .label("Demo toggle")
+                .help_text("Just a toggle for demonstration purposes."),
+                Timepicker("demo_timepicker")
+                .label("Demo timepicker")
+                .help_text("A simple timepicker input."),
+                RadioButtons("demo_radiobuttons")
+                .label("Demo radio buttons")
+                .options(
+                    [
+                        {
+                            "value": "vue",
+                            "label": "Vue.js",
+                            "description": "A progressive JavaScript framework.",
+                            "image": "https://vuejs.org/images/logo.png",
+                        },
+                        {
+                            "value": "react",
+                            "label": "React",
+                            "description": "A JavaScript library for building user interfaces.",
+                            "image": "https://reactjs.org/logo-og.png",
+                        },
+                        {
+                            "value": "angular",
+                            "label": "Angular",
+                            "description": "A platform for building mobile and desktop web applications.",
+                            "image": "https://angular.io/assets/images/logos/angular/angular.png",
+                        },
+                        {
+                            "value": "svelte",
+                            "label": "Svelte",
+                            "description": "Cybernetically enhanced web apps.",
+                            "image": "https://svelte.dev/svelte-logo-horizontal.svg",
+                        },
+                    ]
+                )
+                .col_span("full"),
+            ],
             title="Extras",
             cols=2,
             col_span="full",
-            fields=[
-                # Demo the use of the new fields
-                Radio(
-                    "demo_radio",
-                    "Demo radio",
-                    options=["Option 1", "Option 2", "Option 3"],
-                ),
-                Toggle(
-                    "demo_toggle",
-                    "Demo toggle",
-                    help_text="Just a toggle for demonstration purposes.",
-                ),
-                Timepicker(
-                    "demo_timepicker",
-                    "Demo timepicker",
-                    help_text="A simple timepicker input.",
-                ),
-                RadioButtons(
-                    "demo_radiobuttons",
-                    "Demo radio buttons",
-                    options=[
-                        {"value": "vue", "label": "Vue.js", "description": "A progressive JavaScript framework.", "image": "https://vuejs.org/images/logo.png"},
-                        {"value": "react", "label": "React", "description": "A JavaScript library for building user interfaces.", "image": "https://reactjs.org/logo-og.png"},
-                        {"value": "angular", "label": "Angular", "description": "A platform for building mobile and desktop web applications.", "image": "https://angular.io/assets/images/logos/angular/angular.png"},
-                        {"value": "svelte", "label": "Svelte", "description": "Cybernetically enhanced web apps.", "image": "https://svelte.dev/svelte-logo-horizontal.svg"},
-                    ],
-                    col_span='full'
-                )
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("title").label("Title"),
+                forms.TextInput.make("isbn").label("ISBN"),
+                forms.Number("year").label("Publication year"),
+                forms.Select.make("author_id")
+                .label("Author")
+                .model(Author, label_field="name")
+                .relationship("author"),
+                forms.Select.make("subject_id")
+                .label("Subject")
+                .model(Subject, label_field="name")
+                .relationship("subject"),
+                forms.TextInput.make("edition").label("Edition"),
+                forms.TextInput.make("location").label("Shelf location"),
+            ],
             title="Catalogue Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("title", "Title"),
-                fields.Text("isbn", "ISBN"),
-                fields.Number("year", "Publication year"),
-                fields.Select(
-                    "author_id",
-                    "Author",
-                    model=Author,
-                    label_field="name",
-                    relationship="author",
-                ),
-                fields.Select(
-                    "subject_id",
-                    "Subject",
-                    model=Subject,
-                    label_field="name",
-                    relationship="subject",
-                ),
-                fields.Text("edition", "Edition"),
-                fields.Text("location", "Shelf location"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Number("copies").label("Copies"),
+                forms.Checkbox.make("available").label("Available"),
+            ],
             title="Inventory",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Number("copies", "Copies"),
-                fields.Checkbox("available", "Available"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes").label("Notes").col_span("full"),
+            ],
             title="Notes",
             col_span="full",
-            fields=[
-                fields.Textarea("notes", "Notes", col_span="full"),
-            ],
         ),
     ]
 
@@ -1304,88 +1309,83 @@ class MemberResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name")
+                .label("Full name")
+                .required()
+                .placeholder("Jane Doe"),
+                forms.TextInput.make("email").email().label("Email address").required(),
+                forms.TextInput.make("phone")
+                .label("Phone number")
+                .placeholder("+254 700 000 000"),
+                forms.DatePicker("joined_on").label("Joined on"),
+            ],
             title="Personal Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("name", "Full name", required=True, placeholder="Jane Doe"),
-                fields.Email("email", "Email address", required=True),
-                fields.Text("phone", "Phone number", placeholder="+254 700 000 000"),
-                fields.Date("joined_on", "Joined on"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("member_number")
+                .label("Member number")
+                .required()
+                .placeholder("MBR-001")
+                .help_text("Unique ID printed on the member card."),
+                forms.Select.make("membership")
+                .label("Membership type")
+                .options(["standard", "student", "senior", "staff"])
+                .help_text("Determines checkout limits and fee waivers."),
+                forms.Checkbox.make("active")
+                .label("Active")
+                .help_text("Inactive members cannot borrow books."),
+            ],
             title="Membership",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text(
-                    "member_number",
-                    "Member number",
-                    required=True,
-                    placeholder="MBR-001",
-                    help_text="Unique ID printed on the member card.",
-                ),
-                fields.Select(
-                    "membership",
-                    "Membership type",
-                    options=["standard", "student", "senior", "staff"],
-                    help_text="Determines checkout limits and fee waivers.",
-                ),
-                fields.Checkbox(
-                    "active",
-                    "Active",
-                    help_text="Inactive members cannot borrow books.",
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes")
+                .label("Staff notes")
+                .col_span("full")
+                .placeholder("Special instructions, suspension reasons, etc."),
+            ],
             title="Notes",
             col_span="full",
-            fields=[
-                fields.Textarea(
-                    "notes",
-                    "Staff notes",
-                    col_span="full",
-                    placeholder="Special instructions, suspension reasons, etc.",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name").label("Full name"),
+                forms.TextInput.make("email").email().label("Email"),
+                forms.TextInput.make("phone").label("Phone"),
+                forms.DatePicker("joined_on").label("Joined on"),
+            ],
             title="Personal Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("name", "Full name"),
-                fields.Email("email", "Email"),
-                fields.Text("phone", "Phone"),
-                fields.Date("joined_on", "Joined on"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("member_number").label("Member number"),
+                forms.Select.make("membership")
+                .label("Type")
+                .options(["standard", "student", "senior", "staff"]),
+                forms.Checkbox.make("active").label("Active"),
+            ],
             title="Membership",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("member_number", "Member number"),
-                fields.Select(
-                    "membership",
-                    "Type",
-                    options=["standard", "student", "senior", "staff"],
-                ),
-                fields.Checkbox("active", "Active"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes").label("Staff notes").col_span("full"),
+            ],
             title="Notes",
             col_span="full",
-            fields=[
-                fields.Textarea("notes", "Staff notes", col_span="full"),
-            ],
         ),
     ]
 
@@ -1414,16 +1414,16 @@ class MemberResource(Resource):
 class _CheckoutView:
     def __init__(self, co: Checkout, book: Book | None, member: Member | None):
         for attr in (
-            "id",
-            "book_id",
-            "member_id",
-            "issued_on",
-            "due_date",
-            "returned_on",
-            "status",
-            "fine_amount",
-            "fine_paid",
-            "notes",
+                "id",
+                "book_id",
+                "member_id",
+                "issued_on",
+                "due_date",
+                "returned_on",
+                "status",
+                "fine_amount",
+                "fine_paid",
+                "notes",
         ):
             setattr(self, attr, getattr(co, attr))
         self.book = book
@@ -1463,133 +1463,109 @@ class CheckoutResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
-            title="Checkout Details",
-            cols=2,
-            col_span="full",
-            fields=[
-                fields.Select(
-                    "book_id",
-                    "Book",
-                    model=Book,
-                    label_field="title",
-                    relationship="book",
-                    required=True,
-                    help_text="Search by title or ISBN.",
-                    remote_search=True,
-                ),
-                fields.Select(
-                    "member_id",
-                    "Member",
-                    model=Member,
-                    label_field="name",
-                    relationship="member",
-                    required=True,
-                    help_text="Search by name or member number.",
-                    remote_search=True,
-                ),
-                FlowbiteDatepicker(
-                    "issued_on",
-                    "Issued on",
-                    help_text="Date the book was handed to the member.",
-                ),
-                FlowbiteDatepicker(
-                    "due_date", "Due date", help_text="Expected return date."
-                ),
-                FlowbiteDatepicker(
-                    "returned_on",
-                    "Returned on",
-                    help_text="Leave blank if not yet returned.",
-                ),
-                fields.Select(
-                    "status",
-                    "Status",
-                    options=lambda record=None: [
+        forms.Section(
+            [
+                forms.Select.make("book_id")
+                .label("Book")
+                .model(Book, label_field="title")
+                .relationship("book")
+                .required()
+                .help_text("Search by title or ISBN.")
+                .remote_search(),
+                forms.Select.make("member_id")
+                .label("Member")
+                .model(Member, label_field="name")
+                .relationship("member")
+                .required()
+                .help_text("Search by name or member number.")
+                .remote_search(),
+                forms.DatePicker("issued_on")
+                .label("Issued on")
+                .help_text("Date the book was handed to the member."),
+                forms.DatePicker("due_date")
+                .label("Due date")
+                .help_text("Expected return date."),
+                forms.DatePicker("returned_on")
+                .label("Returned on")
+                .help_text("Leave blank if not yet returned."),
+                forms.Select.make("status")
+                .label("Status")
+                .options(
+                    lambda record=None: [
                         {"value": "issued", "label": "Issued"},
                         {"value": "returned", "label": "Returned"},
                         {"value": "overdue", "label": "Overdue"},
                         {"value": "lost", "label": "Lost"},
-                    ],
-                    help_text="Current state of this checkout.",
-                ),
+                    ]
+                )
+                .help_text("Current state of this checkout."),
             ],
+            title="Checkout Details",
+            cols=2,
+            col_span="full",
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Number("fine_amount")
+                .label("Fine amount (KES)")
+                .help_text("Accumulated overdue or loss penalty."),
+                forms.Checkbox.make("fine_paid")
+                .label("Fine paid")
+                .help_text("Check once the member has settled the fine."),
+            ],
             title="Fine",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Number(
-                    "fine_amount",
-                    "Fine amount (KES)",
-                    help_text="Accumulated overdue or loss penalty.",
-                ),
-                fields.Checkbox(
-                    "fine_paid",
-                    "Fine paid",
-                    help_text="Check once the member has settled the fine.",
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes")
+                .label("Staff notes")
+                .col_span("full")
+                .placeholder("Extension requests, damage notes, etc."),
+            ],
             title="Notes",
             col_span="full",
-            fields=[
-                fields.Textarea(
-                    "notes",
-                    "Staff notes",
-                    col_span="full",
-                    placeholder="Extension requests, damage notes, etc.",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.Select.make("book_id")
+                .label("Book")
+                .model(Book, label_field="title")
+                .relationship("book"),
+                forms.Select.make("member_id")
+                .label("Member")
+                .model(Member, label_field="name")
+                .relationship("member"),
+                forms.DatePicker("issued_on").label("Issued on"),
+                forms.DatePicker("due_date").label("Due date"),
+                forms.DatePicker("returned_on").label("Returned on"),
+                forms.Select.make("status")
+                .label("Status")
+                .options(["issued", "returned", "overdue", "lost"]),
+            ],
             title="Checkout Details",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Select(
-                    "book_id",
-                    "Book",
-                    model=Book,
-                    label_field="title",
-                    relationship="book",
-                ),
-                fields.Select(
-                    "member_id",
-                    "Member",
-                    model=Member,
-                    label_field="name",
-                    relationship="member",
-                ),
-                FlowbiteDatepicker("issued_on", "Issued on"),
-                FlowbiteDatepicker("due_date", "Due date"),
-                FlowbiteDatepicker("returned_on", "Returned on"),
-                fields.Select(
-                    "status",
-                    "Status",
-                    options=["issued", "returned", "overdue", "lost"],
-                ),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Number("fine_amount").label("Fine (KES)"),
+                forms.Checkbox.make("fine_paid").label("Fine paid"),
+            ],
             title="Fine",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Number("fine_amount", "Fine (KES)"),
-                fields.Checkbox("fine_paid", "Fine paid"),
-            ],
         ),
-        fields.Section(
+        forms.Section(
+            [
+                forms.Textarea("notes").label("Staff notes").col_span("full"),
+            ],
             title="Notes",
             col_span="full",
-            fields=[
-                fields.Textarea("notes", "Staff notes", col_span="full"),
-            ],
         ),
     ]
 
@@ -1610,12 +1586,10 @@ class CheckoutResource(Resource):
             placement="header",
             style="danger",
             form_fields=[
-                fields.Number("fine_amount", "Loss fine (KES)", required=True),
-                fields.Textarea(
-                    "note",
-                    "Comment",
-                    placeholder="e.g. Member reported book lost at home.",
-                ),
+                forms.Number("fine_amount").label("Loss fine (KES)").required(),
+                forms.Textarea("note")
+                .label("Comment")
+                .placeholder("e.g. Member reported book lost at home."),
             ],
         ),
         Action(
@@ -1625,12 +1599,10 @@ class CheckoutResource(Resource):
             placement="inline",
             style="default",
             form_fields=[
-                fields.Textarea(
-                    "note",
-                    "Note",
-                    required=True,
-                    placeholder="Visible to staff only...",
-                ),
+                forms.Textarea("note")
+                .label("Note")
+                .required()
+                .placeholder("Visible to staff only..."),
             ],
         ),
     ]
@@ -1685,11 +1657,11 @@ class CheckoutResource(Resource):
 
 class _StaffUserView:
     def __init__(
-        self,
-        user: StaffUser,
-        role_ids: list[str],
-        roles_list: list[str],
-        all_roles: list[dict],
+            self,
+            user: StaffUser,
+            role_ids: list[str],
+            roles_list: list[str],
+            all_roles: list[dict],
     ):
         for attr in ("id", "name", "email", "password", "role", "active"):
             setattr(self, attr, getattr(user, attr))
@@ -1727,66 +1699,62 @@ class StaffUserResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name").label("Full name").required(),
+                forms.TextInput.make("email").email().label("Email address").required(),
+                forms.Password("password")
+                .label("Password")
+                .help_text("Leave blank to keep current password."),
+                forms.Select.make("role")
+                .label("Display role")
+                .options(["admin", "librarian", "viewer"])
+                .help_text("Badge only — actual access controlled via Roles below."),
+                forms.Checkbox.make("active").label("Active"),
+            ],
             title="Account",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text("name", "Full name", required=True),
-                fields.Email("email", "Email address", required=True),
-                fields.Password(
-                    "password",
-                    "Password",
-                    help_text="Leave blank to keep current password.",
-                ),
-                fields.Select(
-                    "role",
-                    "Display role",
-                    options=["admin", "librarian", "viewer"],
-                    help_text="Badge only — actual access controlled via Roles below.",
-                ),
-                fields.Checkbox("active", "Active"),
-            ],
         ),
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.CheckboxGroup("role_ids")
+                .label("")
+                .options_from("all_roles")
+                .col_span("full"),
+            ],
             title="Assigned Roles",
             description="Grant this user role-based permissions.",
             col_span="full",
             cols=1,
-            fields=[
-                fields.CheckboxGroup(
-                    key="role_ids",
-                    label="",
-                    options_attr="all_roles",
-                    col_span="full",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.TextInput.make("name").label("Full name"),
+                forms.Email("email")
+                .label("Email"),
+                forms.Select.make("role")
+                .label("Display role")
+                .options(["admin", "librarian", "viewer"]),
+                forms.Checkbox.make("active").label("Active"),
+            ],
             title="Account",
             cols=2,
-            fields=[
-                fields.Text("name", "Full name"),
-                fields.Email("email", "Email"),
-                fields.Select(
-                    "role", "Display role", options=["admin", "librarian", "viewer"]
-                ),
-                fields.Checkbox("active", "Active"),
-            ],
         ),
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.CheckboxGroup("roles_list")
+                .label("Roles")
+                .options_from("all_roles")
+                .col_span("full"),
+            ],
             title="Roles",
             col_span="full",
             cols=1,
             description="Roles currently assigned to this user.",
-            fields=[
-                fields.CheckboxGroup(
-                    "roles_list", "Roles", options_attr="all_roles", col_span="full"
-                ),
-            ],
         ),
     ]
 
@@ -1861,58 +1829,54 @@ class RoleResource(Resource):
     ]
 
     form_fields = [
-        fields.Section(
+        forms.Section(
+            [
+                forms.TextInput.make("name")
+                .label("Role name")
+                .required()
+                .placeholder("e.g. Librarian"),
+                forms.TextInput.make("description")
+                .label("Description")
+                .placeholder("What this role can do"),
+            ],
             title="Role",
             cols=2,
             col_span="full",
-            fields=[
-                fields.Text(
-                    "name", "Role name", required=True, placeholder="e.g. Librarian"
-                ),
-                fields.Text(
-                    "description", "Description", placeholder="What this role can do"
-                ),
-            ],
         ),
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.CheckboxGroup("permission_ids")
+                .label("")
+                .options_from("all_permissions")
+                .col_span("full"),
+            ],
             title="Permissions",
-            description="Permissions granted to members of this role. "
-            "The * wildcard grants everything.",
+            description="Permissions granted to members of this role. The * wildcard grants everything.",
             col_span="full",
             cols=1,
-            fields=[
-                fields.CheckboxGroup(
-                    key="permission_ids",
-                    label="",
-                    options_attr="all_permissions",
-                    col_span="full",
-                ),
-            ],
         ),
     ]
 
     detail_fields = [
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.TextInput.make("name").label("Role name"),
+                forms.TextInput.make("description").label("Description"),
+            ],
             title="Role",
             cols=2,
-            fields=[
-                fields.Text("name", "Role name"),
-                fields.Text("description", "Description"),
-            ],
         ),
-        fields.Fieldset(
+        forms.Fieldset(
+            [
+                forms.CheckboxGroup("permissions_list")
+                .label("Permissions")
+                .options_from("all_permissions")
+                .col_span("full"),
+            ],
             title="Permissions",
             col_span="full",
             cols=1,
             description="Codenames granted to users in this role.",
-            fields=[
-                fields.CheckboxGroup(
-                    "permissions_list",
-                    "Permissions",
-                    options_attr="all_permissions",
-                    col_span="full",
-                ),
-            ],
         ),
     ]
 
@@ -1997,14 +1961,14 @@ class ReportsPage(Page):
         }
 
         kpi_fields = [
-            fields.Text("total_books", "Books in catalogue"),
-            fields.Text("available_books", "Currently available"),
-            fields.Text("total_members", "Registered members"),
-            fields.Text("active_members", "Active members"),
-            fields.Text("issued_now", "Books currently out"),
-            fields.Text("overdue", "Overdue checkouts"),
-            fields.Text("total_fines", "Total fines (KES)"),
-            fields.Text("unpaid_fines", "Unpaid fines (KES)"),
+            forms.TextInput.make("total_books", "Books in catalogue"),
+            forms.TextInput.make("available_books", "Currently available"),
+            forms.TextInput.make("total_members", "Registered members"),
+            forms.TextInput.make("active_members", "Active members"),
+            forms.TextInput.make("issued_now", "Books currently out"),
+            forms.TextInput.make("overdue", "Overdue checkouts"),
+            forms.TextInput.make("total_fines", "Total fines (KES)"),
+            forms.TextInput.make("unpaid_fines", "Unpaid fines (KES)"),
         ]
 
         recent_checkouts = sorted(all_checkouts, key=lambda c: c.id or 0, reverse=True)[
@@ -2030,8 +1994,8 @@ class ReportsPage(Page):
         ]
 
         note_fields = [
-            fields.Text("author", "Your name", required=True, placeholder="Jane Doe"),
-            fields.Textarea(
+            forms.TextInput.make("author", "Your name", required=True, placeholder="Jane Doe"),
+            forms.Textarea(
                 "message",
                 "Note",
                 required=True,
@@ -2065,7 +2029,7 @@ class ReportsPage(Page):
         message = str(form.get("message", "")).strip()
         if not author or not message:
             return RedirectResponse(
-                f"{self.panel.prefix}/{self.slug}?error=Please+fill+in+all+fields.",
+                f"{self.panel.prefix}/{self.slug}?error=Please+fill+in+all+forms.",
                 status_code=303,
             )
         from datetime import datetime, timezone
