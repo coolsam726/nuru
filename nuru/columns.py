@@ -98,3 +98,36 @@ class Boolean(Column):
 
     def is_true(self, value: Any) -> bool:
         return bool(value)
+
+
+@dataclass
+class Image(Column):
+    """Render a stored file server-ID (relative path) as a thumbnail in the table.
+
+    Args:
+        url_prefix: URL prefix that, combined with the stored value, gives the
+            full public URL of the image.
+        img_class: Tailwind classes applied to the ``<img>`` (and the
+            placeholder ``<span>``).  Use full static class names so the
+            Tailwind scanner can detect them.
+            Default: ``"w-8 h-8 rounded-full object-cover"``
+        placeholder_icon: SVG path data shown when no image is stored.
+    """
+    url_prefix: str = ""
+    img_class: str = "w-8 h-8 rounded-full object-cover"
+    # Default placeholder: a simple person silhouette path
+    placeholder_icon: str = (
+        "M16 7a4 4 0 11-8 0 4 4 0 018 0z"
+        "M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+    )
+
+    def get_url(self, value: Any) -> str | None:
+        """Return the absolute URL for *value*, or None when empty."""
+        if not value or str(value).strip() == "":
+            return None
+        v = str(value).strip()
+        if v.startswith(("http://", "https://", "/")):
+            return v
+        prefix = self.url_prefix.rstrip("/")
+        return f"{prefix}/{v}"
+

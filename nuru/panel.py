@@ -86,11 +86,13 @@ class AdminPanel:
         warning: str | None = None,
         logo_url: str | None = None,
         per_page: int = 25,
-        auth: AuthBackend | None = None,
+        auth: "AuthBackend | None" = None,
         permission_checker: Any | None = None,
         template_dirs: list[str | Path] | None = None,
         extra_css: list[str] | str | None = None,
         extra_js: list[str] | str | None = None,
+        upload_dir: "Path | str | None" = None,
+        upload_backend: Any | None = None,
     ) -> None:
         self.title = title
         self.prefix = prefix.rstrip("/")
@@ -120,6 +122,16 @@ class AdminPanel:
             self.extra_js = [extra_js]
         else:
             self.extra_js = list(extra_js)
+
+        # -- File upload --
+        if upload_backend is not None:
+            self.upload_backend = upload_backend
+        else:
+            from .storage.local import LocalFileBackend as _LocalFB
+            _udir = Path(upload_dir) if upload_dir else Path.cwd() / "uploads"
+            self.upload_backend = _LocalFB(_udir)
+        # Expose the upload dir for static serving
+        self.upload_dir: Path = self.upload_backend.upload_dir
 
         # Derive a safe identifier from the prefix for naming purposes.
         # "/admin" → "admin", "/staff/panel" → "staff_panel"
@@ -211,6 +223,9 @@ class AdminPanel:
         # Queried directly by the combobox template; resolves options from the model
         # layer without requiring a matching Resource.
         self._add_model_search_route()
+
+        # ── File upload endpoint ──
+        self._add_upload_routes()
 
         # Register built-in pages unless the user has overridden them
         registered_slugs = {cls.slug for cls in self._pages}
@@ -373,8 +388,96 @@ class AdminPanel:
             except Exception:
                 return _JSONResponse([])
 
+    def _add_upload_routes(self) -> None:
+        """Register POST and DELETE /_upload for FilePond file uploads.
+
+        POST /_upload
+            Accepts a multipart file named ``file`` (or any name FilePond uses).
+            Query param ``directory`` specifies the sub-directory under the
+            upload root.
+            Returns a plain-text response with the server ID (relative path).
+
+        DELETE /_upload
+            Body should be the server ID returned by the POST.
+            Deletes the file from storage and returns 204.
+
+        GET /_upload/restore?id=<server_id>
+            Return the file so FilePond can show a preview for existing values.
+
+        GET /_upload/load?source=<server_id>
+            Alias for restore (FilePond uses either depending on config).
+        """
+        from fastapi import File, UploadFile
+        from fastapi.responses import Response as _Resp, PlainTextResponse, StreamingResponse
+        import mimetypes as _mt
+
+        panel = self
+
+        @self._router.post("/_upload", response_model=None, include_in_schema=False)
+        async def upload_file(
+            request: Request,
+            directory: str = "",
+        ) -> PlainTextResponse:
+            if await panel._require_login(request):
+                return PlainTextResponse("Unauthorized", status_code=401)
+
+            form = await request.form()
+            # FilePond sends the file under the field name configured in its
+            # `name` option — default is "file".  Fall back to first file found.
+            uploaded = None
+            for key, val in form.items():
+                if hasattr(val, "filename"):
+                    uploaded = val
+                    break
+
+            if uploaded is None:
+                return PlainTextResponse("No file", status_code=400)
+
+            content = await uploaded.read()
+
+            class _Buf:
+                """Minimal file-like wrapper around bytes for LocalFileBackend."""
+                def __init__(self, data: bytes) -> None:
+                    self._data = data
+                def read(self) -> bytes:
+                    return self._data
+
+            meta = panel.upload_backend.save(
+                _Buf(content),
+                original_filename=uploaded.filename or "upload",
+                directory=directory,
+                content_type=uploaded.content_type,
+            )
+            return PlainTextResponse(meta["server_id"], status_code=200)
+
+        @self._router.delete("/_upload", response_model=None, include_in_schema=False)
+        async def revert_upload(request: Request) -> _Resp:
+            if await panel._require_login(request):
+                return _Resp(status_code=401)
+            body = await request.body()
+            server_id = body.decode().strip()
+            panel.upload_backend.delete(server_id)
+            return _Resp(status_code=204)
+
+        @self._router.get("/_upload/restore", response_model=None, include_in_schema=False)
+        async def restore_file(request: Request, id: str) -> _Resp:
+            if await panel._require_login(request):
+                return _Resp(status_code=401)
+            path = panel.upload_backend.path(id)
+            if path is None:
+                return _Resp(status_code=404)
+            ct = _mt.guess_type(str(path))[0] or "application/octet-stream"
+
+            def _iter():
+                yield path.read_bytes()
+
+            return StreamingResponse(_iter(), media_type=ct)
+
+        @self._router.get("/_upload/load", response_model=None, include_in_schema=False)
+        async def load_file(request: Request, source: str) -> _Resp:
+            return await restore_file(request, id=source)
+
     def _add_login_routes(self) -> None:
-        """Add GET /login, POST /login, and GET /logout routes."""
         panel = self
 
         @self._router.get("/login", response_class=HTMLResponse, response_model=None, include_in_schema=False)
@@ -500,6 +603,18 @@ class AdminPanel:
             StaticFiles(directory=str(_STATIC_DIR)),
             name=mount_name,
         )
+
+        # Mount uploads directory so uploaded files can be served statically.
+        uploads_mount_name = f"nuru_uploads_{self._panel_id}"
+        uploads_mount_path = f"{self.prefix}/uploads"
+        if uploads_mount_name not in existing_names:
+            # Ensure uploads dir exists before mounting
+            self.upload_dir.mkdir(parents=True, exist_ok=True)
+            app.mount(
+                uploads_mount_path,
+                StaticFiles(directory=str(self.upload_dir)),
+                name=uploads_mount_name,
+            )
 
     # ------------------------------------------------------------------
     # Templating helpers

@@ -53,7 +53,20 @@
         {% for col in resource.table_columns %}
         <td class="px-4 py-3 text-secondary-700 dark:text-secondary-300">
           {% set value = record | field_value(col.key) %}
-          {% if col.__class__.__name__ == 'Badge' %}
+          {% if col.__class__.__name__ == 'Image' %}
+            {% set _img_url = col.get_url(value) %}
+            {% if _img_url %}
+              <img src="{{ _img_url }}"
+                   alt="{{ col.label }}"
+                   class="{{ col.img_class }} ring-1 ring-secondary-200 dark:ring-secondary-600">
+            {% else %}
+              <span class="inline-flex items-center justify-center {{ col.img_class }} bg-secondary-100 dark:bg-secondary-700 ring-1 ring-secondary-200 dark:ring-secondary-600">
+                <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="{{ col.placeholder_icon }}"/>
+                </svg>
+              </span>
+            {% endif %}
+          {% elif col.__class__.__name__ == 'Badge' %}
             {% set rendered = col.render(value) %}
             {% if rendered != '—' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ col.css_classes(value) }}">

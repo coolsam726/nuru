@@ -433,6 +433,73 @@ from starlette.staticfiles import StaticFiles
 app.mount("/admin/static", StaticFiles(directory="my_app/static"), name="admin-static")
 ```
 
+## File Upload
+
+Nuru's `FileUpload` field is powered by [FilePond](https://pqina.nl/filepond/) (loaded from CDN — no build step needed) and inspired by [FilamentPHP's FileUpload](https://filamentphp.com/docs/5.x/forms/file-upload).
+
+```python
+from nuru.forms import FileUpload
+
+form_fields = [
+    # Single image upload with preview and crop
+    FileUpload("avatar")
+        .label("Profile Photo")
+        .image()                                      # enable image preview plugin
+        .directory("avatars")                         # stored in uploads/avatars/
+        .accept_file_types(["image/jpeg", "image/png", "image/webp"])
+        .max_file_size(2 * 1024 * 1024)               # 2 MB
+        .image_crop_aspect_ratio("1:1")
+        .required(),
+
+    # Multiple PDF attachments
+    FileUpload("documents")
+        .label("Attachments")
+        .multiple()
+        .max_files(5)
+        .accept_file_types(["application/pdf"])
+        .max_file_size(10 * 1024 * 1024),             # 10 MB per file
+]
+```
+
+### Storage backend
+
+By default Nuru saves files under `./uploads/` relative to the current working directory. Configure a different path via `AdminPanel`:
+
+```python
+from pathlib import Path
+from nuru.storage import LocalFileBackend
+
+panel = AdminPanel(
+    title="My App",
+    prefix="/admin",
+    upload_backend=LocalFileBackend(Path("/var/www/myapp/media")),
+)
+```
+
+Uploaded files are served at `{prefix}/uploads/<server_id>` automatically.
+
+### How it works
+
+1. User drops a file on the FilePond widget.
+2. FilePond `POST`s the file to `{prefix}/_upload?directory=<dir>`.
+3. Nuru saves it via the storage backend and returns a plain-text **server ID** (relative path).
+4. FilePond stores the server ID in a hidden `<input name="{key}">`.
+5. On form submit, `parse_form` reads the server ID(s) and stores them as the field value.
+6. In edit mode, the existing server ID is passed back to FilePond so the thumbnail is pre-populated.
+
+| Method | Description |
+|---|---|
+| `.image()` | Enable image preview + EXIF orientation fix |
+| `.multiple()` | Allow multiple file selection |
+| `.max_files(n)` | Limit number of files (requires `.multiple()`) |
+| `.accept_file_types([...])` | List of MIME types to accept |
+| `.max_file_size(bytes)` | Maximum file size in bytes |
+| `.directory("path")` | Sub-directory under upload root |
+| `.image_crop_aspect_ratio("1:1")` | Lock crop to a ratio |
+| `.image_resize(width, height, mode)` | Resize image client-side before upload |
+| `.can_reorder(True)` | Allow drag-to-reorder in FilePond |
+| `.can_download(True)` | Show download button (default: `True`) |
+
 ## Forms API
 
 ### TextInput — the canonical single-line input
@@ -480,7 +547,8 @@ before the action handler is called.
 
 - ✅ **Core CRUD** — tables, forms, detail views
 - ✅ **Typed columns** — `Text`, `Badge`, `Currency`, `DateTime`, `Boolean`
-- ✅ **Typed fields** — `TextInput` (+ legacy `Text`), `Email`, `Password`, `Number`, `Textarea`, `Select`, `Checkbox`, `Date`, `Time`, `Hidden`, `DatePicker`, `DateTimePicker`, `TimePicker`
+- ✅ **Typed fields** — `TextInput` (+ legacy `Text`), `Email`, `Password`, `Number`, `Textarea`, `Select`, `Checkbox`, `Date`, `Time`, `Hidden`, `DatePicker`, `DateTimePicker`, `TimePicker`, **`FileUpload`**
+- ✅ **File upload (FilePond)** — drag-and-drop, image preview, content-type and size validation, single/multiple file modes, pluggable storage backends (`LocalFileBackend`; S3-ready interface)
 - ✅ **Field.make() factory** — fluent factory with `.email()`, `.password()`, `.url()`, `.numeric()`, `.integer()` convenience methods
 - ✅ **Server-side validation** — required, max_length, email, url, numeric, integer; field-level errors in the form UI
 - ✅ **Alpine.js 3.x** — all client-side interactivity (sidebar, theme toggle, dialog, combobox) powered by Alpine; plain JS removed

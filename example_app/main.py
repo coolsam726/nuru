@@ -102,6 +102,7 @@ class Author(SQLModel, table=True):
     nationality: Optional[str] = None
     birth_date: Optional[date] = None
     bio: Optional[str] = None
+    avatar: Optional[str] = None   # FilePond server ID (relative path under uploads/)
     active: bool = True
     books: list["Book"] = Relationship(
         back_populates="author"
@@ -156,6 +157,7 @@ class Member(SQLModel, table=True):
     joined_on: Optional[date] = None
     active: bool = True
     notes: Optional[str] = None
+    avatar: Optional[str] = None   # FilePond server ID (relative path under uploads/)
     checkouts: list["Checkout"] = Relationship(
         back_populates="member"
     )  # for back_populates in Checkout.member_id
@@ -178,6 +180,7 @@ class Checkout(SQLModel, table=True):
     fine_amount: float = 0.0
     fine_paid: bool = False
     notes: Optional[str] = None
+    attachment: Optional[str] = None  # FilePond server ID — e.g. a scanned returns slip
 
     def __str__(self) -> str:
         return f"Checkout #{self.id}"
@@ -862,6 +865,7 @@ class AuthorResource(Resource):
     options_label_field = "name"
 
     table_columns = [
+        columns.Image("avatar", "Photo", url_prefix="/admin/uploads", img_class='size-10 rounded-lg object-cover p-0.5'),
         columns.Text("name", "Name", sortable=True),
         columns.Text("nationality", "Nationality", sortable=True),
         columns.Text("email", "Email"),
@@ -901,6 +905,21 @@ class AuthorResource(Resource):
                 .placeholder("A sentence or two about this author..."),
             ],
             title="Biography",
+            col_span="full",
+        ),
+        forms.Section(
+            [
+                forms.FileUpload("avatar")
+                .label("Author photo")
+                .image()
+                .directory("authors")
+                .accept_file_types(["image/jpeg", "image/png", "image/webp"])
+                .max_file_size(5 * 1024 * 1024)
+                .image_crop_aspect_ratio("1:1")
+                .col_span("full")
+                .help_text("Square photo works best. Max 5 MB (JPEG, PNG, WebP)."),
+            ],
+            title="Photo",
             col_span="full",
         ),
     ]
@@ -1354,6 +1373,21 @@ class MemberResource(Resource):
             title="Notes",
             col_span="full",
         ),
+        forms.Section(
+            [
+                forms.FileUpload("avatar")
+                .label("Member photo / ID scan")
+                .image()
+                .directory("members")
+                .accept_file_types(["image/jpeg", "image/png", "image/webp"])
+                .max_file_size(5 * 1024 * 1024)
+                .image_crop_aspect_ratio("1:1")
+                .col_span("full")
+                .help_text("Passport photo or scanned ID. Max 5 MB."),
+            ],
+            title="Photo",
+            col_span="full",
+        ),
     ]
 
     detail_fields = [
@@ -1525,6 +1559,19 @@ class CheckoutResource(Resource):
                 .placeholder("Extension requests, damage notes, etc."),
             ],
             title="Notes",
+            col_span="full",
+        ),
+        forms.Section(
+            [
+                forms.FileUpload("attachment")
+                .label("Attachment")
+                .directory("checkouts")
+                .accept_file_types(["application/pdf", "image/jpeg", "image/png"])
+                .max_file_size(10 * 1024 * 1024)
+                .col_span("full")
+                .help_text("Attach a scanned returns slip, damage report, or agreement (PDF/image, max 10 MB). Optional."),
+            ],
+            title="Attachment",
             col_span="full",
         ),
     ]
