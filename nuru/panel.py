@@ -467,11 +467,16 @@ class AdminPanel:
             if path is None:
                 return _Resp(status_code=404)
             ct = _mt.guess_type(str(path))[0] or "application/octet-stream"
+            data = path.read_bytes()
+            headers = {
+                "Content-Disposition": f'inline; filename="{path.name}"',
+                "Content-Length": str(len(data)),
+            }
 
             def _iter():
-                yield path.read_bytes()
+                yield data
 
-            return StreamingResponse(_iter(), media_type=ct)
+            return StreamingResponse(_iter(), media_type=ct, headers=headers)
 
         @self._router.get("/_upload/load", response_model=None, include_in_schema=False)
         async def load_file(request: Request, source: str) -> _Resp:

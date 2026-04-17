@@ -99,9 +99,7 @@
     existingFiles.push({
       source: {{ _sid | tojson }},
       options: {
-        type: 'limbo',
-        file: { name: {{ _sid.split('/')|last | tojson }}, size: 0 },
-        metadata: { poster: {{ (panel_prefix ~ '/uploads/' ~ _sid) | tojson }} }
+        type: 'local'
       }
     });
     {%   endfor %}
