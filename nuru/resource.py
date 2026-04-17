@@ -628,6 +628,31 @@ class Resource:
             elif field.get_field_type() == "checkbox_group":
                 # Multi-value: collect all submitted values for this key.
                 data[key] = form_data.getlist(key)
+            elif field.get_field_type() == "file_upload":
+                # FilePond posts the server IDs as one or more values under the field name.
+                # Multiple values come in as repeated fields; single value is a plain string.
+                vals = form_data.getlist(key)
+                # Flatten — FilePond may also send a JSON-encoded list
+                server_ids: list[str] = []
+                import json as _json
+                for v in vals:
+                    if not v:
+                        continue
+                    try:
+                        parsed = _json.loads(v)
+                        if isinstance(parsed, list):
+                            server_ids.extend([str(x) for x in parsed if x])
+                            continue
+                    except (ValueError, TypeError):
+                        pass
+                    server_ids.append(v)
+                if not server_ids:
+                    data[key] = None
+                elif getattr(field, "is_multiple", lambda: False)():
+                    import json as _j2
+                    data[key] = _j2.dumps(server_ids)
+                else:
+                    data[key] = server_ids[0]
             elif field.get_field_type() == "datetimepicker":
                 # Submits as two keys: {key}_date and {key}_time.
                 date_val = submitted.get(f"{key}_date", "") or ""

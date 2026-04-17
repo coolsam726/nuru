@@ -21,6 +21,7 @@ from .datetimepicker import DateTimePicker
 from .timepicker import TimePicker
 from .hidden import Hidden
 from .section import Section, Fieldset
+from .file_upload import FileUpload
 
 __all__ = [
     "Field",
@@ -39,4 +40,5 @@ __all__ = [
     "Hidden",
     "Section",
     "Fieldset",
+    "FileUpload",
 ]
