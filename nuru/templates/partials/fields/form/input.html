@@ -9,6 +9,11 @@
     value="{{ current if current is not none else '' }}"
     {% if field.is_required() %}required{% endif %}
     {% if field.get_placeholder() %}placeholder="{{ field.get_placeholder() }}"{% endif %}
+    {# Add a simple client-side pattern for email fields so browsers can
+       perform HTML5 validation even when JS intercepts submission. This is
+       intentionally lightweight (checks for an @) — server-side validation
+       should still be performed where strong guarantees are required. #}
+{#    {% if 'email' in field.get_validators() %}pattern=".+@.+" title="Enter a valid email address"{% endif %}#}
     {% if field.get_min_value is defined and field.get_min_value() is not none %}min="{{ field.get_min_value() }}"{% endif %}
     {% if field.get_max_value is defined and field.get_max_value() is not none %}max="{{ field.get_max_value() }}"{% endif %}
     {% if field.get_max_length() is not none %}maxlength="{{ field.get_max_length() }}"{% endif %}

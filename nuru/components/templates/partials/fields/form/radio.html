@@ -2,19 +2,19 @@
 <div>
   <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
 
-  <div class="flex {{ 'flex-row' if field.inline else 'flex-col' }} gap-3">
-    {% for opt in field.options %}
+  <div class="flex {{ 'flex-row' if field.is_inline() else 'flex-col' }} gap-3">
+    {% for opt in field.get_options() %}
       {% set value = opt.value if opt is mapping else opt %}
       {% set label = opt.label if opt is mapping else opt %}
       <label class="inline-flex items-center gap-2">
-        <input type="radio" name="{{ field.key }}" value="{{ value }}" {% if current == value %}checked{% endif %} class="form-radio h-4 w-4 text-primary-600">
+        <input type="radio" name="{{ field.get_key() }}" value="{{ value }}" {% if current == value %}checked{% endif %} class="form-radio h-4 w-4 text-primary-600">
         <span class="text-sm text-secondary-700">{{ label }}</span>
       </label>
     {% endfor %}
   </div>
 
   {% if has_error %}
-    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.key] }}</p>
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
   {% elif field.get_help_text() %}
     <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
   {% endif %}

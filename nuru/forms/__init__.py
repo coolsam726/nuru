@@ -8,7 +8,7 @@ Or use the top-level alias ``nuru.fields`` which re-exports everything here.
 """
 
 from .base import Field
-from .text import Text
+from .text import Text, TextInput
 from .email import Email
 from .password import Password
 from .number import Number
@@ -24,7 +24,8 @@ from .section import Section, Fieldset
 
 __all__ = [
     "Field",
-    "Text",
+    "TextInput",
+    "Text", # Deprecated. Use TextInput instead
     "Email",
     "Password",
     "Number",

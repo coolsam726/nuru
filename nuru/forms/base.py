@@ -70,6 +70,21 @@ class Field:
         self._prefix_icon: str = ""
         self._suffix_icon: str = ""
 
+    @classmethod
+    def make(cls, key: str) -> "Field":
+        """Factory-style constructor for fluent factory usage.
+
+        Example: ``Field.make('email_address').email()``
+
+        The returned instance is marked with an internal ``_factory`` flag so
+        that convenience methods (like :meth:`email` and :meth:`password`) can
+        opt to return concrete subclasses instead of mutating the factory
+        instance in-place.
+        """
+        obj = cls(key)
+        setattr(obj, "_factory", True)
+        return obj
+
     # ------------------------------------------------------------------ #
     # Identity discriminator                                              #
     # ------------------------------------------------------------------ #
@@ -279,6 +294,19 @@ class Field:
     # ------------------------------------------------------------------ #
 
     def email(self) -> "Field":
+        # If this instance was created via the factory helper
+        # (TextInput.make(...)) return a concrete Email instance instead of
+        # mutating in-place. Local import to avoid circular imports.
+        if getattr(self, "_factory", False):
+            from .email import Email
+
+            new = Email(self._key)
+            result = self._clone_into(new)
+            # Ensure the email validator is present on the returned instance
+            # (the Email.__init__ may have set a default which _clone_into
+            # overwrote). Use add_validator to avoid duplicates.
+            return result.add_validator("email")
+
         self._input_type = "email"
         return self.add_validator("email")
 
@@ -289,6 +317,14 @@ class Field:
         return self.add_validator("integer")
 
     def password(self) -> "Field":
+        # If created via TextInput.make(...), return a concrete Password
+        # instance instead of mutating the factory object.
+        if getattr(self, "_factory", False):
+            from .password import Password
+
+            new = Password(self._key)
+            return self._clone_into(new)
+
         self._input_type = "password"
         return self
 
@@ -306,6 +342,57 @@ class Field:
 
     def get_max_length(self) -> int | None:
         return getattr(self, "_max_length", None)
+
+    def _clone_into(self, other: "Field") -> "Field":
+        """Copy common attributes from self into ``other`` and return ``other``.
+
+        This is used by factory-style creation helpers that need to return a
+        concrete subclass while preserving any fluent-configured metadata.
+        """
+        attrs = [
+            "_label",
+            "_field_type",
+            "_input_type",
+            "_required",
+            "_placeholder",
+            "_help_text",
+            "_default",
+            "_validators",
+            "_input_class",
+            "_input_style",
+            "_col_span",
+            "_css_class",
+            "_cols",
+            "_styled",
+            "_disabled",
+            "_readonly",
+            "_visible",
+            "_autofocus",
+            "_autocomplete",
+            "_nullable",
+            "_reactive",
+            "_prefix",
+            "_suffix",
+            "_prefix_icon",
+            "_suffix_icon",
+        ]
+
+        for name in attrs:
+            if hasattr(self, name):
+                setattr(other, name, getattr(self, name))
+
+        # copy optional max_length if present
+        if hasattr(self, "_max_length"):
+            setattr(other, "_max_length", getattr(self, "_max_length"))
+
+        # ensure the factory flag is not carried over
+        if hasattr(other, "_factory"):
+            try:
+                delattr(other, "_factory")
+            except Exception:
+                setattr(other, "_factory", False)
+
+        return other
 
     def __repr__(self) -> str:
         return (

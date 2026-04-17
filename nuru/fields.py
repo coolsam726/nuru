@@ -9,6 +9,7 @@ re-exports everything so existing imports continue to work::
 from nuru.forms import (  # noqa: F401
     Field,
     Text,
+    TextInput,
     Email,
     Password,
     Number,
@@ -27,6 +28,7 @@ from nuru.forms import (  # noqa: F401
 __all__ = [
     "Field",
     "Text",
+    "TextInput",
     "Email",
     "Password",
     "Number",

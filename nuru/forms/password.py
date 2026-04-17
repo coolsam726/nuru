@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from .base import Field
+from .text import TextInput
 
 
-class Password(Field):
+class Password(TextInput):
     """Password ``<input type="password">``."""
 
     _FIELD_TYPE = "password"
