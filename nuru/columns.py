@@ -102,21 +102,19 @@ class Boolean(Column):
 
 @dataclass
 class Image(Column):
-    """Render a stored file server-ID (relative path) as a circular thumbnail.
+    """Render a stored file server-ID (relative path) as a thumbnail in the table.
 
     Args:
         url_prefix: URL prefix that, combined with the stored value, gives the
-            full public URL of the image.  Defaults to the empty string — in
-            that case you must pass an absolute URL or configure the prefix
-            at build time.
-        size: Tailwind size token applied to ``w-*`` and ``h-*`` (default ``8``
-            → 32 px).
-        rounded: CSS class for the shape (default ``rounded-full`` = circle).
-        placeholder_icon: SVG path data to use when no image is stored.
+            full public URL of the image.
+        img_class: Tailwind classes applied to the ``<img>`` (and the
+            placeholder ``<span>``).  Use full static class names so the
+            Tailwind scanner can detect them.
+            Default: ``"w-8 h-8 rounded-full object-cover"``
+        placeholder_icon: SVG path data shown when no image is stored.
     """
     url_prefix: str = ""
-    size: str = "8"
-    rounded: str = "rounded-full"
+    img_class: str = "w-8 h-8 rounded-full object-cover"
     # Default placeholder: a simple person silhouette path
     placeholder_icon: str = (
         "M16 7a4 4 0 11-8 0 4 4 0 018 0z"

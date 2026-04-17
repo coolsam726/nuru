@@ -58,11 +58,10 @@
             {% if _img_url %}
               <img src="{{ _img_url }}"
                    alt="{{ col.label }}"
-                   class="w-{{ col.size }} h-{{ col.size }} {{ col.rounded }} object-cover ring-1 ring-secondary-200 dark:ring-secondary-600">
+                   class="{{ col.img_class }} ring-1 ring-secondary-200 dark:ring-secondary-600">
             {% else %}
-              <span class="inline-flex items-center justify-center w-{{ col.size }} h-{{ col.size }} {{ col.rounded }} bg-secondary-100 dark:bg-secondary-700 ring-1 ring-secondary-200 dark:ring-secondary-600">
-                <svg class="w-{{ col.size | int // 2 if col.size.isdigit() else 4 }} h-{{ col.size | int // 2 if col.size.isdigit() else 4 }} text-secondary-400 dark:text-secondary-500"
-                     fill="currentColor" viewBox="0 0 24 24">
+              <span class="inline-flex items-center justify-center {{ col.img_class }} bg-secondary-100 dark:bg-secondary-700 ring-1 ring-secondary-200 dark:ring-secondary-600">
+                <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" fill="currentColor" viewBox="0 0 24 24">
                   <path d="{{ col.placeholder_icon }}"/>
                 </svg>
               </span>
