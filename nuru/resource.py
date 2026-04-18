@@ -18,16 +18,31 @@ if TYPE_CHECKING:
 
 @dataclass
 class _BuiltinAction:
-    """Sentinel for the three built-in per-row operations.
-
-    Unlike ``Action``, these are rendered as links or hx-delete buttons by
-    the template, not as ``data-action-trigger`` modals.
-    """
+    """Sentinel for the three built-in per-row operations."""
     key: str        # '__view__' | '__edit__' | '__delete__'
     label: str
     icon: str
     style: str = "default"
     is_builtin: bool = True
+    placement: str = "row"
+    confirm: str = ""
+
+    # ── Accessors used by updated templates ──────────────────────────────
+    def get_key(self) -> str: return self.key
+    def get_label(self) -> str: return self.label
+    def get_icon(self) -> str: return self.icon
+    def get_style(self) -> str: return self.style
+    def get_placement(self) -> str: return self.placement
+    def get_confirm(self) -> str: return self.confirm
+    def get_modal_title(self) -> str: return self.label
+    def get_submit_label(self) -> str: return self.label
+    def get_fields(self) -> list: return []
+    def fields_json(self) -> str: return "[]"
+
+    @property
+    def button_class(self) -> str:
+        from nuru.actions.base import _STYLE_CLASSES
+        return _STYLE_CLASSES.get(self.style, _STYLE_CLASSES["default"])
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +70,7 @@ def _annotation_to_column(key: str, annotation: Any) -> Any:
 
 
 def _annotation_to_field(key: str, annotation: Any) -> Any:
-    from . import fields
+    from . import forms as fields
     import enum as _enum
     inner = _unwrap_optional(annotation)
     name  = getattr(inner, "__name__", "")

@@ -46,7 +46,7 @@ class Action:
     Usage::
 
         from nuru.actions import Action
-        from nuru import fields
+        import nuru.forms as fields
 
         class UserResource(Resource):
 
@@ -164,6 +164,18 @@ class Action:
     @property
     def button_class(self) -> str:
         return _STYLE_CLASSES.get(self.style, _STYLE_CLASSES["default"])
+
+    # ── get_*() accessors (expected by updated templates) ─────────────
+
+    def get_key(self) -> str: return self.key
+    def get_label(self) -> str: return self.label
+    def get_icon(self) -> str: return self.icon
+    def get_style(self) -> str: return self.style
+    def get_placement(self) -> str: return self.placement
+    def get_confirm(self) -> str: return self.confirm or ""
+    def get_modal_title(self) -> str: return self.form_title or self.label
+    def get_submit_label(self) -> str: return self.label
+    def get_fields(self) -> list: return list(self.form_fields)
 
     def fields_json(self) -> str:
         """JSON-serialise ``form_fields`` for the ``data-action-fields`` HTML attribute."""
