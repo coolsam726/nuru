@@ -66,7 +66,7 @@ def _annotation_to_field(key: str, annotation: Any) -> Any:
     if inner is float or name in ("float", "Decimal"):
         return fields.Number(key=key)
     if name == "date":
-        return fields.Date(key=key)
+        return fields.DatePicker(key=key)
     if name == "datetime":
         return fields.Text(key=key, input_type="datetime-local")
     try:
@@ -189,6 +189,10 @@ class Resource:
         if the subclass hasn't defined them explicitly."""
         # Only fill in what the subclass left blank.
         if cls.__dict__.get("table_columns") and cls.__dict__.get("form_fields"):
+            return
+        # Skip auto-build if the class uses the new v0.4 form()/table() API.
+        # The bridge (_bridge_from_new_api) will populate these in __init__.
+        if "form" in cls.__dict__ or "table" in cls.__dict__:
             return
         try:
             model_fields = cls.model.model_fields

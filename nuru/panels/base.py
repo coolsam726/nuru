@@ -40,16 +40,32 @@ class Panel:
     prefix: str = "/admin"
     primary_color: str | None = None
     auth_backend: Any = None
+    permission_checker: Any = None
+    per_page: int = 25
     upload_dir: str | Path | None = None
     upload_backend: Any = None
     def __init__(self) -> None:
         cls = self.__class__
-        self._title: str = cls.title
-        self._prefix: str = cls.prefix.rstrip("/")
-        self._primary_color: str | None = cls.primary_color
-        self._auth_backend: Any = cls.auth_backend
-        self._upload_dir: Any = cls.upload_dir
-        self._upload_backend: Any = cls.upload_backend
+        # Helper: read a class attribute only if a *subclass* explicitly declares it
+        # as a non-callable value (i.e. not the fluent-setter method defined on Panel).
+        def _cv(name: str, default: Any = None) -> Any:
+            for klass in cls.__mro__:
+                if klass is Panel:
+                    break  # don't read Panel's own method definitions
+                if name in vars(klass):
+                    val = vars(klass)[name]
+                    if not callable(val) or isinstance(val, (type, staticmethod, classmethod)):
+                        return val
+            return default
+
+        self._title: str = _cv("title", "Admin")
+        self._prefix: str = _cv("prefix", "/admin").rstrip("/")
+        self._primary_color: str | None = _cv("primary_color", None)
+        self._auth_backend: Any = _cv("auth_backend", None)
+        self._permission_checker: Any = _cv("permission_checker", None)
+        self._per_page: int = _cv("per_page", 25)
+        self._upload_dir: Any = _cv("upload_dir", None)
+        self._upload_backend: Any = _cv("upload_backend", None)
         self._resource_classes: list[type] = []
         self._page_classes: list[type] = []
         self._extra_template_dirs: list[Path] = []
@@ -81,6 +97,10 @@ class Panel:
         self._primary_color = value; return self
     def auth_backend(self, value: Any) -> "Panel":    # type: ignore[override]
         self._auth_backend = value; return self
+    def permission_checker(self, value: Any) -> "Panel":  # type: ignore[override]
+        self._permission_checker = value; return self
+    def per_page(self, value: int) -> "Panel":        # type: ignore[override]
+        self._per_page = value; return self
     def upload_dir(self, value: Any) -> "Panel":      # type: ignore[override]
         self._upload_dir = value; return self
     def upload_backend(self, value: Any) -> "Panel":  # type: ignore[override]
@@ -92,6 +112,8 @@ class Panel:
     def get_prefix(self) -> str: return self._prefix
     def get_primary_color(self) -> str | None: return self._primary_color
     def get_auth_backend(self): return self._auth_backend
+    def get_permission_checker(self): return self._permission_checker
+    def get_per_page(self) -> int: return self._per_page
     def get_upload_dir(self): return self._upload_dir
     def get_upload_backend(self): return self._upload_backend
     def get_resource_classes(self) -> list[type]:
@@ -121,6 +143,20 @@ class Panel:
     def add_template_dir(self, path: str | Path) -> "Panel":
         """Register an additional template directory."""
         self._extra_template_dirs.append(Path(path))
+        return self
+
+    def add_extra_js(self, url: str) -> "Panel":
+        """Register an additional JS URL to inject into every page."""
+        if not hasattr(self, "_extra_js"):
+            self._extra_js: list[str] = []
+        self._extra_js.append(url)
+        return self
+
+    def add_extra_css(self, url: str) -> "Panel":
+        """Register an additional CSS URL to inject into every page."""
+        if not hasattr(self, "_extra_css"):
+            self._extra_css: list[str] = []
+        self._extra_css.append(url)
         return self
     # ------------------------------------------------------------------ #
     # Auto-discovery                                                        #
@@ -191,9 +227,13 @@ class Panel:
             title=self._title,
             prefix=self._prefix,
             primary=self._primary_color,
-            auth_backend=self._auth_backend,
+            auth=self._auth_backend,
+            permission_checker=self._permission_checker,
+            per_page=self._per_page,
             upload_dir=self._upload_dir,
             upload_backend=self._upload_backend,
+            extra_js=getattr(self, "_extra_js", []),
+            extra_css=getattr(self, "_extra_css", []),
         )
         # Register discovered resources and pages
         from nuru.resource import Resource as _LegacyResource
