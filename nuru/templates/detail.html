@@ -22,18 +22,18 @@
 {% block header_actions %}
   {% if resource.form_actions %}
     {% for action in resource.form_actions %}
-      {% if action.placement == 'header' and has_perm(resource.slug + ':action') %}
+      {% if action.get_placement() == 'header' and has_perm(resource.slug + ':action') %}
       <button type="button"
               data-action-trigger
               data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-              data-action-title="{{ action.modal_title }}"
+              data-action-title="{{ action.get_modal_title() }}"
               data-action-fields="{{ action.fields_json() | e }}"
-              data-action-confirm="{{ action.confirm or '' }}"
-              data-action-submit="{{ action.label }}"
+              data-action-confirm="{{ action.get_confirm() or '' }}"
+              data-action-submit="{{ action.get_label() }}"
               class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                      {{ action.button_class }} transition-colors">
-        {{ render_icon(action.icon) }}
-        {{ action.label }}
+        {{ render_icon(action.get_icon()) }}
+        {{ action.get_label() }}
       </button>
       {% endif %}
     {% endfor %}
@@ -92,7 +92,7 @@
   {# ── Inline form actions ────────────────────────────────────────── #}
   {% set inline_actions = [] %}
   {% for action in resource.form_actions %}
-    {% if action.placement == 'inline' and has_perm(resource.slug + ':action') %}
+    {% if action.get_placement() == 'inline' and has_perm(resource.slug + ':action') %}
       {% set _ = inline_actions.append(action) %}
     {% endif %}
   {% endfor %}
@@ -104,14 +104,14 @@
     <button type="button"
             data-action-trigger
             data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-            data-action-title="{{ action.modal_title }}"
+            data-action-title="{{ action.get_modal_title() }}"
             data-action-fields="{{ action.fields_json() | e }}"
-            data-action-confirm="{{ action.confirm or '' }}"
-            data-action-submit="{{ action.label }}"
+            data-action-confirm="{{ action.get_confirm() or '' }}"
+            data-action-submit="{{ action.get_label() }}"
             class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                    {{ action.button_class }} transition-colors">
-      {{ render_icon(action.icon) }}
-      {{ action.label }}
+      {{ render_icon(action.get_icon()) }}
+      {{ action.get_label() }}
     </button>
     {% endfor %}
   </div>

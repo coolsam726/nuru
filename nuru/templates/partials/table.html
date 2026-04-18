@@ -108,25 +108,25 @@
 
             {# ── Inline actions ─────────────────────────────────── #}
             {% for action in _show_inline %}
-              {% set _cls = _icon_cls.get(action.style, _icon_cls['default']) %}
+              {% set _cls = _icon_cls.get(action.get_style(), _icon_cls['default']) %}
               {% if action.is_builtin %}
                 {# Built-in: view → <a>, edit → <a>, delete → hx-delete #}
                 {% if action.key == '__view__' and has_perm(resource.slug + ':view') %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
-                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
-                  {{ render_icon(action.icon) }}
+                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.get_label() }}">
+                  {{ render_icon(action.get_icon()) }}
                 </a>
                 {% elif action.key == '__edit__' and has_perm(resource.slug + ':edit') %}
                 <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
-                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
-                  {{ render_icon(action.icon) }}
+                   class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.get_label() }}">
+                  {{ render_icon(action.get_icon()) }}
                 </a>
                 {% elif action.key == '__delete__' and has_perm(resource.slug + ':delete') %}
-                <button class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}"
+                <button class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.get_label() }}"
                         hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                         hx-confirm="Delete this {{ resource.label }}?"
                         hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
-                  {{ render_icon(action.icon) }}
+                  {{ render_icon(action.get_icon()) }}
                 </button>
                 {% endif %}
               {% else %}
@@ -135,14 +135,14 @@
                 <button type="button"
                         data-action-trigger
                         data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-                        data-action-title="{{ action.modal_title }}"
+                        data-action-title="{{ action.get_modal_title() }}"
                         data-action-fields="{{ action.fields_json() | e }}"
-                        data-action-confirm="{{ action.confirm or '' }}"
-                        data-action-submit="{{ action.label }}"
-                        class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.label }}">
-                  {% if action.icon %}
-                  {{ render_icon(action.icon) }}
-                  {% else %}{{ action.label }}{% endif %}
+                        data-action-confirm="{{ action.get_confirm() or '' }}"
+                        data-action-submit="{{ action.get_label() }}"
+                        class="p-1.5 rounded transition-colors {{ _cls }}" title="{{ action.get_label() }}">
+                  {% if action.get_icon() %}
+                  {{ render_icon(action.get_icon()) }}
+                  {% else %}{{ action.get_label() }}{% endif %}
                 </button>
                 {% endif %}
               {% endif %}
@@ -173,37 +173,37 @@
               </button>
               <div class="overflow-dropdown hidden fixed w-44 bg-white dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700 shadow-lg z-[9999] py-1">
                 {% for action in _visible_overflow %}
-                  {% set _mcls = _menu_cls.get(action.style, _menu_cls['default']) %}
+                  {% set _mcls = _menu_cls.get(action.get_style(), _menu_cls['default']) %}
                   {% if action.is_builtin %}
                     {% if action.key == '__view__' %}
                     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/view"
                        class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
+                      {{ render_icon(action.get_icon(), "w-4 h-4 flex-shrink-0") }}{{ action.get_label() }}
                     </a>
                     {% elif action.key == '__edit__' %}
                     <a href="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                        class="flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
+                      {{ render_icon(action.get_icon(), "w-4 h-4 flex-shrink-0") }}{{ action.get_label() }}
                     </a>
                     {% elif action.key == '__delete__' %}
                     <button class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}"
                             hx-delete="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}"
                             hx-confirm="Delete this {{ resource.label }}?"
                             hx-target="#row-{{ record_id }}" hx-swap="outerHTML swap:200ms">
-                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}{{ action.label }}
+                      {{ render_icon(action.get_icon(), "w-4 h-4 flex-shrink-0") }}{{ action.get_label() }}
                     </button>
                     {% endif %}
                   {% else %}
                     <button type="button"
                             data-action-trigger
                             data-action-url="{{ panel_prefix }}/{{ resource.slug }}/{{ record_id }}/action/{{ action.key }}"
-                            data-action-title="{{ action.modal_title }}"
+                            data-action-title="{{ action.get_modal_title() }}"
                             data-action-fields="{{ action.fields_json() | e }}"
-                            data-action-confirm="{{ action.confirm or '' }}"
-                            data-action-submit="{{ action.label }}"
+                            data-action-confirm="{{ action.get_confirm() or '' }}"
+                            data-action-submit="{{ action.get_label() }}"
                             class="w-full text-left flex items-center gap-2 px-3 py-1.5 text-sm {{ _mcls }}">
-                      {{ render_icon(action.icon, "w-4 h-4 flex-shrink-0") }}
-                      {{ action.label }}
+                      {{ render_icon(action.get_icon(), "w-4 h-4 flex-shrink-0") }}
+                      {{ action.get_label() }}
                     </button>
                   {% endif %}
                 {% endfor %}

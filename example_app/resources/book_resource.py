@@ -51,21 +51,21 @@ class BookResource(Resource):
     def form(self) -> Form:
         return (
             Form()
-            .set_actions([
+            .actions([
                 Action.make("mark_unavailable")
                 .label("Mark Unavailable")
-                .set_handler("mark_unavailable")
-                .set_placement("header")
-                .set_style("warning")
-                .set_confirm("Mark this book as unavailable for checkout?")
-                .set_icon("M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"),
+                .handler("mark_unavailable")
+                .placement("header")
+                .style("warning")
+                .confirm("Mark this book as unavailable for checkout?")
+                .icon("M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"),
                 Action.make("mark_available")
                 .label("Mark Available")
-                .set_handler("mark_available")
-                .set_placement("header")
-                .set_style("success")
-                .set_confirm("Mark this book as available for checkout?")
-                .set_icon("M5 13l4 4L19 7"),
+                .handler("mark_available")
+                .placement("header")
+                .style("success")
+                .confirm("Mark this book as available for checkout?")
+                .icon("M5 13l4 4L19 7"),
             ])
             .schema([
                 forms.Section(

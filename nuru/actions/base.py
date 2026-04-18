@@ -33,10 +33,7 @@ class Action:
     A server-side action button usable in any context:
     row actions, form header, page header, bulk actions.
 
-    All state is private; public access is via fluent setters (return self)
-    and no-arg getter calls.
-
-    Usage::
+    Fluent API — every setter returns ``self`` for chaining::
 
         Action.make("send_email")
             .label("Send Welcome Email")
@@ -45,9 +42,9 @@ class Action:
             .confirm("Send email to this user?")
             .fields([Text("subject").required()])
             .handler("send_welcome")
+            .placement("header")
     """
 
-    # Sentinels for built-in actions (handled by the framework directly).
     KEY_VIEW   = "__view__"
     KEY_EDIT   = "__edit__"
     KEY_DELETE = "__delete__"
@@ -61,7 +58,7 @@ class Action:
         self._confirm: str = ""
         self._fields: list[Any] = []
         self._handler: str = ""
-        self._placement: str = "row"   # "row" | "header" | "bulk"
+        self._placement: str = "row"
         self._modal_title: str = ""
         self._is_builtin: bool = False
         self._submit_label: str = ""
@@ -75,118 +72,99 @@ class Action:
         return cls(key)
 
     # ------------------------------------------------------------------ #
-    # Properties — template-friendly attribute access (no get_ prefix)    #
+    # Dual fluent setters / getters                                        #
+    # Call with a value → set and return self.                            #
+    # Call with no args → return the current value.                       #
     # ------------------------------------------------------------------ #
 
-    @property
-    def key(self) -> str: return self._key
-
-    @property
-    def label(self) -> str: return self._label
-
-    @property
-    def icon(self) -> str: return self._icon
-
-    @property
-    def style(self) -> str: return self._style
-
-    @property
-    def confirm(self) -> str: return self._confirm
-
-    @property
-    def is_builtin(self) -> bool: return self._is_builtin
-
-    @property
-    def modal_title(self) -> str: return self._modal_title or self._label
-
-    @property
-    def handler(self) -> str: return self._handler
-
-    # ------------------------------------------------------------------ #
-    # Getters (no-arg calls)                                              #
-    # ------------------------------------------------------------------ #
-
-    def get_key(self) -> str:
-        return self._key
-
-    def get_label(self) -> str:
-        return self._label
-
-    def get_icon(self) -> str:
-        return self._icon
-
-    def get_style(self) -> str:
-        return self._style
-
-    def get_confirm(self) -> str:
-        return self._confirm
-
-    def get_fields(self) -> list[Any]:
-        return list(self._fields)
-
-    def get_handler(self) -> str:
-        return self._handler
-
-    def get_placement(self) -> str:
-        return self._placement
-
-    def get_modal_title(self) -> str:
-        return self._modal_title or self._label
-
-
-    def get_submit_label(self) -> str:
-        return self._submit_label or self._label
-
-    def get_style_classes(self) -> str:
-        return _STYLE_CLASSES.get(self._style, _STYLE_CLASSES["default"])
-
-    # ------------------------------------------------------------------ #
-    # Fluent setters — use set_* names to avoid collision with properties  #
-    # ------------------------------------------------------------------ #
-
-    def set_label(self, value: str) -> "Action":
-        self._label = value; return self
-
-    def set_icon(self, value: str) -> "Action":
-        self._icon = value; return self
-
-    def set_style(self, value: str) -> "Action":
-        self._style = value; return self
-
-    def set_confirm(self, value: str) -> "Action":
-        self._confirm = value; return self
-
-    def fields(self, value: list[Any]) -> "Action":
-        self._fields = list(value)
+    def label(self, value=_MISSING):
+        if value is _MISSING:
+            return self._label
+        self._label = value
         return self
 
-    def set_handler(self, value: str) -> "Action":
-        self._handler = value; return self
+    def icon(self, value=_MISSING):
+        if value is _MISSING:
+            return self._icon
+        self._icon = value
+        return self
 
-    def handler(self, value: str) -> "Action":
+    def style(self, value=_MISSING):
+        if value is _MISSING:
+            return self._style
+        self._style = value
+        return self
+
+    def confirm(self, value=_MISSING):
+        if value is _MISSING:
+            return self._confirm
+        self._confirm = value
+        return self
+
+    def handler(self, value=_MISSING):
+        if value is _MISSING:
+            return self._handler
         self._handler = value
         return self
 
-    def set_placement(self, value: str) -> "Action":
-        self._placement = value; return self
-
-    def placement(self, value: str) -> "Action":
+    def placement(self, value=_MISSING):
+        if value is _MISSING:
+            return self._placement
         self._placement = value
         return self
 
-    def set_modal_title(self, value: str) -> "Action":
-        self._modal_title = value; return self
-
-    def modal_title(self, value: str) -> "Action":
+    def modal_title(self, value=_MISSING):
+        if value is _MISSING:
+            return self._modal_title or self._label
         self._modal_title = value
         return self
 
-    def set_submit_label(self, value: str) -> "Action":
-        self._submit_label = value; return self
-
-    def submit_label(self, value: str) -> "Action":
+    def submit_label(self, value=_MISSING):
+        if value is _MISSING:
+            return self._submit_label or self._label
         self._submit_label = value
         return self
+
+    def fields(self, value=_MISSING):
+        if value is _MISSING:
+            return list(self._fields)
+        self._fields = list(value)
+        return self
+
+    # ------------------------------------------------------------------ #
+    # Read-only properties (no setter — pure state)                       #
+    # ------------------------------------------------------------------ #
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @property
+    def is_builtin(self) -> bool:
+        return self._is_builtin
+
+    @property
+    def button_class(self) -> str:
+        """Template-friendly alias for get_style_classes()."""
+        return self.get_style_classes()
+
+    # ------------------------------------------------------------------ #
+    # Explicit getters (for use in templates / code that prefers get_*)   #
+    # ------------------------------------------------------------------ #
+
+    def get_key(self) -> str: return self._key
+    def get_label(self) -> str: return self._label
+    def get_icon(self) -> str: return self._icon
+    def get_style(self) -> str: return self._style
+    def get_confirm(self) -> str: return self._confirm
+    def get_fields(self) -> list[Any]: return list(self._fields)
+    def get_handler(self) -> str: return self._handler
+    def get_placement(self) -> str: return self._placement
+    def get_modal_title(self) -> str: return self._modal_title or self._label
+    def get_submit_label(self) -> str: return self._submit_label or self._label
+
+    def get_style_classes(self) -> str:
+        return _STYLE_CLASSES.get(self._style, _STYLE_CLASSES["default"])
 
     # ------------------------------------------------------------------ #
     # Template helpers                                                     #

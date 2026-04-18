@@ -51,19 +51,19 @@ class CheckoutResource(Resource):
     def form(self) -> Form:
         return (
             Form()
-            .set_actions([
+            .actions([
                 Action.make("mark_returned").label("Mark Returned")
-                .set_handler("mark_returned").set_placement("header").set_style("success")
-                .set_confirm("Mark this book as returned?").set_icon("M5 13l4 4L19 7"),
+                .handler("mark_returned").placement("header").style("success")
+                .confirm("Mark this book as returned?").icon("M5 13l4 4L19 7"),
                 Action.make("mark_lost").label("Mark Lost")
-                .set_handler("mark_lost").set_placement("header").set_style("danger")
-                .set_fields([
+                .handler("mark_lost").placement("header").style("danger")
+                .fields([
                     forms.Number("fine_amount").label("Loss fine (KES)").required(),
                     forms.Textarea("note").label("Comment").placeholder("e.g. Member reported book lost at home."),
                 ]),
                 Action.make("add_note").label("Add Note")
-                .set_handler("add_note").set_placement("inline").set_style("default")
-                .set_fields([
+                .handler("add_note").placement("inline").style("default")
+                .fields([
                     forms.Textarea("note").label("Note").required().placeholder("Visible to staff only..."),
                 ]),
             ])

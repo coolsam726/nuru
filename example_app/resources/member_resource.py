@@ -37,14 +37,14 @@ class MemberResource(Resource):
                 }),
                 Boolean("active", "Active"),
             ])
-            .set_row_actions([
+            .row_actions([
                 Action.make("suspend").label("Suspend")
-                .set_handler("suspend_member").set_style("danger")
-                .set_confirm("Suspend this member's account?")
-                .set_icon("M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"),
+                .handler("suspend_member").style("danger")
+                .confirm("Suspend this member's account?")
+                .icon("M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"),
                 Action.make("reactivate").label("Reactivate")
-                .set_handler("reactivate_member").set_style("success")
-                .set_icon("M5 13l4 4L19 7"),
+                .handler("reactivate_member").style("success")
+                .icon("M5 13l4 4L19 7"),
             ])
         )
 
