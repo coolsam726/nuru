@@ -1,4 +1,4 @@
-from nuru.fields import Text
+from nuru.forms import Text
 
 
 def test_fluent_chaining_returns_self():

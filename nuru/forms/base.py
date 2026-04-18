@@ -1,402 +1,60 @@
-"""nuru.forms.base — base Field class.
-
-All field types inherit from :class:`Field`.  Internal state is stored on
-``_`` -prefixed instance variables.  The public API consists of:
-
-* **Fluent setters** — mutate the field in-place and return ``self`` so calls
-  can be chained::
-
-      Text("email").label("E-mail").required().placeholder("you@example.com")
-
-* **Getter methods** — read internal state::
-
-      field.get_label()     # str
-      field.is_required()   # bool
-"""
-
+"""nuru.forms.base — Form container class."""
 from __future__ import annotations
-
 from typing import Any
 
+_MISSING = object()
 
-class Field:
-    """Base class for all Nuru form and detail fields."""
 
-    # ------------------------------------------------------------------ #
-    # Class-level defaults — overridden by subclasses.                    #
-    # ------------------------------------------------------------------ #
-    _FIELD_TYPE: str = "text"
-    _INPUT_TYPE: str = "text"
+class Form:
+    """Reusable form container owning fields and actions."""
 
-    # ------------------------------------------------------------------ #
-    # Construction                                                         #
-    # ------------------------------------------------------------------ #
-
-    def __init__(self, key: str) -> None:
-        self._key: str = key
-        self._label: str = key.replace("_", " ").title()
-        self._field_type: str = self._FIELD_TYPE
-        self._input_type: str = self._INPUT_TYPE
-
-        # Value constraints / meta
-        self._required: bool = False
-        self._placeholder: str = ""
-        self._help_text: str = ""
-        self._default: Any = None
-        self._validators: list[str] = []
-
-        # Input element styling
-        self._input_class: str = ""
-        self._input_style: str = ""
-
-        # Layout hints (used inside Section containers)
-        self._col_span: int | str = 1
-        self._css_class: str = ""
-        self._cols: int = 1
-        self._styled: bool = False
-
-        # Accessibility
-        self._disabled: bool = False
-        self._readonly: bool = False
-        self._visible: bool = True
-        self._autofocus: bool = False
-        self._autocomplete: str = ""
-
-        # Filament-style addons
-        self._nullable: bool = False
-        self._reactive: bool = False
-        self._prefix: str = ""
-        self._suffix: str = ""
-        self._prefix_icon: str = ""
-        self._suffix_icon: str = ""
+    def __init__(self) -> None:
+        self._fields: list[Any] = []
+        self._actions: list[Any] = []
+        self._cols: int = 2
+        self._title: str = ""
 
     @classmethod
-    def make(cls, key: str) -> "Field":
-        """Factory-style constructor for fluent factory usage.
-
-        Example: ``Field.make('email_address').email()``
-
-        The returned instance is marked with an internal ``_factory`` flag so
-        that convenience methods (like :meth:`email` and :meth:`password`) can
-        opt to return concrete subclasses instead of mutating the factory
-        instance in-place.
-        """
-        obj = cls(key)
-        setattr(obj, "_factory", True)
+    def make(cls, fields: list[Any] | None = None) -> "Form":
+        obj = cls()
+        if fields is not None:
+            obj._fields = list(fields)
         return obj
 
-    # ------------------------------------------------------------------ #
-    # Identity discriminator                                              #
-    # ------------------------------------------------------------------ #
+    def fields(self, value=_MISSING):
+        """Get all fields (no args) or set them (with list arg)."""
+        if value is _MISSING:
+            return list(self._fields)
+        self._fields = list(value)
+        return self
 
-    def is_section_field(self) -> bool:
-        """Return ``False`` for fields; ``True`` only for Section/Fieldset."""
-        return False
+    def actions(self, value=_MISSING):
+        """Get all actions (no args) or set them (with list arg)."""
+        if value is _MISSING:
+            return list(self._actions)
+        self._actions = list(value)
+        return self
 
-    # ------------------------------------------------------------------ #
-    # Getters                                                              #
-    # ------------------------------------------------------------------ #
+    def schema(self, fields: list[Any]) -> "Form":
+        self._fields = list(fields); return self
 
-    def get_key(self) -> str:
-        return self._key
+    def add_field(self, field: Any) -> "Form":
+        self._fields.append(field); return self
 
-    def get_label(self) -> str:
-        return self._label
+    def add_action(self, action: Any) -> "Form":
+        self._actions.append(action); return self
 
-    def get_field_type(self) -> str:
-        return self._field_type
+    def cols(self, value: int) -> "Form":
+        self._cols = value; return self
 
-    def get_input_type(self) -> str:
-        return self._input_type
-
-    def is_required(self) -> bool:
-        return self._required
-
-    def get_placeholder(self) -> str:
-        return self._placeholder
-
-    def get_help_text(self) -> str:
-        return self._help_text
-
-    def get_default(self) -> Any:
-        return self._default
-
-    def get_validators(self) -> list[str]:
-        return list(self._validators)
-
-    def get_input_class(self) -> str:
-        return self._input_class
-
-    def get_input_style(self) -> str:
-        return self._input_style
-
-    def get_col_span(self) -> int | str:
-        return self._col_span
-
-    def get_css_class(self) -> str:
-        return self._css_class
+    def title(self, value: str) -> "Form":
+        self._title = value; return self
 
     def get_cols(self) -> int:
         return self._cols
 
-    def is_styled(self) -> bool:
-        return self._styled
-
-    def is_disabled(self) -> bool:
-        return self._disabled
-
-    def is_readonly(self) -> bool:
-        return self._readonly
-
-    def is_visible(self) -> bool:
-        return self._visible
-
-    def is_autofocus(self) -> bool:
-        return self._autofocus
-
-    def get_autocomplete(self) -> str:
-        return self._autocomplete
-
-    def is_nullable(self) -> bool:
-        return self._nullable
-
-    def is_reactive(self) -> bool:
-        return self._reactive
-
-    def get_prefix(self) -> str:
-        return self._prefix
-
-    def get_suffix(self) -> str:
-        return self._suffix
-
-    def get_prefix_icon(self) -> str:
-        return self._prefix_icon
-
-    def get_suffix_icon(self) -> str:
-        return self._suffix_icon
-
-    # ------------------------------------------------------------------ #
-    # Fluent setters — all return ``self`` for chaining                   #
-    # ------------------------------------------------------------------ #
-
-    def label(self, value: str) -> "Field":
-        """Set the human-readable label shown above the input."""
-        self._label = value
-        return self
-
-    def title(self, value: str) -> "Field":
-        """Alias for :meth:`label`."""
-        return self.label(value)
-
-    def required(self, on: bool = True) -> "Field":
-        """Mark the field as required (shows a ``*`` marker)."""
-        self._required = on
-        return self
-
-    def optional(self) -> "Field":
-        """Mark the field as optional (opposite of :meth:`required`)."""
-        return self.required(False)
-
-    def placeholder(self, value: str) -> "Field":
-        self._placeholder = value
-        return self
-
-    def help_text(self, value: str) -> "Field":
-        self._help_text = value
-        return self
-
-    def hint(self, value: str) -> "Field":
-        """Alias for :meth:`help_text`."""
-        return self.help_text(value)
-
-    def default(self, value: Any) -> "Field":
-        self._default = value
-        return self
-
-    def add_validator(self, name: str) -> "Field":
-        self._validators = list(self._validators) + [name]
-        return self
-
-    def input_class(self, value: str) -> "Field":
-        self._input_class = value
-        return self
-
-    def input_style(self, value: str) -> "Field":
-        self._input_style = value
-        return self
-
-    def col_span(self, value: int | str) -> "Field":
-        self._col_span = value
-        return self
-
-    def css_class(self, value: str) -> "Field":
-        self._css_class = value
-        return self
-
-    def cols(self, value: int) -> "Field":
-        self._cols = value
-        return self
-
-    def styled(self, on: bool = True) -> "Field":
-        self._styled = on
-        return self
-
-    def disabled(self, on: bool = True) -> "Field":
-        self._disabled = on
-        return self
-
-    def readonly(self, on: bool = True) -> "Field":
-        self._readonly = on
-        return self
-
-    def visible(self, on: bool = True) -> "Field":
-        self._visible = on
-        return self
-
-    def hidden(self) -> "Field":
-        """Hide the field from the UI."""
-        return self.visible(False)
-
-    def autofocus(self, on: bool = True) -> "Field":
-        self._autofocus = on
-        return self
-
-    def autocomplete(self, value: str) -> "Field":
-        self._autocomplete = value
-        return self
-
-    def nullable(self, on: bool = True) -> "Field":
-        self._nullable = on
-        return self
-
-    def reactive(self, on: bool = True) -> "Field":
-        self._reactive = on
-        return self
-
-    def prefix(self, value: str) -> "Field":
-        self._prefix = value
-        return self
-
-    def suffix(self, value: str) -> "Field":
-        self._suffix = value
-        return self
-
-    def prefix_icon(self, name: str) -> "Field":
-        self._prefix_icon = name
-        return self
-
-    def suffix_icon(self, name: str) -> "Field":
-        self._suffix_icon = name
-        return self
-
-    # ------------------------------------------------------------------ #
-    # Input-type / validator convenience methods                          #
-    # ------------------------------------------------------------------ #
-
-    def email(self) -> "Field":
-        # If this instance was created via the factory helper
-        # (TextInput.make(...)) return a concrete Email instance instead of
-        # mutating in-place. Local import to avoid circular imports.
-        if getattr(self, "_factory", False):
-            from .email import Email
-
-            new = Email(self._key)
-            result = self._clone_into(new)
-            # Ensure the email validator is present on the returned instance
-            # (the Email.__init__ may have set a default which _clone_into
-            # overwrote). Use add_validator to avoid duplicates.
-            return result.add_validator("email")
-
-        self._input_type = "email"
-        return self.add_validator("email")
-
-    def numeric(self) -> "Field":
-        return self.add_validator("numeric")
-
-    def integer(self) -> "Field":
-        return self.add_validator("integer")
-
-    def password(self) -> "Field":
-        # If created via TextInput.make(...), return a concrete Password
-        # instance instead of mutating the factory object.
-        if getattr(self, "_factory", False):
-            from .password import Password
-
-            new = Password(self._key)
-            return self._clone_into(new)
-
-        self._input_type = "password"
-        return self
-
-    def tel(self) -> "Field":
-        self._input_type = "tel"
-        return self
-
-    def url(self) -> "Field":
-        self._input_type = "url"
-        return self.add_validator("url")
-
-    def max_length(self, n: int) -> "Field":
-        self._max_length = n
-        return self
-
-    def get_max_length(self) -> int | None:
-        return getattr(self, "_max_length", None)
-
-    def _clone_into(self, other: "Field") -> "Field":
-        """Copy common attributes from self into ``other`` and return ``other``.
-
-        This is used by factory-style creation helpers that need to return a
-        concrete subclass while preserving any fluent-configured metadata.
-        """
-        attrs = [
-            "_label",
-            "_field_type",
-            "_input_type",
-            "_required",
-            "_placeholder",
-            "_help_text",
-            "_default",
-            "_validators",
-            "_input_class",
-            "_input_style",
-            "_col_span",
-            "_css_class",
-            "_cols",
-            "_styled",
-            "_disabled",
-            "_readonly",
-            "_visible",
-            "_autofocus",
-            "_autocomplete",
-            "_nullable",
-            "_reactive",
-            "_prefix",
-            "_suffix",
-            "_prefix_icon",
-            "_suffix_icon",
-        ]
-
-        for name in attrs:
-            if hasattr(self, name):
-                setattr(other, name, getattr(self, name))
-
-        # copy optional max_length if present
-        if hasattr(self, "_max_length"):
-            setattr(other, "_max_length", getattr(self, "_max_length"))
-
-        # ensure the factory flag is not carried over
-        if hasattr(other, "_factory"):
-            try:
-                delattr(other, "_factory")
-            except Exception:
-                setattr(other, "_factory", False)
-
-        return other
+    def get_title(self) -> str:
+        return self._title
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}(key={self._key!r}, "
-            f"label={self._label!r}, "
-            f"required={self._required})"
-        )
+        return f"{type(self).__name__}(fields={len(self.fields())})"

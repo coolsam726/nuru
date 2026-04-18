@@ -1,0 +1,54 @@
+{#
+  ── DatePicker — single-date Flowbite datepicker ──────────────────────────
+  Requires: Flowbite JS loaded via register_flowbite(panel).
+
+  Field getters used:
+    field.get_date_format()   — e.g. "yyyy-mm-dd"
+    field.is_autohide()       — bool
+    field.has_buttons()       — bool (Today / Clear buttons)
+    field.get_orientation()   — "bottom" | "top" | "bottom right" etc.
+    field.get_picker_title()  — optional calendar header text
+    field.get_min_date()      — optional lower bound
+    field.get_max_date()      — optional upper bound
+#}
+{% set _current_val = current | string if current is not none and current != '' and current != 'None' else '' %}
+
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  <div class="relative">
+    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
+      <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" aria-hidden="true"
+           xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
+      </svg>
+    </div>
+
+    <input
+      datepicker
+      datepicker-format="{{ field.get_date_format() }}"
+      {% if field.is_autohide() %}datepicker-autohide{% endif %}
+      {% if field.has_buttons() %}datepicker-buttons{% endif %}
+      {% if field.get_orientation() %}datepicker-orientation="{{ field.get_orientation() }}"{% endif %}
+      {% if field.get_picker_title() %}datepicker-title="{{ field.get_picker_title() }}"{% endif %}
+      {% if field.get_min_date() %}datepicker-min-date="{{ field.get_min_date() }}"{% endif %}
+      {% if field.get_max_date() %}datepicker-max-date="{{ field.get_max_date() }}"{% endif %}
+      type="text"
+      name="{{ field.get_key() }}"
+      value="{{ _current_val }}"
+      placeholder="{{ field.get_placeholder() if field.get_placeholder() else field.get_date_format() }}"
+      {% if field.is_required() %}required{% endif %}
+      autocomplete="off"
+      class="{{ input_class }} ps-9"
+      style="--tw-ring-color: var(--color-primary-500);"
+    >
+  </div>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
+  {% endif %}
+</div>

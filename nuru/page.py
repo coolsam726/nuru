@@ -21,7 +21,7 @@ class Page:
     Quick-start example::
 
         from nuru import Page
-        from nuru.fields import Text, Section
+        from nuru.forms import Text, Section
         from nuru.columns import Text as TCol
 
         class ReportPage(Page):

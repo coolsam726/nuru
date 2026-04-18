@@ -1,6 +1,6 @@
 """Tests for nuru.integrations.flowbite — standalone datepicker integration."""
 import pytest
-from nuru import AdminPanel
+from nuru.panel import AdminPanel  # internal routing engine
 from nuru.integrations.flowbite import (
     FlowbiteDatepicker,
     FlowbiteDateRangePicker,

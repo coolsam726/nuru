@@ -1,0 +1,36 @@
+{%- macro _badge(v, i) %}
+{%- if i % 2 == 0 %}
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+               bg-primary-100 text-primary ring-1 ring-inset ring-primary-200
+               dark:bg-primary-900/40 dark:text-primary-300 dark:ring-primary-700">{{ v }}</span>
+{%- else %}
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+               bg-secondary-100 text-secondary-700 ring-1 ring-inset ring-secondary-300
+               dark:bg-secondary-700/60 dark:text-secondary-300 dark:ring-secondary-600">{{ v }}</span>
+{%- endif %}
+{%- endmacro %}
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">{{ field.get_label() }}</dt>
+  <dd>
+    {% set vals = value if (value is iterable and value is not string) else ([value] if value else []) %}
+    <div class="flex flex-wrap gap-1.5">
+      {% for v in vals %}{{ _badge(v, loop.index0) }}
+      {% else %}<span class="text-sm text-secondary-400 dark:text-secondary-500 italic">—</span>
+      {% endfor %}
+    </div>
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
+  <dd class="mt-1 sm:mt-0 sm:col-span-2">
+    {% set vals = value if (value is iterable and value is not string) else ([value] if value else []) %}
+    <div class="flex flex-wrap gap-1.5">
+      {% for v in vals %}{{ _badge(v, loop.index0) }}
+      {% else %}<span class="text-sm text-secondary-400 dark:text-secondary-500 italic">—</span>
+      {% endfor %}
+    </div>
+  </dd>
+</div>
+{% endif %}

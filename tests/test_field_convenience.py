@@ -1,4 +1,4 @@
-from nuru.fields import Text, Number, Textarea
+from nuru.forms import Text, Number, Textarea
 
 
 def test_input_styling_and_convenience_methods():

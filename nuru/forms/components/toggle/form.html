@@ -1,0 +1,15 @@
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">{{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
+
+  <label class="inline-flex items-center cursor-pointer">
+    <input type="checkbox" name="{{ field.get_key() }}" value="1" {% if current %}checked{% endif %} class="sr-only peer">
+    <div class="relative w-9 h-5 bg-neutral-quaternary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-soft dark:peer-focus:ring-brand-soft rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-buffer after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
+    <span class="select-none ms-3 text-sm font-medium text-heading">{{ field.get_on_label() if current else field.get_off_label() }}</span>
+  </label>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
+  {% endif %}
+</div>

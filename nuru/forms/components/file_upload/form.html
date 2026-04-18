@@ -1,0 +1,179 @@
+{#
+  ── FilePond File Upload field ─────────────────────────────────────────────
+  Uses FilePond (https://pqina.nl/filepond/) for drag-and-drop uploads with
+  previews, validation, and progress indicators.
+
+  Plugins loaded:
+    • FilePondPluginImagePreview         — thumbnail for images
+    • FilePondPluginFileValidateSize     — enforce max_file_size
+    • FilePondPluginFileValidateType     — enforce accept_file_types
+    • FilePondPluginImageExifOrientation — fix EXIF orientation
+    • FilePondPluginImageCrop            — crop aspect-ratio support
+    • FilePondPluginImageResize          — resize support
+    • FilePondPluginImageTransform       — apply crop/resize client-side
+
+  Context variables (injected by macros/form_item.html):
+    current      — current stored value (string server ID or JSON list)
+    has_error    — bool
+    errors       — dict { field_key: message }
+    panel_prefix — URL prefix of this admin panel
+#}
+
+{# Unique ID per field instance to support multiple file uploads on one page #}
+{% set _uid = field.get_key() | replace('.', '_') | replace('-', '_') %}
+{% set _upload_url = panel_prefix ~ '/_upload' %}
+{% set _cfg = field.filepond_config(upload_url=_upload_url) %}
+
+{# -- CSS (injected once per page via a guard attribute) -- #}
+<link rel="stylesheet" href="https://unpkg.com/filepond/dist/filepond.css" data-filepond-css>
+{% if field.is_image_preview() %}
+<link rel="stylesheet" href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" data-filepond-preview-css>
+{% endif %}
+
+<style>
+  .filepond--root {
+    font-family: inherit;
+  }
+</style>
+
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.get_label() }}
+    {% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  {#
+    The hidden input(s) carry the server IDs on form submit.
+    FilePond will update them as files are processed/reverted.
+    We use a <template> element to pre-populate existing files on edit.
+  #}
+  <input
+    type="file"
+    id="filepond-{{ _uid }}"
+    name="{{ field.get_key() }}"
+    {% if field.is_multiple() %}multiple{% endif %}
+    {% if field.get_accept_file_types() %}accept="{{ field.get_accept_file_types() | join(',') }}"{% endif %}
+    style="display:none;"
+  >
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
+  {% endif %}
+</div>
+
+{# -- JS — load FilePond and plugins, then initialise this field -- #}
+<script>
+(function () {
+  // Avoid re-loading scripts if multiple file upload fields exist on one page
+  function _loadScript(src, id, cb) {
+    if (document.getElementById(id)) { if (cb) cb(); return; }
+    var s = document.createElement('script');
+    s.src = src; s.id = id; s.defer = false; s.async = false;
+    if (cb) s.onload = cb;
+    document.head.appendChild(s);
+  }
+  function _initFilePond_{{ _uid }}() {
+    // Register plugins
+    var plugins = [];
+    if (window.FilePondPluginFileValidateSize)     plugins.push(FilePondPluginFileValidateSize);
+    if (window.FilePondPluginFileValidateType)     plugins.push(FilePondPluginFileValidateType);
+    if (window.FilePondPluginImageExifOrientation) plugins.push(FilePondPluginImageExifOrientation);
+    {% if field.is_image_preview() %}
+    if (window.FilePondPluginImagePreview)         plugins.push(FilePondPluginImagePreview);
+    if (window.FilePondPluginImageCrop)            plugins.push(FilePondPluginImageCrop);
+    if (window.FilePondPluginImageResize)          plugins.push(FilePondPluginImageResize);
+    if (window.FilePondPluginImageTransform)       plugins.push(FilePondPluginImageTransform);
+    {% endif %}
+    if (plugins.length) FilePond.registerPlugin.apply(FilePond, plugins);
+
+    var el = document.getElementById('filepond-{{ _uid }}');
+    if (!el) return;
+
+    // Pre-populate existing files from the server
+    var existingFiles = [];
+    {% if current %}
+    {%   set _existing = field.parse_value(current) %}
+    {%   for _sid in _existing %}
+    existingFiles.push({
+      source: {{ _sid | tojson }},
+      options: {
+        type: 'local'
+      }
+    });
+    {%   endfor %}
+    {% endif %}
+
+    var fp = FilePond.create(el, {
+      allowMultiple:     {{ 'true' if field.is_multiple() else 'false' }},
+      maxFiles:          {{ field.get_max_files() | tojson }},
+      acceptedFileTypes: {{ field.get_accept_file_types() | tojson }},
+      maxFileSize:       {{ field.get_max_file_size() | tojson }},
+      allowReorder:      {{ 'true' if field.can_reorder_files() else 'false' }},
+      {% if field.get_image_crop_aspect_ratio() %}
+      imageCropAspectRatio: {{ field.get_image_crop_aspect_ratio() | tojson }},
+      {% endif %}
+      {% if field.get_image_resize_width() or field.get_image_resize_height() %}
+      imageResizeTargetWidth:  {{ field.get_image_resize_width() | tojson }},
+      imageResizeTargetHeight: {{ field.get_image_resize_height() | tojson }},
+      imageResizeMode:         {{ field.get_image_resize_mode() | tojson }},
+      {% endif %}
+      files: existingFiles,
+      server: {
+        process: {
+          url: {{ (_upload_url) | tojson }},
+          method: 'POST',
+          withCredentials: false,
+          headers: {},
+          timeout: 30000,
+          ondata: function (formData) {
+            {%- if field.get_directory() %}
+            formData.append('directory', {{ field.get_directory() | tojson }});
+            {%- endif %}
+            return formData;
+          },
+        },
+        revert:  { url: {{ _upload_url | tojson }}, method: 'DELETE' },
+        restore: '{{ _upload_url }}/restore?id=',
+        load:    '{{ _upload_url }}/load?source=',
+      },
+      labelIdle: '<span class="filepond--label-action" style="text-decoration:none;">Browse</span> or drag &amp; drop files here',
+      {% if field.is_image_preview() %}
+      allowImagePreview: true,
+      imagePreviewHeight: 200,
+      {% endif %}
+      name: {{ field.get_key() | tojson }},
+    });
+  }
+
+  // Load FilePond core then plugins then initialise
+  _loadScript(
+    'https://unpkg.com/filepond/dist/filepond.js',
+    '__filepond_core__',
+    function () {
+      var pluginScripts = [
+        ['https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.js', '__fp_validate_size__'],
+        ['https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js', '__fp_validate_type__'],
+        ['https://unpkg.com/filepond-plugin-image-exif-orientation/dist/filepond-plugin-image-exif-orientation.js', '__fp_exif__'],
+        {% if field.is_image_preview() %}
+        ['https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js', '__fp_img_preview__'],
+        ['https://unpkg.com/filepond-plugin-image-crop/dist/filepond-plugin-image-crop.js', '__fp_img_crop__'],
+        ['https://unpkg.com/filepond-plugin-image-resize/dist/filepond-plugin-image-resize.js', '__fp_img_resize__'],
+        ['https://unpkg.com/filepond-plugin-image-transform/dist/filepond-plugin-image-transform.js', '__fp_img_transform__'],
+        {% endif %}
+      ];
+
+      var pending = pluginScripts.length;
+      if (pending === 0) { _initFilePond_{{ _uid }}(); return; }
+      pluginScripts.forEach(function (item) {
+        _loadScript(item[0], item[1], function () {
+          pending -= 1;
+          if (pending === 0) _initFilePond_{{ _uid }}();
+        });
+      });
+    }
+  );
+})();
+</script>
+

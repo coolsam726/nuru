@@ -18,16 +18,31 @@ if TYPE_CHECKING:
 
 @dataclass
 class _BuiltinAction:
-    """Sentinel for the three built-in per-row operations.
-
-    Unlike ``Action``, these are rendered as links or hx-delete buttons by
-    the template, not as ``data-action-trigger`` modals.
-    """
+    """Sentinel for the three built-in per-row operations."""
     key: str        # '__view__' | '__edit__' | '__delete__'
     label: str
     icon: str
     style: str = "default"
     is_builtin: bool = True
+    placement: str = "row"
+    confirm: str = ""
+
+    # ── Accessors used by updated templates ──────────────────────────────
+    def get_key(self) -> str: return self.key
+    def get_label(self) -> str: return self.label
+    def get_icon(self) -> str: return self.icon
+    def get_style(self) -> str: return self.style
+    def get_placement(self) -> str: return self.placement
+    def get_confirm(self) -> str: return self.confirm
+    def get_modal_title(self) -> str: return self.label
+    def get_submit_label(self) -> str: return self.label
+    def get_fields(self) -> list: return []
+    def fields_json(self) -> str: return "[]"
+
+    @property
+    def button_class(self) -> str:
+        from nuru.actions.base import _STYLE_CLASSES
+        return _STYLE_CLASSES.get(self.style, _STYLE_CLASSES["default"])
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +70,7 @@ def _annotation_to_column(key: str, annotation: Any) -> Any:
 
 
 def _annotation_to_field(key: str, annotation: Any) -> Any:
-    from . import fields
+    from . import forms as fields
     import enum as _enum
     inner = _unwrap_optional(annotation)
     name  = getattr(inner, "__name__", "")
@@ -66,7 +81,7 @@ def _annotation_to_field(key: str, annotation: Any) -> Any:
     if inner is float or name in ("float", "Decimal"):
         return fields.Number(key=key)
     if name == "date":
-        return fields.Date(key=key)
+        return fields.DatePicker(key=key)
     if name == "datetime":
         return fields.Text(key=key, input_type="datetime-local")
     try:
@@ -190,6 +205,10 @@ class Resource:
         # Only fill in what the subclass left blank.
         if cls.__dict__.get("table_columns") and cls.__dict__.get("form_fields"):
             return
+        # Skip auto-build if the class uses the new v0.4 form()/table() API.
+        # The bridge (_bridge_from_new_api) will populate these in __init__.
+        if "form" in cls.__dict__ or "table" in cls.__dict__:
+            return
         try:
             model_fields = cls.model.model_fields
         except AttributeError:
@@ -303,6 +322,10 @@ class Resource:
             self.slug = self.label.lower().replace(" ", "-")
         if not self.label_plural:
             self.label_plural = self.label + "s"
+        # v0.4 bridge: if subclass defines form()/table()/infolist(),
+        # populate legacy form_fields / table_columns / detail_fields from them.
+        if callable(getattr(self, "_bridge_from_new_api", None)):
+            self._bridge_from_new_api()
 
     async def _user_allowed(self, request: Request, action: str, action_key: str | None = None) -> bool:
         """Check whether the current user may perform *action* on this resource.

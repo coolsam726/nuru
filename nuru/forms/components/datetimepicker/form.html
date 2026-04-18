@@ -1,0 +1,102 @@
+{#
+  ── DateTimePicker — Flowbite date picker + native time input ─────────────
+  Requires: Flowbite JS loaded via register_flowbite(panel).
+
+  Submits two separate form values:
+    {key}_date  — the date portion (e.g. "2026-04-17")
+    {key}_time  — the time portion (e.g. "14:30")
+
+  Field getters used:
+    field.get_date_format()  — e.g. "yyyy-mm-dd"
+    field.get_time_format()  — display hint label (e.g. "HH:mm")
+    field.is_autohide()      — bool
+    field.has_buttons()      — bool
+    field.get_orientation()  — "bottom" | "top" etc.
+    field.get_min_date()     — optional lower date bound
+    field.get_max_date()     — optional upper date bound
+    field.get_min_time()     — optional min time (e.g. "08:00")
+    field.get_max_time()     — optional max time (e.g. "20:00")
+#}
+{% set _key = field.get_key() %}
+{% set _date_val = '' %}
+{% set _time_val = '' %}
+{% if current is mapping %}
+  {% set _date_val = current.get(_key ~ '_date', '') | string %}
+  {% set _time_val = current.get(_key ~ '_time', '') | string %}
+{% elif current is not none and current != '' and current != 'None' %}
+  {# Try to split a combined "YYYY-MM-DD HH:MM" string #}
+  {% set _combined = current | string %}
+  {% set _space = _combined.find(' ') %}
+  {% if _space > -1 %}
+    {% set _date_val = _combined[:_space] %}
+    {% set _time_val = _combined[_space + 1:] %}
+  {% else %}
+    {% set _date_val = _combined %}
+  {% endif %}
+{% endif %}
+{% if _date_val == 'None' %}{% set _date_val = '' %}{% endif %}
+{% if _time_val == 'None' %}{% set _time_val = '' %}{% endif %}
+
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
+  </label>
+
+  <div class="flex items-center gap-2">
+
+    {# ── Date input ── #}
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
+        <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
+        </svg>
+      </div>
+      <input
+        datepicker
+        datepicker-format="{{ field.get_date_format() }}"
+        {% if field.is_autohide() %}datepicker-autohide{% endif %}
+        {% if field.has_buttons() %}datepicker-buttons{% endif %}
+        {% if field.get_orientation() %}datepicker-orientation="{{ field.get_orientation() }}"{% endif %}
+        {% if field.get_min_date() %}datepicker-min-date="{{ field.get_min_date() }}"{% endif %}
+        {% if field.get_max_date() %}datepicker-max-date="{{ field.get_max_date() }}"{% endif %}
+        type="text"
+        name="{{ _key }}_date"
+        value="{{ _date_val }}"
+        placeholder="{{ field.get_date_format() }}"
+        {% if field.is_required() %}required{% endif %}
+        autocomplete="off"
+        class="{{ input_class }} ps-9"
+        style="--tw-ring-color: var(--color-primary-500);"
+      >
+    </div>
+
+    {# ── Time input ── #}
+    <div class="relative w-36">
+      <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
+        <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+      </div>
+      <input
+        type="time"
+        name="{{ _key }}_time"
+        value="{{ _time_val }}"
+        {% if field.get_min_time() %}min="{{ field.get_min_time() }}"{% endif %}
+        {% if field.get_max_time() %}max="{{ field.get_max_time() }}"{% endif %}
+        {% if field.is_required() %}required{% endif %}
+        class="{{ input_class }} ps-9"
+        style="--tw-ring-color: var(--color-primary-500);"
+      >
+    </div>
+
+  </div>
+
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[_key] }}</p>
+  {% elif field.get_help_text() %}
+    <p class="text-xs text-secondary-400 dark:text-secondary-500 mt-1">{{ field.get_help_text() }}</p>
+  {% endif %}
+</div>
