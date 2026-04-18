@@ -161,20 +161,47 @@ class TestPaletteCssVarsLiteral:
 # ---------------------------------------------------------------------------
 
 class TestPaletteCssVarsVar:
-    def test_var_input_uses_color_mix(self):
+    def test_palette_alias_pattern_detected(self):
+        """var(--color-amber-500) should alias to var(--color-amber-{stop}) for all stops."""
+        css = palette_css_vars("primary", "var(--color-amber-500)")
+        assert "--color-primary-50: var(--color-amber-50);" in css
+        assert "--color-primary-500: var(--color-amber-500);" in css
+        assert "--color-primary-950: var(--color-amber-950);" in css
+
+    def test_palette_alias_covers_all_11_stops(self):
         css = palette_css_vars("primary", "var(--color-indigo-500)")
+        for stop in [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]:
+            assert f"--color-primary-{stop}: var(--color-indigo-{stop});" in css
+
+    def test_dash_dash_prefix_alias(self):
+        css = palette_css_vars("primary", "--color-indigo-500")
+        assert "--color-primary-50: var(--color-indigo-50);" in css
+        assert "--color-primary-500: var(--color-indigo-500);" in css
+
+    def test_no_color_mix_for_alias(self):
+        """Direct alias path must NOT use color-mix (that was the bug)."""
+        css = palette_css_vars("primary", "var(--color-amber-500)")
+        assert "color-mix" not in css
+
+    def test_circular_alias_falls_back_to_color_mix(self):
+        """var(--color-primary-500) must not generate self-referencing vars."""
+        css = palette_css_vars("primary", "var(--color-primary-500)")
+        assert "color-mix" in css
+        assert "--color-primary-50: var(--color-primary-50);" not in css
+
+    def test_generic_var_uses_color_mix(self):
+        """A var() that doesn't match --color-{name}-{stop} falls back to color-mix."""
+        css = palette_css_vars("primary", "var(--my-brand-color)")
+        assert "color-mix" in css
+
+    def test_var_input_uses_color_mix(self):
+        css = palette_css_vars("primary", "var(--my-custom)")
         assert "color-mix" in css
 
     def test_dash_dash_prefix_expanded(self):
         css = palette_css_vars("primary", "--color-indigo-500")
-        assert "var(--color-indigo-500)" in css
-
-    def test_500_stop_is_base_token_for_var(self):
-        css = palette_css_vars("primary", "var(--color-indigo-500)")
-        import re
-        m = re.search(r'--color-primary-500:\s*(.+?);', css)
-        assert m is not None
-        assert m.group(1).strip() == "var(--color-indigo-500)"
+        # Result should be direct alias, not color-mix
+        assert "var(--color-indigo-50)" in css
 
 
 # ---------------------------------------------------------------------------

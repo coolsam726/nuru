@@ -286,11 +286,18 @@ def palette_css_vars(name: str, color: str) -> str:
       its actual lightness using ``color-mix(in oklch, …)``.
 
     * A CSS custom-property reference — ``var(--color-indigo-500)`` or
-      ``--color-indigo-500``.  The variable is assumed to sit at roughly the
-      500 lightness level (≈ 0.588); surrounding stops are derived with
-      ``color-mix()``.  Using ``var()`` is preferred when the colour is
-      already a registered Tailwind token, because the browser resolves the
-      reference at paint time and no build step is needed.
+      ``--color-indigo-500``.
+
+      If the token follows the ``--color-{palette}-{stop}`` naming convention
+      (e.g. ``var(--color-amber-500)``), every stop is aliased directly to the
+      corresponding stop of that palette
+      (``--color-primary-50: var(--color-amber-50)`` etc.).  This is exact —
+      no colour math is involved and the browser resolves the full palette at
+      paint time.
+
+      For arbitrary variable names that don't match the pattern, a
+      ``color-mix()`` fallback anchored at L≈0.588 is used instead (less
+      accurate; prefer the palette-alias form when possible).
 
     Why ``color-mix()`` instead of precomputed ``oklch()`` values
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -306,12 +313,41 @@ def palette_css_vars(name: str, color: str) -> str:
 
     # ── CSS variable input ────────────────────────────────────────────────
     if v.lower().startswith("var(") and v.endswith(")"):
+        inner = v[4:-1].strip()          # content inside var(…)
         base_token = v
-        base_lightness = dict(_STOPS)[500]  # assume var() is a ~500-level colour
     elif v.startswith("--"):
+        inner = v
         base_token = f"var({v})"
-        base_lightness = dict(_STOPS)[500]
     else:
+        inner = ""
+        base_token = ""
+
+    if inner:
+        # Fast path: --color-{palette}-{stop} pattern → alias every stop
+        # directly to the same palette.  This is exact: no colour-math, no
+        # lightness assumptions — the browser already has the right values.
+        # Example: var(--color-amber-500) → --color-primary-50: var(--color-amber-50)
+        _alias_re = re.compile(r'^--color-([a-z][\w-]*)-\d+$', re.I)
+        m = _alias_re.match(inner)
+        if m:
+            src_palette = m.group(1)
+            if src_palette != name:          # guard against circular self-alias
+                lines = [
+                    f"  --color-{name}-{stop}: var(--color-{src_palette}-{stop});"
+                    for stop, _ in _STOPS
+                ]
+                return "\n".join(lines)
+            # src_palette == name → fall through to color-mix to avoid
+            # circular references like --color-primary-50: var(--color-primary-50)
+
+        # Generic var() fallback: colour-mix anchored at assumed L=0.588.
+        # Works best when the referenced colour is already near the 500-level
+        # lightness.  Users should prefer the palette-alias pattern above for
+        # accurate results.
+        base_lightness = dict(_STOPS)[500]
+        # (base_token already set above)
+
+    if not inner:
         # ── Literal colour input ──────────────────────────────────────────
         # Parse the colour to find its actual lightness, then anchor the 500
         # stop at that lightness and spread the rest proportionally.
