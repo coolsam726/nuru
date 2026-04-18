@@ -1,4 +1,4 @@
-from nuru.fields import Section, Text
+from nuru.forms import Section, Text
 
 
 def test_section_fluent_setters():

@@ -1,6 +1,7 @@
 from typing import Any
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru import Role, UserRole
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
@@ -36,12 +37,12 @@ class StaffUserResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Text("name",  "Name",  sortable=True),
-            columns.Text("email", "Email"),
-            columns.Badge("role", "Display Role", colors={
+            Text("name",  "Name",  sortable=True),
+            Text("email", "Email"),
+            Badge("role", "Display Role", colors={
                 "admin": "purple", "librarian": "blue", "viewer": "gray",
             }),
-            columns.Boolean("active", "Active"),
+            Boolean("active", "Active"),
         ])
 
     def form(self) -> Form:

@@ -2,7 +2,8 @@ from typing import Any
 from datetime import date
 from sqlalchemy.orm import selectinload
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
 from nuru.tables.base import Table
@@ -37,14 +38,14 @@ class CheckoutResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Text("book.title",   "Book"),
-            columns.Text("member.name",  "Member"),
-            columns.Text("issued_on",    "Issued",    sortable=True),
-            columns.Text("due_date",     "Due date",  sortable=True),
-            columns.Badge("status", "Status", colors={
+            Text("book.title",   "Book"),
+            Text("member.name",  "Member"),
+            Text("issued_on",    "Issued",    sortable=True),
+            Text("due_date",     "Due date",  sortable=True),
+            Badge("status", "Status", colors={
                 "issued": "blue", "returned": "green", "overdue": "amber", "lost": "red",
             }),
-            columns.Boolean("fine_paid", "Fine paid"),
+            Boolean("fine_paid", "Fine paid"),
         ])
 
     def form(self) -> Form:

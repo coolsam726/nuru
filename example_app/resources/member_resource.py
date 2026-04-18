@@ -1,6 +1,7 @@
 from typing import Any
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
 from nuru.tables.base import Table
@@ -27,14 +28,14 @@ class MemberResource(Resource):
         return (
             Table()
             .schema([
-                columns.Text("member_number", "Number",  sortable=True),
-                columns.Text("name",          "Name",    sortable=True),
-                columns.Text("email",         "Email"),
-                columns.Badge("membership", "Type", colors={
+                Text("member_number", "Number",  sortable=True),
+                Text("name",          "Name",    sortable=True),
+                Text("email",         "Email"),
+                Badge("membership", "Type", colors={
                     "standard": "blue", "student": "amber",
                     "senior": "green",  "staff":   "purple",
                 }),
-                columns.Boolean("active", "Active"),
+                Boolean("active", "Active"),
             ])
             .set_row_actions([
                 Action.make("suspend").label("Suspend")

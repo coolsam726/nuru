@@ -1,7 +1,8 @@
 import pytest
 
 from typing import Any, Callable, List
-from nuru import AdminPanel, fields
+from nuru import AdminPanel
+import nuru.forms as fields
 from nuru.resource import Resource  # legacy resource (accepts panel= kwarg)
 
 

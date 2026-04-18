@@ -1,6 +1,7 @@
 from typing import Any
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru import Role, Permission, RolePermission
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
@@ -33,8 +34,8 @@ class RoleResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Text("name",        "Role Name",   sortable=True),
-            columns.Text("description", "Description"),
+            Text("name",        "Role Name",   sortable=True),
+            Text("description", "Description"),
         ])
 
     def form(self) -> Form:

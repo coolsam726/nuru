@@ -1,4 +1,5 @@
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
 from nuru.tables.base import Table
@@ -19,10 +20,10 @@ class SubjectResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Text("code",      "Code",    sortable=True),
-            columns.Text("name",      "Subject", sortable=True),
-            columns.Text("floor",     "Floor"),
-            columns.Boolean("active", "Active"),
+            Text("code",      "Code",    sortable=True),
+            Text("name",      "Subject", sortable=True),
+            Text("floor",     "Floor"),
+            Boolean("active", "Active"),
         ])
 
     def form(self) -> Form:

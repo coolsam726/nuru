@@ -1,4 +1,5 @@
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
 from nuru.tables.base import Table
@@ -21,12 +22,12 @@ class AuthorResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Image("avatar", "Photo", url_prefix="uploads",
+            Image("avatar", "Photo", url_prefix="uploads",
                           img_class="size-10 rounded-lg object-cover p-0.5"),
-            columns.Text("name",        "Name",        sortable=True),
-            columns.Text("nationality", "Nationality", sortable=True),
-            columns.Text("email",       "Email"),
-            columns.Boolean("active",   "Active"),
+            Text("name",        "Name",        sortable=True),
+            Text("nationality", "Nationality", sortable=True),
+            Text("email",       "Email"),
+            Boolean("active",   "Active"),
         ])
 
     def form(self) -> Form:

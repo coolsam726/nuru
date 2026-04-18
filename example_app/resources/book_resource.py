@@ -1,7 +1,8 @@
 from typing import Any
 from sqlalchemy.orm import selectinload
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.resources.base import Resource
 from nuru.forms.base import Form
 from nuru.tables.base import Table
@@ -41,10 +42,10 @@ class BookResource(Resource):
 
     def table(self) -> Table:
         return Table().schema([
-            columns.Text("isbn",         "ISBN",      sortable=True),
-            columns.Text("title",        "Title",     sortable=True),
-            columns.Text("location",     "Location"),
-            columns.Boolean("available", "Available"),
+            Text("isbn",         "ISBN",      sortable=True),
+            Text("title",        "Title",     sortable=True),
+            Text("location",     "Location"),
+            Boolean("available", "Available"),
         ])
 
     def form(self) -> Form:

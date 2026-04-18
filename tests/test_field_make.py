@@ -1,4 +1,4 @@
-from nuru.fields import Text, Number
+from nuru.forms import Text, Number
 
 
 def test_make_returns_field_instance():

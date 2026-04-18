@@ -2,7 +2,8 @@ from fastapi import Request
 from fastapi.responses import RedirectResponse, Response
 from datetime import datetime, timezone
 
-from nuru import columns, forms
+from nuru import forms
+from nuru.columns import Text, Badge, Boolean, Image, Currency, DateTime
 from nuru.pages.base import Page
 
 from example_app.models import Book, Member, Checkout
@@ -49,12 +50,12 @@ class ReportsPage(Page):
         recent_checkouts = sorted(all_checkouts, key=lambda c: c.id or 0, reverse=True)[:10]
 
         checkout_columns = [
-            columns.Text("id",        "ID",       sortable=True),
-            columns.Text("book_id",   "Book ID"),
-            columns.Text("member_id", "Member ID"),
-            columns.Text("issued_on", "Issued"),
-            columns.Text("due_date",  "Due"),
-            columns.Badge("status", "Status", colors={
+            Text("id",        "ID",       sortable=True),
+            Text("book_id",   "Book ID"),
+            Text("member_id", "Member ID"),
+            Text("issued_on", "Issued"),
+            Text("due_date",  "Due"),
+            Badge("status", "Status", colors={
                 "issued": "blue", "returned": "green", "overdue": "amber", "lost": "red",
             }),
         ]
@@ -65,9 +66,9 @@ class ReportsPage(Page):
             .placeholder("Write a quick message for staff..."),
         ]
         note_columns = [
-            columns.Text("author",    "Staff member"),
-            columns.Text("message",   "Message"),
-            columns.Text("posted_at", "Posted at"),
+            Text("author",    "Staff member"),
+            Text("message",   "Message"),
+            Text("posted_at", "Posted at"),
         ]
 
         return {

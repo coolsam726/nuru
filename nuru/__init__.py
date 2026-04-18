@@ -1,22 +1,23 @@
-# Legacy imports (kept for backward compatibility)
-from .panel import AdminPanel
-from .resource import Resource as _LegacyResource
-from .page import Page as _LegacyPage
-from . import columns
-from . import fields
-from . import actions as _actions_legacy
+# ---------------------------------------------------------------------------
+# Core framework imports
+# ---------------------------------------------------------------------------
 
-# New v0.4 API
+# v0.4 API
 from .panels import Panel
 from .resources import Resource
 from .pages import Page, ListPage, CreatePage, EditPage, ViewPage
 from .forms.base import Form
 from .forms import components as form_components
+from . import forms
 from .tables import Table
-from .tables import columns as table_columns
+from . import columns
+from .columns import Column, Text, Badge, Boolean, Currency, DateTime, Image
 from .infolists import Infolist
 from .infolists import components as infolist_components
 from .actions import Action, CreateAction, EditAction, DeleteAction, ViewAction
+
+# Legacy panel / resource / page (routing engine)
+from .panel import AdminPanel
 
 from .auth import AuthBackend, SimpleAuthBackend, DatabaseAuthBackend, default_permission_checker
 from .roles import Permission, Role, RolePermission, UserRole, db_permission_checker, STANDARD_ACTIONS
@@ -33,20 +34,21 @@ __all__ = [
     "Infolist",
     "Action", "CreateAction", "EditAction", "DeleteAction", "ViewAction",
     "form_components",
-    "table_columns",
     "infolist_components",
+    # Namespaces
+    "columns",
+    "forms",
+    # Individual column classes
+    "Column", "Text", "Badge", "Boolean", "Currency", "DateTime", "Image",
     # Legacy
     "AdminPanel",
-    "columns",
-    "fields",
-    # Auth backends
+    # Auth
     "AuthBackend",
     "SimpleAuthBackend",
     "DatabaseAuthBackend",
-    # Permission checkers
     "default_permission_checker",
     "db_permission_checker",
-    # Role / permission models
+    # Roles / permissions
     "Permission",
     "Role",
     "RolePermission",
@@ -57,4 +59,4 @@ __all__ = [
     "resolve_icon",
     "render_icon",
 ]
-__version__ = "0.1.0"
+__version__ = "0.3.1"
