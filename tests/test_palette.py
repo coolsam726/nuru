@@ -161,27 +161,34 @@ class TestPaletteCssVarsLiteral:
 # ---------------------------------------------------------------------------
 
 class TestPaletteCssVarsVar:
-    def test_palette_alias_pattern_detected(self):
-        """var(--color-amber-500) should alias to var(--color-amber-{stop}) for all stops."""
+    def test_var_input_emits_color_mix_and_preserves_500(self):
+        """var(--color-amber-500) should produce color-mix() derived stops and
+        the 500 stop should point to the base token (var(--color-amber-500))."""
         css = palette_css_vars("primary", "var(--color-amber-500)")
-        assert "--color-primary-50: var(--color-amber-50);" in css
-        assert "--color-primary-500: var(--color-amber-500);" in css
-        assert "--color-primary-950: var(--color-amber-950);" in css
+        assert "color-mix" in css
+        assert "var(--color-amber-500)" in css
+        m = re.search(r'--color-primary-500:\s*(.+?);', css)
+        assert m and m.group(1).strip() == "var(--color-amber-500)"
 
-    def test_palette_alias_covers_all_11_stops(self):
+    def test_var_input_uses_color_mix_for_all_stops(self):
         css = palette_css_vars("primary", "var(--color-indigo-500)")
-        for stop in [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]:
-            assert f"--color-primary-{stop}: var(--color-indigo-{stop});" in css
+        # Every derived stop should use color-mix() or be the base var for 500
+        for stop in [50, 100, 200, 300, 400, 600, 700, 800, 900, 950]:
+            assert f"--color-primary-{stop}: color-mix(" in css
+        m = re.search(r'--color-primary-500:\s*(.+?);', css)
+        assert m and m.group(1).strip() == "var(--color-indigo-500)"
 
-    def test_dash_dash_prefix_alias(self):
+    def test_dash_dash_prefix_expands_and_uses_color_mix(self):
         css = palette_css_vars("primary", "--color-indigo-500")
-        assert "--color-primary-50: var(--color-indigo-50);" in css
-        assert "--color-primary-500: var(--color-indigo-500);" in css
+        assert "color-mix" in css
+        m = re.search(r'--color-primary-500:\s*(.+?);', css)
+        assert m and m.group(1).strip() == "var(--color-indigo-500)"
 
-    def test_no_color_mix_for_alias(self):
-        """Direct alias path must NOT use color-mix (that was the bug)."""
+    def test_no_direct_aliasing_occurs(self):
+        """Ensure we do not perform direct per-stop aliasing; color-mix should be
+        used so that arbitrary referenced tokens still produce a full palette."""
         css = palette_css_vars("primary", "var(--color-amber-500)")
-        assert "color-mix" not in css
+        assert "color-mix" in css
 
     def test_circular_alias_falls_back_to_color_mix(self):
         """var(--color-primary-500) must not generate self-referencing vars."""
@@ -200,8 +207,8 @@ class TestPaletteCssVarsVar:
 
     def test_dash_dash_prefix_expanded(self):
         css = palette_css_vars("primary", "--color-indigo-500")
-        # Result should be direct alias, not color-mix
-        assert "var(--color-indigo-50)" in css
+        # Result should reference the base var for the 500 stop
+        assert "var(--color-indigo-500)" in css
 
 
 # ---------------------------------------------------------------------------
