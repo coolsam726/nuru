@@ -1190,6 +1190,14 @@ class BookResource(Resource):
                     ]
                 )
                 .col_span("full"),
+                RadioButtons.make('slim_buttons')
+                .options([
+                    {'value': 'groq_ai', 'label': 'Groq AI', 'icon': 'cpu-chip'},
+                    {'value': 'claude', 'label': 'Claude', 'icon': 'cpu-chip'},
+                    {'value': 'gemini', 'label': 'Gemini', 'icon': 'cpu-chip'},
+                    {'value': 'gpt', 'label': 'Gpt', 'icon': 'cpu-chip'},
+                ])
+                .label("Slim buttons"),
             ],
             title="Extras",
             cols=2,
@@ -2125,6 +2133,8 @@ admin_panel = AdminPanel(
     ),
     permission_checker=db_permission_checker,
     template_dirs=[_EXAMPLE_TEMPLATES],
+    primary="var(--color-amber-500)"
+    # primary="oklch(76.9% 0.188 70.08)"
 )
 
 register_flowbite(admin_panel)

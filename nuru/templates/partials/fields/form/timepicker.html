@@ -1,38 +1,20 @@
-{#
-  ── TimePicker — Flowbite-styled native time input ────────────────────────
-
-  Field getters used:
-    field.get_min_time()  — optional min time (e.g. "08:00")
-    field.get_max_time()  — optional max time (e.g. "20:00")
-    field.get_step()      — step in seconds (0 = browser default)
-#}
-{% set _current_val = current | string if current is not none and current != '' and current != 'None' else '' %}
-
 <div>
-  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-    {{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}
-  </label>
+  <label for="{{ field.get_key() }}" class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">{{ field.get_label() }}{% if field.is_required() %}<span class="text-red-500 ml-0.5">*</span>{% endif %}</label>
 
   <div class="relative">
-    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
-      <svg class="w-4 h-4 text-secondary-400 dark:text-secondary-500" aria-hidden="true"
-           xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-      </svg>
+    <div class="absolute inset-y-0 end-0 top-0 flex items-center pe-3.5 pointer-events-none">
+      <svg class="w-4 h-4 text-body" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
     </div>
-
     <input
       type="time"
+      id="{{ field.get_key() }}"
       name="{{ field.get_key() }}"
-      value="{{ _current_val }}"
-      {% if field.get_min_time() %}min="{{ field.get_min_time() }}"{% endif %}
-      {% if field.get_max_time() %}max="{{ field.get_max_time() }}"{% endif %}
-      {% if field.get_step() %}step="{{ field.get_step() }}"{% endif %}
+      class="block w-full p-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand shadow-xs placeholder:text-body"
+      value="{{ current if current is not none else (value or '') }}"
+      {% if field.min_time is defined %}min="{{ field.min_time }}"{% endif %}
+      {% if field.max_time is defined %}max="{{ field.max_time }}"{% endif %}
       {% if field.is_required() %}required{% endif %}
-      class="{{ input_class }} ps-9"
-      style="--tw-ring-color: var(--color-primary-500);"
-    >
+    />
   </div>
 
   {% if has_error %}
