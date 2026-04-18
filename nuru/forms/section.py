@@ -50,6 +50,15 @@ class Section:
         self._css_class: str = css_class
         self._styled: bool = styled
 
+    @classmethod
+    def make(cls, fields: list | None = None) -> "Section":
+        """Factory-style constructor to match :class:`Field.make`.
+
+        Example: ``Section.make([...]).title("Contact")``
+        """
+        obj = cls(fields or [])
+        setattr(obj, "_factory", True)
+        return obj
     # ------------------------------------------------------------------ #
     # Identity discriminator                                              #
     # ------------------------------------------------------------------ #
