@@ -1,0 +1,17 @@
+<div>
+  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+    {{ field.get_label() }}
+  </label>
+  <div class="flex items-center gap-2">
+    <input type="checkbox" name="{{ field.get_key() }}" value="true"
+           {% if current %}checked{% endif %}
+           class="rounded border-secondary-300 dark:border-secondary-600"
+           style="accent-color: var(--color-primary-500);">
+    {% if field.get_help_text() %}
+      <span class="text-sm text-secondary-500 dark:text-secondary-400">{{ field.get_help_text() }}</span>
+    {% endif %}
+  </div>
+  {% if has_error %}
+    <p class="text-xs text-red-600 dark:text-red-400 mt-1">{{ errors[field.get_key()] }}</p>
+  {% endif %}
+</div>

@@ -7,7 +7,7 @@ Import from here directly::
 Or use the top-level alias ``nuru.fields`` which re-exports everything here.
 """
 
-from .base import Field
+from .field_base import Field
 from .text import Text, TextInput
 from .email import Email
 from .password import Password

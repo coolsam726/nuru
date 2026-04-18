@@ -1,0 +1,41 @@
+{% set _img_url = field.get_url(value) %}
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-2">{{ field.get_label() }}</dt>
+  <dd>
+    {% if _img_url %}
+      <img src="{{ _img_url }}"
+           alt="{{ field.get_label() }}"
+           class="{{ field.get_img_class() }} ring-1 ring-secondary-200 dark:ring-secondary-600">
+    {% else %}
+      <span class="inline-flex items-center justify-center {{ field.get_img_class() }}
+                   bg-secondary-100 dark:bg-secondary-700
+                   ring-1 ring-secondary-200 dark:ring-secondary-600">
+        <svg class="w-1/3 h-1/3 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ field.get_placeholder_icon() }}"/>
+        </svg>
+      </span>
+    {% endif %}
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
+  <dd class="mt-1 sm:mt-0 sm:col-span-2">
+    {% if _img_url %}
+      <img src="{{ _img_url }}"
+           alt="{{ field.get_label() }}"
+           class="{{ field.get_img_class() }} ring-1 ring-secondary-200 dark:ring-secondary-600">
+    {% else %}
+      <span class="inline-flex items-center justify-center {{ field.get_img_class() }}
+                   bg-secondary-100 dark:bg-secondary-700
+                   ring-1 ring-secondary-200 dark:ring-secondary-600">
+        <svg class="w-1/3 h-1/3 text-secondary-400 dark:text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ field.get_placeholder_icon() }}"/>
+        </svg>
+      </span>
+    {% endif %}
+  </dd>
+</div>
+{% endif %}
+

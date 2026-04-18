@@ -16,9 +16,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl">
+<div class="w-full">
   {% if resources %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="flex items-center flex-wrap max-sm:flex-col gap-3">
     {% for res_cls in resources %}
     {% set res_slug = res_cls.slug if res_cls.slug else res_cls.label.lower().replace(' ', '-') %}
     {% set res_label = res_cls.label_plural if res_cls.label_plural else res_cls.label + 's' %}
@@ -26,7 +26,7 @@
     {% if has_perm(res_slug + ':list') %}
     <a href="{{ panel_prefix }}/{{ res_slug }}" class="bg-white dark:bg-secondary-800 rounded-xl border border-secondary-200 dark:border-secondary-700
                 p-5 shadow-sm hover:shadow-md hover:border-secondary-300 dark:hover:border-secondary-600
-                transition-all group">
+                transition-all group min-w-[200px] max-sm:w-full">
       <div class="flex items-center justify-between mb-3">
         <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
           {% if res_cls.nav_icon %}

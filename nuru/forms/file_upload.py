@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .base import Field
+from .field_base import Field
 
 
 class FileUpload(Field):

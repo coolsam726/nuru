@@ -5,7 +5,7 @@ Requires ``register_flowbite(panel)`` to load the Flowbite JS CDN.
 
 from __future__ import annotations
 
-from .base import Field
+from .field_base import Field
 
 
 class DatePicker(Field):

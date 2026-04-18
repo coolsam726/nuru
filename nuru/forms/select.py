@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from .base import Field
+from .field_base import Field
 
 
 class Select(Field):
