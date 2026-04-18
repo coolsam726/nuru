@@ -38,6 +38,20 @@ class Entry:
     @property
     def template_name(self) -> str:
         return f"infolist_{self._ENTRY_TYPE}.html"
+
+    # ------------------------------------------------------------------ #
+    # Compatibility with the legacy detail_item macro                     #
+    # These let Entry objects pass through the same rendering path as     #
+    # legacy Field objects without any template changes.                  #
+    # ------------------------------------------------------------------ #
+
+    def get_field_type(self) -> str:
+        """Alias for get_entry_type() — used by detail_item macro."""
+        return self._ENTRY_TYPE
+
+    def is_section_field(self) -> bool:
+        """Entries are never section containers."""
+        return False
     def render(self, value: Any) -> str:
         if value is None or str(value).strip() == "":
             return self._placeholder

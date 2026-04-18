@@ -1,0 +1,26 @@
+{% set _rendered = field.render(value) if field.render is defined else ('Yes' if value else 'No') %}
+{% set _true_label = field.get_true_label() if field.get_true_label is defined else 'Yes' %}
+{% set _is_true = value and value != 'False' and value != '0' and value != '' %}
+{% if in_section %}
+<div class="{{ span_class }} px-5 py-4">
+  <dt class="text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wide mb-1">{{ field.get_label() }}</dt>
+  <dd class="mt-1">
+    {% if _is_true %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ _rendered }}</span>
+    {% else %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-600 dark:bg-secondary-700 dark:text-secondary-400">{{ _rendered }}</span>
+    {% endif %}
+  </dd>
+</div>
+{% else %}
+<div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-6">
+  <dt class="text-sm font-medium text-secondary-500 dark:text-secondary-400 flex items-center">{{ field.get_label() }}</dt>
+  <dd class="mt-1 sm:mt-0 sm:col-span-2">
+    {% if _is_true %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ _rendered }}</span>
+    {% else %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-600 dark:bg-secondary-700 dark:text-secondary-400">{{ _rendered }}</span>
+    {% endif %}
+  </dd>
+</div>
+{% endif %}
