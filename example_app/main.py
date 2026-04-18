@@ -935,7 +935,7 @@ class AuthorResource(Resource):
             [
                 forms.ImageEntry("avatar")
                     .label("Photo")
-                    .avatar()
+                    .img_class('size-48 rounded-2xl object-cover')
                     .url_prefix("/admin/uploads")
                     .col_span("full"),
                 forms.TextInput.make("name").label("Full name"),
@@ -2061,6 +2061,12 @@ class ReportsPage(Page):
             columns.Text("author", "Staff member"),
             columns.Text("message", "Message"),
             columns.Text("posted_at", "Posted at"),
+        ],
+        showcase_form = [
+            forms.Section.make([
+            ])
+            .col_span('full')
+            .cols(3)
         ]
 
         return {
