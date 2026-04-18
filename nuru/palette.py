@@ -215,12 +215,8 @@ def _scale_chroma(C_base: float, L_base: float, L_target: float) -> float:
     """
     Reduce chroma towards the extremes of the lightness scale so that very
     light and very dark stops don't produce out-of-gamut colours.
-
-    The scaling mirrors the pattern in Tailwind's own generated palettes:
-    chroma drops off smoothly as lightness moves away from the 500-level base.
     """
     distance = abs(L_target - L_base)
-    # Linear reduction: at full distance (0.7 ≈ white to base) chroma → 0
     factor = max(0.0, 1.0 - distance / 0.70)
     return C_base * factor
 
@@ -230,69 +226,138 @@ def generate_palette(color: str) -> dict[int, str]:
 
     Returns a dict mapping stop numbers (50, 100, …, 950) to CSS oklch()
     strings ready to embed in a stylesheet.
+
+    .. note::
+        This function uses fixed lightness targets anchored at L≈0.588 for the
+        500 stop.  It works well when the input colour has lightness close to
+        0.588.  For colours at other lightness levels (e.g. bright amber at
+        L≈0.84) prefer ``palette_css_vars`` which anchors at the actual input
+        lightness and uses ``color-mix()`` for perceptually correct results.
     """
     base = parse_color(color)
     result: dict[int, str] = {}
     for stop, L_target in _STOPS:
         C_target = _scale_chroma(base.C, base.L, L_target)
-        # Round to 4 significant figures to keep CSS concise
         result[stop] = f"oklch({L_target:.4f} {C_target:.4f} {base.H:.2f})"
     return result
+
+
+def _dynamic_stop_lightnesses(L_base: float) -> dict[int, float]:
+    """Return 50-950 lightness targets anchored at *L_base* for the 500 stop.
+
+    The 5 lighter stops (400→50) spread evenly from L_base up to 0.97.
+    The 5 darker stops (600→950) spread evenly from L_base down to 0.20.
+    The 500 stop is exactly L_base.
+
+    This ensures:
+    - The generated 500 stop matches the input colour precisely.
+    - The scale is always monotonic (50 is always lightest, 950 always darkest).
+    - The progression is perceptually smooth regardless of where in the
+      lightness range the input colour sits.
+    """
+    L_MIN, L_MAX = 0.20, 0.97
+    # Clamp to avoid degenerate single-sided scales
+    L_base = max(L_MIN + 0.01, min(L_MAX - 0.01, L_base))
+
+    # Lighter steps listed closest-to-base first so `step` increments outward
+    lighter = [400, 300, 200, 100, 50]
+    darker  = [600, 700, 800, 900, 950]
+    n = len(lighter)  # == len(darker) == 5
+
+    targets: dict[int, float] = {500: L_base}
+    for step, stop in enumerate(lighter, 1):
+        targets[stop] = L_base + (step / n) * (L_MAX - L_base)
+    for step, stop in enumerate(darker, 1):
+        targets[stop] = L_base - (step / n) * (L_base - L_MIN)
+    return targets
 
 
 def palette_css_vars(name: str, color: str) -> str:
     """Return a block of CSS custom property declarations for *name*.
 
-    Example output::
+    ``name`` should be one of: ``primary``, ``secondary``, ``accent``,
+    ``info``, ``success``, ``danger``, ``warning``.
 
-        --color-primary-50: oklch(0.9710 0.0146 264.05);
-        --color-primary-100: oklch(0.9360 0.0311 264.05);
-        ...
-        --color-primary-950: oklch(0.2360 0.0521 264.05);
+    ``color`` may be any of:
 
-    ``name`` should be one of: primary, secondary, accent, info, success,
-    danger, warning.
+    * A real CSS colour string — ``#6366f1``, ``oklch(0.769 0.188 70.08)``,
+      ``rgb(99 102 241)``, ``hsl(239 84% 67%)``.  The colour is taken as the
+      **500 anchor**; the full 50–950 scale is derived proportionally around
+      its actual lightness using ``color-mix(in oklch, …)``.
 
-    ``color`` may be a real CSS color value such as ``#6366f1`` or
-    ``oklch(...)``, or an existing CSS variable such as
-    ``var(--color-indigo-500)`` / ``--color-indigo-500``. Variable inputs
-    are expanded with ``color-mix(...)`` so the full 50–950 scale can still
-    be derived from the provided token.
+    * A CSS custom-property reference — ``var(--color-indigo-500)`` or
+      ``--color-indigo-500``.  The variable is assumed to sit at roughly the
+      500 lightness level (≈ 0.588); surrounding stops are derived with
+      ``color-mix()``.  Using ``var()`` is preferred when the colour is
+      already a registered Tailwind token, because the browser resolves the
+      reference at paint time and no build step is needed.
+
+    Why ``color-mix()`` instead of precomputed ``oklch()`` values
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Tailwind v4 parses ``oklch()`` values in ``@theme`` blocks to extract
+    channel data for its opacity-modifier utilities.  Its parser reads the
+    first token numerically and **drops the ``%`` unit**, so
+    ``oklch(76.9% 0.188 70.08)`` is stored with lightness = 76.9 (not 0.769),
+    which breaks every opacity utility that touches that colour.  Using
+    ``color-mix()`` delegates all colour arithmetic to the browser, which
+    handles all CSS Color Level 4 notations correctly.
     """
-    # CSS variable input is handled with color-mix so we can derive the
-    # surrounding stops from the provided token without needing its concrete
-    # computed value at build time.
     v = color.strip()
+
+    # ── CSS variable input ────────────────────────────────────────────────
     if v.lower().startswith("var(") and v.endswith(")"):
         base_token = v
+        base_lightness = dict(_STOPS)[500]  # assume var() is a ~500-level colour
     elif v.startswith("--"):
         base_token = f"var({v})"
-    else:
-        base_token = ""
-
-    if base_token:
         base_lightness = dict(_STOPS)[500]
+    else:
+        # ── Literal colour input ──────────────────────────────────────────
+        # Parse the colour to find its actual lightness, then anchor the 500
+        # stop at that lightness and spread the rest proportionally.
+        try:
+            parsed = parse_color(v)
+        except ValueError:
+            # Last-resort fallback: fixed-lightness oklch strings
+            palette = generate_palette(v)
+            lines = [f"  --color-{name}-{stop}: {value};" for stop, value in sorted(palette.items())]
+            return "\n".join(lines)
 
-        def mix_expr(target_lightness: float) -> str:
-            if target_lightness == base_lightness:
-                return base_token
-            if target_lightness > base_lightness:
-                base_pct = max(0.0, min(100.0, (1.0 - target_lightness) / (1.0 - base_lightness) * 100.0))
-                light_pct = 100.0 - base_pct
-                return f"color-mix(in oklch, white {light_pct:.2f}%, {base_token} {base_pct:.2f}%)"
-            base_pct = max(0.0, min(100.0, target_lightness / base_lightness * 100.0))
-            dark_pct = 100.0 - base_pct
-            return f"color-mix(in oklch, black {dark_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+        base_lightness = parsed.L
+        base_token = f"var(--color-{name})"
 
-        lines = [
-            f"  --color-{name}-{stop}: {mix_expr(L_target)};"
-            for stop, L_target in _STOPS
-        ]
+        # Build dynamic stop targets anchored at the actual input lightness
+        stop_targets = _dynamic_stop_lightnesses(base_lightness)
+
+        def mix_expr_literal(stop: int, L_target: float) -> str:
+            if abs(L_target - base_lightness) < 1e-6:
+                return base_token  # exact match → the input colour itself
+            if L_target > base_lightness:
+                base_pct = max(0.0, min(100.0,
+                    (1.0 - L_target) / (1.0 - base_lightness) * 100.0))
+                return f"color-mix(in oklch, white {100.0 - base_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+            base_pct = max(0.0, min(100.0,
+                L_target / base_lightness * 100.0))
+            return f"color-mix(in oklch, black {100.0 - base_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+
+        lines = [f"  --color-{name}: {v};"]  # register the base colour
+        for stop in [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]:
+            L_target = stop_targets[stop]
+            lines.append(f"  --color-{name}-{stop}: {mix_expr_literal(stop, L_target)};")
         return "\n".join(lines)
 
-    # Fallback: compute an OKLch palette from the provided colour string
-    palette = generate_palette(color)
-    lines = [f"  --color-{name}-{stop}: {value};" for stop, value in sorted(palette.items())]
+    # ── Shared color-mix path for var() inputs ────────────────────────────
+    def mix_expr_var(L_target: float) -> str:
+        if abs(L_target - base_lightness) < 1e-6:
+            return base_token
+        if L_target > base_lightness:
+            base_pct = max(0.0, min(100.0,
+                (1.0 - L_target) / (1.0 - base_lightness) * 100.0))
+            return f"color-mix(in oklch, white {100.0 - base_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+        base_pct = max(0.0, min(100.0, L_target / base_lightness * 100.0))
+        return f"color-mix(in oklch, black {100.0 - base_pct:.2f}%, {base_token} {base_pct:.2f}%)"
+
+    lines = [f"  --color-{name}-{stop}: {mix_expr_var(L_target)};" for stop, L_target in _STOPS]
     return "\n".join(lines)
 
 
