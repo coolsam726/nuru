@@ -35,12 +35,11 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker as _asm,
 )
 
-from nuru.components import (
-    register_components,
-    Timepicker,
+from nuru.forms import (
     Radio,
     Toggle,
     RadioButtons,
+    TimePicker,
 )
 from nuru.components.types import RadioOption
 from nuru.integrations.flowbite import register_flowbite
@@ -934,10 +933,10 @@ class AuthorResource(Resource):
         forms.Section(
             [
                 forms.ImageEntry("avatar")
-                    .label("Photo")
-                    .img_class('size-48 rounded-2xl object-cover')
-                    .url_prefix("/admin/uploads")
-                    .col_span("full"),
+                .label("Photo")
+                .img_class('size-48 rounded-2xl object-cover')
+                .url_prefix("/admin/uploads")
+                .col_span("full"),
                 forms.TextInput.make("name").label("Full name"),
                 forms.TextInput.make("email").email().label("Email"),
                 forms.TextInput.make("nationality").label("Nationality"),
@@ -1157,7 +1156,7 @@ class BookResource(Resource):
                 Toggle("demo_toggle")
                 .label("Demo toggle")
                 .help_text("Just a toggle for demonstration purposes."),
-                Timepicker("demo_timepicker")
+                TimePicker("demo_timepicker")
                 .label("Demo timepicker")
                 .help_text("A simple timepicker input."),
                 RadioButtons("demo_radiobuttons")
@@ -2129,7 +2128,6 @@ admin_panel = AdminPanel(
 )
 
 register_flowbite(admin_panel)
-register_components(admin_panel)
 admin_panel.register_page(ReportsPage)
 admin_panel.register(AuthorResource)
 admin_panel.register(SubjectResource)

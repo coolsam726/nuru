@@ -17,7 +17,9 @@ if TYPE_CHECKING:
 
 def register_components(panel: "AdminPanel") -> None:
     """Register component templates with *panel*. Call once during app setup."""
-    panel.add_template_dir(Path(__file__).parent / "templates")
+    # Templates have been moved into the main `nuru/templates` tree; nothing
+    # to register here anymore. This function is kept for compatibility.
+    return None
 
 
 # The Flowbite-backed component field classes live in the `forms` package.
