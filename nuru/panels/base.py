@@ -26,6 +26,13 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from fastapi import FastAPI
+
+
+def _make_legacy_compatible(new_cls: type, legacy_base: type) -> type:
+    """Return a merged class: new_cls + legacy_base for routing compatibility."""
+    return type(new_cls.__name__, (new_cls, legacy_base), {"__module__": new_cls.__module__})
+
+
 class Panel:
     """Base class for all Nuru panels.  Subclass to create your admin panel."""
     # Class-level defaults — override in subclasses
@@ -95,7 +102,14 @@ class Panel:
     # Manual registration                                                  #
     # ------------------------------------------------------------------ #
     def register(self, resource_class: type) -> "Panel":
-        """Manually register a Resource class."""
+        """Manually register a Resource class (new-style or legacy)."""
+        from nuru.resources.base import Resource as NewResource
+        from nuru.resource import Resource as LegacyResource
+        if (
+            issubclass(resource_class, NewResource)
+            and not issubclass(resource_class, LegacyResource)
+        ):
+            resource_class = _make_legacy_compatible(resource_class, LegacyResource)
         if resource_class not in self._resource_classes:
             self._resource_classes.append(resource_class)
         return self
@@ -129,6 +143,9 @@ class Panel:
     @staticmethod
     def _discover_in(directory: Path, base_class: type, target: list) -> None:
         """Import all .py files in *directory* and collect subclasses of *base_class*."""
+        from nuru.resources.base import Resource as NewResource
+        from nuru.resource import Resource as LegacyResource
+
         if not directory.is_dir():
             return
         for py_file in sorted(directory.glob("*.py")):
@@ -144,12 +161,18 @@ class Panel:
             except Exception:
                 continue
             for _, obj in inspect.getmembers(module, inspect.isclass):
+                if not (issubclass(obj, base_class) and obj is not base_class):
+                    continue
+                if obj in target:
+                    continue
+                # If new-style Resource doesn't inherit from legacy Resource,
+                # create a combined class so routing machinery works.
                 if (
-                    issubclass(obj, base_class)
-                    and obj is not base_class
-                    and obj not in target
+                    issubclass(obj, NewResource)
+                    and not issubclass(obj, LegacyResource)
                 ):
-                    target.append(obj)
+                    obj = _make_legacy_compatible(obj, LegacyResource)
+                target.append(obj)
     # ------------------------------------------------------------------ #
     # Mount                                                                #
     # ------------------------------------------------------------------ #

@@ -303,6 +303,10 @@ class Resource:
             self.slug = self.label.lower().replace(" ", "-")
         if not self.label_plural:
             self.label_plural = self.label + "s"
+        # v0.4 bridge: if subclass defines form()/table()/infolist(),
+        # populate legacy form_fields / table_columns / detail_fields from them.
+        if callable(getattr(self, "_bridge_from_new_api", None)):
+            self._bridge_from_new_api()
 
     async def _user_allowed(self, request: Request, action: str, action_key: str | None = None) -> bool:
         """Check whether the current user may perform *action* on this resource.
