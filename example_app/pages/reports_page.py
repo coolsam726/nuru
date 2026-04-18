@@ -21,9 +21,15 @@ class ReportsPage(Page):
     async def get_context(self, request: Request) -> dict:
         async with get_session() as session:
             from sqlmodel import select as sm_select
+            from sqlalchemy.orm import selectinload
             all_books     = (await session.exec(sm_select(Book))).all()
             all_members   = (await session.exec(sm_select(Member))).all()
-            all_checkouts = (await session.exec(sm_select(Checkout))).all()
+            all_checkouts = (await session.exec(
+                sm_select(Checkout).options(
+                    selectinload(Checkout.book),
+                    selectinload(Checkout.member),
+                )
+            )).all()
 
         kpi = {
             "total_books":     str(len(all_books)),
@@ -51,8 +57,8 @@ class ReportsPage(Page):
 
         checkout_columns = [
             Text("id",        "ID",       sortable=True),
-            Text("book_id",   "Book ID"),
-            Text("member_id", "Member ID"),
+            Text("book.title",  "Book"),
+            Text("member.name", "Member"),
             Text("issued_on", "Issued"),
             Text("due_date",  "Due"),
             Badge("status", "Status", colors={

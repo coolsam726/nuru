@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from nuru.forms.datepicker import DatePicker
 from nuru.forms.datetimepicker import DateTimePicker
 from nuru.forms.timepicker import TimePicker
+from nuru.panels.base import Panel
 
 if TYPE_CHECKING:
     from nuru.panel import AdminPanel
@@ -69,7 +70,7 @@ class DateRangePicker(FlowbiteDateRangePicker):
     _FIELD_TYPE = "flowbite_daterangepicker"  # reuses the same template
 
 
-def register_flowbite(panel: "AdminPanel") -> None:
+def register_flowbite(panel: "Panel") -> None:
     """Register the Flowbite integration with *panel*."""
     panel.add_template_dir(_TEMPLATES_DIR)
     panel.add_extra_js(FLOWBITE_JS_CDN)

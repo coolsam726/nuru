@@ -30,7 +30,7 @@
       {% if not field.get_relationship() %}
         {% set badge_col = none %}
         {% for col in resource.table_columns %}
-          {% if col.key == field.get_key() and col.__class__.__name__ == 'Badge' %}{% set badge_col = col %}{% endif %}
+          {% if col.get_key() == field.get_key() and col.__class__.__name__ == 'Badge' %}{% set badge_col = col %}{% endif %}
         {% endfor %}
         {% if badge_col %}
           <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ badge_col.css_classes(_display) }}">{{ _display }}</span>
@@ -47,7 +47,7 @@
       {% if not field.get_relationship() %}
         {% set badge_col = none %}
         {% for col in resource.table_columns %}
-          {% if col.key == field.get_key() and col.__class__.__name__ == 'Badge' %}
+          {% if col.get_key() == field.get_key() and col.__class__.__name__ == 'Badge' %}
             {% set badge_col = col %}
           {% endif %}
         {% endfor %}
