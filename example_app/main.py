@@ -2134,7 +2134,6 @@ admin_panel = AdminPanel(
     permission_checker=db_permission_checker,
     template_dirs=[_EXAMPLE_TEMPLATES],
     primary="var(--color-amber-500)"
-    # primary="oklch(76.9% 0.188 70.08)"
 )
 
 register_flowbite(admin_panel)

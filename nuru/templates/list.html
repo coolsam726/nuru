@@ -3,138 +3,145 @@
 {% block title %}{{ resource.label_plural }} — {{ panel_title }}{% endblock %}
 
 {% block breadcrumb %}
-  <nav class="flex flex-wrap items-center gap-1 text-sm text-secondary-400 dark:text-secondary-500">
-    <a href="{{ panel_prefix }}/" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">Dashboard</a>
-    <span class="select-none">›</span>
-    <span class="text-secondary-600 dark:text-secondary-300">{{ resource.label_plural }}</span>
-  </nav>
+    <nav class="flex flex-wrap items-center gap-1 text-sm text-secondary-400 dark:text-secondary-500">
+        <a href="{{ panel_prefix }}/" class="hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors">Dashboard</a>
+        <span class="select-none">›</span>
+        <span class="text-secondary-600 dark:text-secondary-300">{{ resource.label_plural }}</span>
+    </nav>
 {% endblock %}
 
 {% block page_heading %}
-  <div>
-    <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">{{ resource.label_plural }}</h1>
-    {% if total is defined %}
-      <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">{{ total }} record{{ 's' if total != 1 }}</p>
-    {% endif %}
-  </div>
+    <div>
+        <h1 class="text-xl font-semibold text-secondary-900 dark:text-secondary-100">{{ resource.label_plural }}</h1>
+        {% if total is defined %}
+            <p class="text-sm text-secondary-500 dark:text-secondary-400 mt-0.5">{{ total }}
+                record{{ 's' if total != 1 }}</p>
+        {% endif %}
+    </div>
 {% endblock %}
 
 {% block header_actions %}
-  {% for action in resource.list_actions %}
-  {% if has_perm(resource.slug + ':action') %}
-  <button type="button"
-          data-action-trigger
-          data-action-url="{{ panel_prefix }}/{{ resource.slug }}/action/{{ action.key }}"
-          data-action-title="{{ action.modal_title }}"
-          data-action-fields="{{ action.fields_json() | e }}"
-          data-action-confirm="{{ action.confirm or '' }}"
-          data-action-submit="{{ action.label }}"
-          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+    {% for action in resource.list_actions %}
+        {% if has_perm(resource.slug + ':action') %}
+            <button type="button"
+                    data-action-trigger
+                    data-action-url="{{ panel_prefix }}/{{ resource.slug }}/action/{{ action.key }}"
+                    data-action-title="{{ action.modal_title }}"
+                    data-action-fields="{{ action.fields_json() | e }}"
+                    data-action-confirm="{{ action.confirm or '' }}"
+                    data-action-submit="{{ action.label }}"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                  {{ action.button_class }} transition-colors">
-    {{ render_icon(action.icon) }}
-    {{ action.label }}
-  </button>
-  {% endif %}
-  {% endfor %}
-  {% if resource.can_create and has_perm(resource.slug + ':create') %}
-  <a href="{{ panel_prefix }}/{{ resource.slug }}/new"
-     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:opacity-90 transition-opacity">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-    </svg>
-    New {{ resource.label }}
-  </a>
-  {% endif %}
+                {{ render_icon(action.icon) }}
+                {{ action.label }}
+            </button>
+        {% endif %}
+    {% endfor %}
+    {% if resource.can_create and has_perm(resource.slug + ':create') %}
+        <a href="{{ panel_prefix }}/{{ resource.slug }}/new"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary hover:opacity-90 transition-opacity">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New {{ resource.label }}
+        </a>
+    {% endif %}
 {% endblock %}
 
 {% block flash %}
-  {% if flash == 'created' %}
-  <div id="flash-banner"
-       class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
+    {% if flash == 'created' %}
+        <div id="flash-banner"
+             class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
               dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300
               rounded-lg px-4 py-2.5 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-    </svg>
-    {{ resource.label }} created successfully.
-  </div>
-  {% elif flash == 'saved' %}
-  <div id="flash-banner"
-       class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            {{ resource.label }} created successfully.
+        </div>
+    {% elif flash == 'saved' %}
+        <div id="flash-banner"
+             class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
               dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300
               rounded-lg px-4 py-2.5 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-    </svg>
-    Changes saved.
-  </div>
-  {% elif flash == 'action_ok' %}
-  <div id="flash-banner"
-       class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Changes saved.
+        </div>
+    {% elif flash == 'action_ok' %}
+        <div id="flash-banner"
+             class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
               dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300
               rounded-lg px-4 py-2.5 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-    </svg>
-    Action completed.
-  </div>
-  {% elif flash == 'deleted' %}
-  <div id="flash-banner"
-       class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Action completed.
+        </div>
+    {% elif flash == 'deleted' %}
+        <div id="flash-banner"
+             class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800
               dark:bg-green-900/30 dark:border-green-700/50 dark:text-green-300
               rounded-lg px-4 py-2.5 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-    </svg>
-    {{ resource.label }} deleted.
-  </div>
-  {% endif %}
-  <script>
-    var fb = document.getElementById('flash-banner');
-    if (fb) setTimeout(function(){ fb.style.transition='opacity .4s'; fb.style.opacity=0; setTimeout(function(){ fb.remove(); }, 400); }, 3000);
-  </script>
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            {{ resource.label }} deleted.
+        </div>
+    {% endif %}
+    <script>
+        var fb = document.getElementById('flash-banner');
+        if (fb) setTimeout(function () {
+            fb.style.transition = 'opacity .4s';
+            fb.style.opacity = 0;
+            setTimeout(function () {
+                fb.remove();
+            }, 400);
+        }, 3000);
+    </script>
 {% endblock %}
 
 {% block content %}
-<div>
+    <div>
 
-  <div class="flex flex-col sm:flex-row sm:items-center justify-end mb-5 gap-4">
-    <div class="relative w-full sm:w-64 flex-shrink-0">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 pointer-events-none"
-           fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-      </svg>
-      <input
-        id="search-input"
-        type="text"
-        name="search"
-        value="{{ search }}"
-        placeholder="Search {{ resource.label_plural | lower }}…"
-        class="w-full pl-9 pr-8 py-2 text-sm border border-secondary-200 dark:border-secondary-600
+        <div class="flex flex-col sm:flex-row sm:items-center justify-end mb-5 gap-4">
+            <div class="relative w-full sm:w-64 flex-shrink-0">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 pointer-events-none"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                </svg>
+                <input
+                        id="search-input"
+                        type="text"
+                        name="search"
+                        value="{{ search }}"
+                        placeholder="Search {{ resource.label_plural | lower }}…"
+                        class="w-full pl-9 pr-8 py-2 text-sm border border-secondary-200 dark:border-secondary-600
                rounded-lg bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100
                placeholder-secondary-400 dark:placeholder-secondary-500
                focus:outline-none focus:ring-2 focus:border-transparent"
-        style="--tw-ring-color: var(--color-primary-500);"
-        hx-get="{{ panel_prefix }}/{{ resource.slug }}/table"
-        hx-trigger="keyup changed delay:300ms, search"
-        hx-target="#list-container"
-        hx-swap="innerHTML"
-        hx-include="#search-input"
-        hx-indicator="#search-spinner"
-      >
-      <svg id="search-spinner"
-           class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 animate-spin"
-           fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-      </svg>
+                        style="--tw-ring-color: var(--color-primary-500);"
+                        hx-get="{{ panel_prefix }}/{{ resource.slug }}/table"
+                        hx-trigger="keyup changed delay:300ms, search"
+                        hx-target="#list-container"
+                        hx-swap="innerHTML"
+                        hx-include="#search-input"
+                        hx-indicator="#search-spinner"
+                >
+                <svg id="search-spinner"
+                     class="htmx-indicator absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 dark:text-secondary-500 animate-spin"
+                     fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div id="list-container">
+            {% include "partials/table.html" %}
+        </div>
+
     </div>
-  </div>
-
-  <div id="list-container">
-    {% include "partials/table.html" %}
-  </div>
-
-</div>
 {% endblock %}

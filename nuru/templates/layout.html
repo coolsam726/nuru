@@ -2,159 +2,162 @@
 <html lang="en" class="">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}{{ panel_title }}{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ panel_title }}{% endblock %}</title>
 
-  {# Apply saved theme before render to avoid flash #}
-  <script>
-    (function () {
-      var t = localStorage.getItem('ap-theme');
-      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
+    {# Apply saved theme before render to avoid flash #}
+    <script>
+        (function () {
+            var t = localStorage.getItem('ap-theme');
+            if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 
-  {# Inter font #}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {# Inter font #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
 
-  {# HTMX #}
-  {% if htmx_local %}
-  <script src="{{ panel_prefix }}/static/htmx.min.js"></script>
-  {% else %}
-  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
-  {% endif %}
+    {# HTMX #}
+    {% if htmx_local %}
+        <script src="{{ panel_prefix }}/static/htmx.min.js"></script>
+    {% else %}
+        <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+    {% endif %}
 
-  <link rel="stylesheet" href="{{ panel_prefix }}/static/tailwind.css">
-  {% for css_url in extra_css %}
-  <link rel="stylesheet" href="{{ css_url }}">
-  {% endfor %}
+    <link rel="stylesheet" href="{{ panel_prefix }}/static/tailwind.css">
+    {% for css_url in extra_css %}
+        <link rel="stylesheet" href="{{ css_url }}">
+    {% endfor %}
 
-  {# Alpine.js 3.x — deferred so inline alpine:init listeners fire after CSS #}
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    {# Alpine.js 3.x — deferred so inline alpine:init listeners fire after CSS #}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
-  {% for js_url in extra_js %}
-  <script defer src="{{ js_url }}"></script>
-  {% endfor %}
+    {% for js_url in extra_js %}
+        <script defer src="{{ js_url }}"></script>
+    {% endfor %}
 
-  <style>
-    /* Hide Alpine-controlled elements until Alpine initialises */
-    [x-cloak] {
-      display: none !important;
-    }
+    <style>
+        /* Hide Alpine-controlled elements until Alpine initialises */
+        [x-cloak] {
+            display: none !important;
+        }
 
-    {% if palette_css %}:root {
-{{ palette_css }}
-}{% endif %}
+        {% if palette_css %}:root {
+        {{ palette_css }}
+        }
 
-    /* ── Semantic colour shorthands ─────────────────────────────── */
-    .bg-primary {
-      background-color: var(--color-primary-500);
-    }
+        {% endif %}
 
-    .bg-primary-600 {
-      background-color: var(--color-primary-600);
-    }
+        /* ── Semantic colour shorthands ─────────────────────────────── */
+        .bg-primary {
+            background-color: var(--color-primary-500);
+        }
 
-    .text-primary {
-      color: var(--color-primary-500);
-    }
+        .bg-primary-600 {
+            background-color: var(--color-primary-600);
+        }
 
-    .border-primary {
-      border-color: var(--color-primary-500);
-    }
+        .text-primary {
+            color: var(--color-primary-500);
+        }
 
-    .ring-primary {
-      --tw-ring-color: var(--color-primary-500);
-    }
+        .border-primary {
+            border-color: var(--color-primary-500);
+        }
 
-    .bg-success {
-      background-color: var(--color-success-500);
-    }
+        .ring-primary {
+            --tw-ring-color: var(--color-primary-500);
+        }
 
-    .text-success {
-      color: var(--color-success-600);
-    }
+        .bg-success {
+            background-color: var(--color-success-500);
+        }
 
-    .bg-danger {
-      background-color: var(--color-danger-500);
-    }
+        .text-success {
+            color: var(--color-success-600);
+        }
 
-    .text-danger {
-      color: var(--color-danger-600);
-    }
+        .bg-danger {
+            background-color: var(--color-danger-500);
+        }
 
-    .bg-warning {
-      background-color: var(--color-warning-500);
-    }
+        .text-danger {
+            color: var(--color-danger-600);
+        }
 
-    .text-warning {
-      color: var(--color-warning-600);
-    }
+        .bg-warning {
+            background-color: var(--color-warning-500);
+        }
 
-    .bg-info {
-      background-color: var(--color-info-500);
-    }
+        .text-warning {
+            color: var(--color-warning-600);
+        }
 
-    .text-info {
-      color: var(--color-info-600);
-    }
+        .bg-info {
+            background-color: var(--color-info-500);
+        }
 
-    /* ── Sidebar nav items ──────────────────────────────────────── */
-    .nav-item {
-      color: var(--color-primary-700);
-    }
+        .text-info {
+            color: var(--color-info-600);
+        }
 
-    @media (hover: hover) {
-      .nav-item:hover {
-        background-color: var(--color-primary-100);
-        color: var(--color-primary-900);
-      }
-    }
+        /* ── Sidebar nav items ──────────────────────────────────────── */
+        .nav-item {
+            color: var(--color-secondary-700);
+        }
 
-    .nav-item.nav-active {
-      background-color: var(--color-primary-100);
-      color: var(--color-primary-700);
-      font-weight: 600;
-    }
+        @media (hover: hover) {
+            .nav-item:hover {
+                background-color: var(--color-primary-50);
+                color: var(--color-primary-900);
+            }
+        }
 
-    :where(.dark, .dark *) .nav-item {
-      color: var(--color-primary-300);
-    }
+        .nav-item.nav-active {
+            background-color: var(--color-brand-soft);
+            color: var(--color-primary-900);
+            font-weight: 600;
+        }
 
-    @media (hover: hover) {
-      :where(.dark, .dark *) .nav-item:hover {
-        background-color: color-mix(in oklab, var(--color-primary-900) 25%, transparent);
-        color: var(--color-primary-100);
-      }
-    }
+        :where(.dark, .dark *) .nav-item {
+            color: var(--color-secondary-300);
+        }
 
-    :where(.dark, .dark *) .nav-item.nav-active {
-      background-color: color-mix(in oklab, var(--color-primary-900) 35%, transparent);
-      color: var(--color-primary-100);
-    }
+        @media (hover: hover) {
+            :where(.dark, .dark *) .nav-item:hover {
+                background-color: color-mix(in oklab, var(--color-primary-900) 25%, transparent);
+                color: var(--color-secondary-100);
+            }
+        }
 
-    /* ── HTMX indicators ────────────────────────────────────────── */
-    .htmx-indicator {
-      display: none;
-    }
+        :where(.dark, .dark *) .nav-item.nav-active {
+            background-color: var(--color-brand-softer);
+            color: var(--color-primary-100);
+        }
 
-    .htmx-request .htmx-indicator {
-      display: block;
-    }
+        /* ── HTMX indicators ────────────────────────────────────────── */
+        .htmx-indicator {
+            display: none;
+        }
 
-    .htmx-request.htmx-indicator {
-      display: block;
-    }
+        .htmx-request .htmx-indicator {
+            display: block;
+        }
 
-    #ap-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.45);
-    }
-  </style>
+        .htmx-request.htmx-indicator {
+            display: block;
+        }
+
+        #ap-dialog::backdrop {
+            background: rgba(0, 0, 0, 0.45);
+        }
+    </style>
 </head>
 
 {#
@@ -164,177 +167,175 @@ Catalyst-inspired layout
 #}
 
 <body x-data="panel()" @click.window="handleActionTriggerClick($event)"
-  data-panel-prefix="{{ panel_prefix }}"
-  class="bg-white dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 min-h-screen flex font-sans antialiased">
+      data-panel-prefix="{{ panel_prefix }}"
+      class="bg-white dark:bg-secondary-900 text-secondary-900 dark:text-secondary-100 min-h-screen flex font-sans antialiased">
 
-  {# ─── Mobile backdrop ─────────────────────────────────────────────── #}
-  <div x-show="sidebarOpen" x-cloak x-transition.opacity class="fixed inset-0 bg-black/30 z-20 md:hidden"
-    @click="sidebarOpen = false"></div>
+{# ─── Mobile backdrop ─────────────────────────────────────────────── #}
+<div x-show="sidebarOpen" x-cloak x-transition.opacity class="fixed inset-0 bg-black/30 z-20 md:hidden"
+     @click="sidebarOpen = false"></div>
 
-  {# ─── Sidebar ───────────────────────────────────────────────────────── #}
-  <aside class="fixed md:relative inset-y-0 left-0 z-30
+{# ─── Sidebar ───────────────────────────────────────────────────────── #}
+<aside class="fixed md:relative inset-y-0 left-0 z-30
                 w-64 min-h-screen bg-secondary-50 dark:bg-secondary-900 flex flex-col flex-shrink-0
                 md:translate-x-0 transition-transform duration-200 ease-in-out"
-    :class="{ '-translate-x-full': !sidebarOpen }">
+       :class="{ '-translate-x-full': !sidebarOpen }">
 
     {# Brand / Logo #}
     <div
-      class="bg-white dark:bg-secondary-900 shadow-none px-4 py-3 h-[60px] border-b border-secondary-200 dark:border-secondary-800 flex items-center justify-between">
-      {% if logo_url %}
-      <img src="{{ logo_url }}" alt="{{ panel_title }}" class="h-7">
-      {% else %}
-      <div class="flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
-        <span class="font-semibold text-secondary-900 dark:text-white text-sm tracking-tight">{{ panel_title }}</span>
-      </div>
-      {% endif %}
-      <button
-        class="md:hidden p-1 rounded-lg text-secondary-500 dark:text-secondary-500 hover:text-secondary-900 dark:hover:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-800 transition-colors"
-        @click="sidebarOpen = false" aria-label="Close sidebar">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+            class="bg-white dark:bg-secondary-900 shadow-none px-4 py-3 h-[60px] border-b border-secondary-200 dark:border-secondary-800 flex items-center justify-between">
+        {% if logo_url %}
+            <img src="{{ logo_url }}" alt="{{ panel_title }}" class="h-7">
+        {% else %}
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="font-semibold text-secondary-900 dark:text-white text-sm tracking-tight">{{ panel_title }}</span>
+            </div>
+        {% endif %}
+        <button
+                class="md:hidden p-1 rounded-lg text-secondary-500 dark:text-secondary-500 hover:text-secondary-900 dark:hover:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-800 transition-colors"
+                @click="sidebarOpen = false" aria-label="Close sidebar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     {# Navigation #}
     <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-      {% for nav in nav_items %}
-      <a href="{{ nav.href }}" data-nav-link
-        class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
-        @click="sidebarOpen = false">
-        {{ render_icon(nav.icon, "w-4 h-4 flex-shrink-0") }}
-        {{ nav.label }}
-      </a>
-      {% endfor %}
+        {% for nav in nav_items %}
+            <a href="{{ nav.href }}" data-nav-link
+               class="nav-item group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full"
+               @click="sidebarOpen = false">
+                {{ render_icon(nav.icon, "w-4 h-4 flex-shrink-0") }}
+                {{ nav.label }}
+            </a>
+        {% endfor %}
     </nav>
-  </aside>
+</aside>
 
-  {# ─── Main content ────────────────────────────────────────────────── #}
-  <div class="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-secondary-50 dark:bg-secondary-900">
+{# ─── Main content ────────────────────────────────────────────────── #}
+<div class="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-secondary-50 dark:bg-secondary-900">
 
     {# Top header strip #}
     <header
-      class="flex items-center gap-3 px-4 md:px-6 py-3 h-[60px] shadow-none border-b border-secondary-200 dark:border-secondary-800 bg-white dark:bg-secondary-900 sticky top-0 z-10">
+            class="flex items-center gap-3 px-4 md:px-6 py-3 h-[60px] shadow-none border-b border-secondary-200 dark:border-secondary-800 bg-white dark:bg-secondary-900 sticky top-0 z-10">
 
-      {# Hamburger — mobile only #}
-      <button class="md:hidden p-1.5 -ml-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
+        {# Hamburger — mobile only #}
+        <button class="md:hidden p-1.5 -ml-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
                      hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors flex-shrink-0"
-        @click="sidebarOpen = true" aria-label="Open menu">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-
-      <div class="flex-1"></div>
-
-      {# Right side: user menu + theme toggle #}
-      <div class="flex items-center gap-2 flex-shrink-0">
-
-        {% if auth_enabled and current_user %}
-        {# User avatar dropdown — self-contained Alpine component #}
-        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-          <button @click="open = !open" class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg
-                         hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors group"
-            aria-haspopup="true" :aria-expanded="open.toString()">
-            <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-              <span class="text-white text-xs font-semibold select-none">{{ current_user.username[0] | upper }}</span>
-            </div>
-            <span
-              class="hidden sm:block text-sm font-medium text-secondary-700 dark:text-secondary-300 max-w-[120px] truncate">{{
-              current_user.username }}</span>
-            <svg class="w-3.5 h-3.5 text-secondary-400 dark:text-secondary-500 hidden sm:block" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                @click="sidebarOpen = true" aria-label="Open menu">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-          </button>
+        </button>
 
-          {# Dropdown #}
-          <div x-show="open" x-cloak x-transition class="absolute right-0 top-full mt-2 w-56 rounded-xl
+        <div class="flex-1"></div>
+
+        {# Right side: user menu + theme toggle #}
+        <div class="flex items-center gap-2 flex-shrink-0">
+
+            {% if auth_enabled and current_user %}
+                {# User avatar dropdown — self-contained Alpine component #}
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                    <button @click="open = !open" class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg
+                         hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors group"
+                            aria-haspopup="true" :aria-expanded="open.toString()">
+                        <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                            <span class="text-white text-xs font-semibold select-none">{{ current_user.username[0] | upper }}</span>
+                        </div>
+                        <span
+                                class="hidden sm:block text-sm font-medium text-secondary-700 dark:text-secondary-300 max-w-[120px] truncate">{{ current_user.username }}</span>
+                        <svg class="w-3.5 h-3.5 text-secondary-400 dark:text-secondary-500 hidden sm:block" fill="none"
+                             stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    {# Dropdown #}
+                    <div x-show="open" x-cloak x-transition class="absolute right-0 top-full mt-2 w-56 rounded-xl
                       bg-white dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700
                       shadow-lg overflow-hidden z-50">
-            <div class="px-4 py-3 border-b border-secondary-100 dark:border-secondary-700">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span class="text-white text-sm font-semibold select-none">{{ current_user.username[0] | upper
-                    }}</span>
-                </div>
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-secondary-900 dark:text-secondary-100 truncate">{{
-                    current_user.username }}</p>
-                  <p class="text-xs text-secondary-400 dark:text-secondary-500">Administrator</p>
-                </div>
-              </div>
-            </div>
-            <div class="py-1">
-              <a href="{{ panel_prefix }}/profile" class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
+                        <div class="px-4 py-3 border-b border-secondary-100 dark:border-secondary-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-sm font-semibold select-none">{{ current_user.username[0] | upper }}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-secondary-900 dark:text-secondary-100 truncate">{{ current_user.username }}</p>
+                                    <p class="text-xs text-secondary-400 dark:text-secondary-500">Administrator</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="py-1">
+                            <a href="{{ panel_prefix }}/profile" class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
                         hover:bg-secondary-50 dark:hover:bg-secondary-700/60 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                Profile
-              </a>
-              <a href="{{ panel_prefix }}/logout"
-                class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                Profile
+                            </a>
+                            <a href="{{ panel_prefix }}/logout"
+                               class="flex items-center gap-2.5 px-4 py-2 text-sm text-secondary-600 dark:text-secondary-300
                         hover:bg-secondary-50 dark:hover:bg-secondary-700/60 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Sign out
-              </a>
-            </div>
-          </div>
-        </div>
-        {% endif %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
 
-        {# Theme toggle #}
-        <button @click="toggleTheme()" aria-label="Toggle dark mode" class="p-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
+            {# Theme toggle #}
+            <button @click="toggleTheme()" aria-label="Toggle dark mode" class="p-1.5 rounded-lg text-secondary-500 dark:text-secondary-400
                        hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors">
-          <svg class="w-4 h-4 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-          <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-          </svg>
-        </button>
-      </div>
+                <svg class="w-4 h-4 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+                <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+                </svg>
+            </button>
+        </div>
     </header>
 
     {# Flash messages #}
     <div id="flash-messages" class="px-4 md:px-6 space-y-2">
-      {% block flash %}{% endblock %}
+        {% block flash %}{% endblock %}
     </div>
 
     {# Page content #}
     <main class="flex-1 px-4 md:px-6 md:px-8 py-6 pt-4 overflow-auto">
 
-      {% if self.breadcrumb() %}
-      <div class="flex flex-wrap items-center gap-1 mb-3 min-w-0">
-        {% block breadcrumb %}{% endblock %}
-      </div>
-      {% endif %}
+        {% if self.breadcrumb() %}
+            <div class="flex flex-wrap items-center gap-1 mb-3 min-w-0">
+                {% block breadcrumb %}{% endblock %}
+            </div>
+        {% endif %}
 
-      {% if self.page_heading() or self.header_actions() %}
-      <div class="flex flex-wrap items-baseline justify-between gap-4 mb-6">
-        <div>{% block page_heading %}{% endblock %}</div>
-        <div class="flex flex-wrap items-center gap-2">{% block header_actions %}{% endblock %}</div>
-      </div>
-      {% endif %}
+        {% if self.page_heading() or self.header_actions() %}
+            <div class="flex flex-wrap items-baseline justify-between gap-4 mb-6">
+                <div>{% block page_heading %}{% endblock %}</div>
+                <div class="flex flex-wrap items-center gap-2">{% block header_actions %}{% endblock %}</div>
+            </div>
+        {% endif %}
 
-      {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
     </main>
-  </div>
+</div>
 
-  {# ─── Unified Dialog ───────────────────────────────────────────────── #}
-  {#
+{# ─── Unified Dialog ───────────────────────────────────────────────── #}
+{#
   Single Alpine component for all dialog types:
   mode='form' — action form with dynamic fields (dispatched via ap-action-trigger)
   mode='confirm' — styled confirmation prompt (dispatched via ap-confirm-request)
@@ -347,486 +348,500 @@ Catalyst-inspired layout
   await apConfirm(message, { title, variant, confirmLabel, cancelLabel })
   await apAlert(message, { title, variant, confirmLabel })
   #}
-  <div x-data="appDialog()" @ap-action-trigger.window="showForm($event.detail)"
-    @ap-confirm-request.window="openConfirm($event.detail)" @ap-alert-request.window="openAlert($event.detail)">
+<div x-data="appDialog()" @ap-action-trigger.window="showForm($event.detail)"
+     @ap-confirm-request.window="openConfirm($event.detail)" @ap-alert-request.window="openAlert($event.detail)">
 
     <dialog x-ref="dlg" id="ap-dialog" x-effect="open ? $refs.dlg.showModal() : ($refs.dlg.open && $refs.dlg.close())"
-      @close="onNativeClose()" @click="$event.target === $refs.dlg && mode !== 'alert' && dismiss()" class="m-auto w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700
+            @close="onNativeClose()" @click="$event.target === $refs.dlg && mode !== 'alert' && dismiss()" class="m-auto w-full max-w-md rounded-xl border border-secondary-200 dark:border-secondary-700
                    bg-white dark:bg-secondary-800 shadow-xl p-0 text-secondary-900 dark:text-secondary-100">
 
-      {# ── Header ── #}
-      <div class="flex items-center justify-between px-5 py-4 border-b border-secondary-100 dark:border-secondary-700">
-        <div class="flex items-center gap-2.5 min-w-0">
+        {# ── Header ── #}
+        <div class="flex items-center justify-between px-5 py-4 border-b border-secondary-100 dark:border-secondary-700">
+            <div class="flex items-center gap-2.5 min-w-0">
 
-          {# Confirm / warning icon #}
-          <svg x-show="mode === 'confirm' || (mode === 'alert' && variant === 'warning')"
-            class="w-5 h-5 flex-shrink-0 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+                {# Confirm / warning icon #}
+                <svg x-show="mode === 'confirm' || (mode === 'alert' && variant === 'warning')"
+                     class="w-5 h-5 flex-shrink-0 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
 
-          {# Danger icon #}
-          <svg x-show="mode === 'alert' && variant === 'danger'" class="w-5 h-5 flex-shrink-0 text-danger" fill="none"
-            stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+                {# Danger icon #}
+                <svg x-show="mode === 'alert' && variant === 'danger'" class="w-5 h-5 flex-shrink-0 text-danger"
+                     fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
 
-          {# Success icon #}
-          <svg x-show="mode === 'alert' && variant === 'success'" class="w-5 h-5 flex-shrink-0 text-success" fill="none"
-            stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+                {# Success icon #}
+                <svg x-show="mode === 'alert' && variant === 'success'" class="w-5 h-5 flex-shrink-0 text-success"
+                     fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
 
-          {# Info icon #}
-          <svg x-show="mode === 'alert' && variant === 'info'" class="w-5 h-5 flex-shrink-0 text-info" fill="none"
-            stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+                {# Info icon #}
+                <svg x-show="mode === 'alert' && variant === 'info'" class="w-5 h-5 flex-shrink-0 text-info" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
 
-          <h3 class="text-sm font-semibold truncate" x-text="title"></h3>
+                <h3 class="text-sm font-semibold truncate" x-text="title"></h3>
+            </div>
+
+            {# Close button — hidden for alert (must use OK) #}
+            <button type="button" x-show="mode !== 'alert'" @click="dismiss()"
+                    class="p-1 rounded text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors flex-shrink-0 ml-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
-        {# Close button — hidden for alert (must use OK) #}
-        <button type="button" x-show="mode !== 'alert'" @click="dismiss()"
-          class="p-1 rounded text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-200 transition-colors flex-shrink-0 ml-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+        {# ── Body + Footer wrapped in a form so the submit button works ── #}
+        <form method="post" :action="formAction">
 
-      {# ── Body + Footer wrapped in a form so the submit button works ── #}
-      <form method="post" :action="formAction">
+            <div class="px-5 py-4 space-y-4">
 
-        <div class="px-5 py-4 space-y-4">
+                {# Message line (confirm / alert) #}
+                <p x-show="message" x-text="message"
+                   class="text-sm text-secondary-600 dark:text-secondary-300 leading-relaxed"></p>
 
-          {# Message line (confirm / alert) #}
-          <p x-show="message" x-text="message"
-            class="text-sm text-secondary-600 dark:text-secondary-300 leading-relaxed"></p>
+                {# Dynamic form fields (form mode only) #}
+                <template x-if="mode === 'form'">
+                    <div class="space-y-4">
+                        <template x-for="field in fields" :key="field.key">
+                            <div>
+                                <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5"
+                                       x-text="field.label + (field.required ? ' *' : '')"></label>
 
-          {# Dynamic form fields (form mode only) #}
-          <template x-if="mode === 'form'">
-            <div class="space-y-4">
-              <template x-for="field in fields" :key="field.key">
-                <div>
-                  <label class="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5"
-                    x-text="field.label + (field.required ? ' *' : '')"></label>
-
-                  {# textarea #}
-                  <template x-if="field.field_type === 'textarea'">
+                                {# textarea #}
+                                <template x-if="field.field_type === 'textarea'">
                     <textarea :name="field.key" rows="3" :placeholder="field.placeholder || ''"
-                      :required="field.required || false"
-                      class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
+                              :required="field.required || false"
+                              class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
                                      rounded-lg bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100
                                      placeholder-secondary-400 focus:outline-none focus:ring-2 focus:border-transparent"
-                      style="--tw-ring-color: var(--color-primary-500);"></textarea>
-                  </template>
+                              style="--tw-ring-color: var(--color-primary-500);"></textarea>
+                                </template>
 
-                  {# select #}
-                  <template x-if="field.field_type === 'select'">
-                    <select :name="field.key" :required="field.required || false" class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
+                                {# select #}
+                                <template x-if="field.field_type === 'select'">
+                                    <select :name="field.key" :required="field.required || false" class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
                                    rounded-lg bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100
                                    focus:outline-none focus:ring-2 focus:border-transparent"
-                      style="--tw-ring-color: var(--color-primary-500);">
-                      <option value="">— Select —</option>
-                      <template x-for="opt in (field.options || [])" :key="typeof opt === 'object' ? opt.value : opt">
-                        <option :value="typeof opt === 'object' ? opt.value : opt"
-                          x-text="typeof opt === 'object' ? opt.label : opt"></option>
-                      </template>
-                    </select>
-                  </template>
+                                            style="--tw-ring-color: var(--color-primary-500);">
+                                        <option value="">— Select —</option>
+                                        <template x-for="opt in (field.options || [])"
+                                                  :key="typeof opt === 'object' ? opt.value : opt">
+                                            <option :value="typeof opt === 'object' ? opt.value : opt"
+                                                    x-text="typeof opt === 'object' ? opt.label : opt"></option>
+                                        </template>
+                                    </select>
+                                </template>
 
-                  {# checkbox #}
-                  <template x-if="field.field_type === 'checkbox'">
-                    <div class="flex items-center gap-2">
-                      <input type="checkbox" :name="field.key" value="true"
-                        class="rounded border-secondary-300 dark:border-secondary-600">
-                      <span x-show="field.help_text" x-text="field.help_text || ''"
-                        class="text-sm text-secondary-500 dark:text-secondary-400"></span>
-                    </div>
-                  </template>
+                                {# checkbox #}
+                                <template x-if="field.field_type === 'checkbox'">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" :name="field.key" value="true"
+                                               class="rounded border-secondary-300 dark:border-secondary-600">
+                                        <span x-show="field.help_text" x-text="field.help_text || ''"
+                                              class="text-sm text-secondary-500 dark:text-secondary-400"></span>
+                                    </div>
+                                </template>
 
-                  {# text / number / date / email / etc. #}
-                   <template x-if="!['textarea', 'select', 'checkbox'].includes(field.field_type)">
-                     <input :type="field.input_type || field.field_type || 'text'" :name="field.key"
-                       :placeholder="field.placeholder || ''" :required="field.required || false"
-                       :pattern="(field.validators && field.validators.includes('email')) ? '.+@.+' : null"
-                       :title="(field.validators && field.validators.includes('email')) ? 'Enter a valid email address' : null"
-                       class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
+                                {# text / number / date / email / etc. #}
+                                <template x-if="!['textarea', 'select', 'checkbox'].includes(field.field_type)">
+                                    <input :type="field.input_type || field.field_type || 'text'" :name="field.key"
+                                           :placeholder="field.placeholder || ''" :required="field.required || false"
+                                           :pattern="(field.validators && field.validators.includes('email')) ? '.+@.+' : null"
+                                           :title="(field.validators && field.validators.includes('email')) ? 'Enter a valid email address' : null"
+                                           class="w-full px-3 py-2 text-sm border border-secondary-200 dark:border-secondary-600
                                   rounded-lg bg-white dark:bg-secondary-700 text-secondary-900 dark:text-secondary-100
                                   placeholder-secondary-400 focus:outline-none focus:ring-2 focus:border-transparent"
-                       style="--tw-ring-color: var(--color-primary-500);">
-                   </template>
+                                           style="--tw-ring-color: var(--color-primary-500);">
+                                </template>
 
-                  {# Help text (not for checkbox — shown inline there) #}
-                  <p x-show="field.help_text && field.field_type !== 'checkbox'" x-text="field.help_text || ''"
-                    class="text-xs text-secondary-400 dark:text-secondary-500 mt-1"></p>
-                </div>
-              </template>
+                                {# Help text (not for checkbox — shown inline there) #}
+                                <p x-show="field.help_text && field.field_type !== 'checkbox'"
+                                   x-text="field.help_text || ''"
+                                   class="text-xs text-secondary-400 dark:text-secondary-500 mt-1"></p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
             </div>
-          </template>
-        </div>
 
-        {# ── Footer ── #}
-        <div
-          class="flex items-center justify-end gap-2 px-5 py-4 border-t border-secondary-100 dark:border-secondary-700">
+            {# ── Footer ── #}
+            <div
+                    class="flex items-center justify-end gap-2 px-5 py-4 border-t border-secondary-100 dark:border-secondary-700">
 
-          {# Cancel — hidden for alert mode #}
-          <button type="button" x-show="mode !== 'alert'" @click="dismiss()" x-text="cancelLabel" class="px-4 py-2 text-sm text-secondary-500 dark:text-secondary-400
+                {# Cancel — hidden for alert mode #}
+                <button type="button" x-show="mode !== 'alert'" @click="dismiss()" x-text="cancelLabel" class="px-4 py-2 text-sm text-secondary-500 dark:text-secondary-400
                          hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors"></button>
 
-          {# Submit — form mode only #}
-          <button type="submit" x-show="mode === 'form'" x-text="submitLabel" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary
+                {# Submit — form mode only #}
+                <button type="submit" x-show="mode === 'form'" x-text="submitLabel" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary
                          hover:opacity-90 transition-opacity"></button>
 
-          {# Confirm / OK — confirm and alert modes #}
-          <button type="button" x-show="mode !== 'form'" @click="confirm()" x-text="confirmLabel"
-            :class="confirmBtnClass"></button>
-        </div>
-      </form>
+                {# Confirm / OK — confirm and alert modes #}
+                <button type="button" x-show="mode !== 'form'" @click="confirm()" x-text="confirmLabel"
+                        :class="confirmBtnClass"></button>
+            </div>
+        </form>
     </dialog>
-  </div>
+</div>
 
-  <script>
+<script>
     document.addEventListener('alpine:init', () => {
 
-      // ── Panel component ────────────────────────────────────────────────
-      // Manages sidebar open/close state, active-nav highlighting, theme
-      // toggle, and delegated [data-action-trigger] click routing.
-      Alpine.data('panel', () => ({
-        sidebarOpen: false,
+        // ── Panel component ────────────────────────────────────────────────
+        // Manages sidebar open/close state, active-nav highlighting, theme
+        // toggle, and delegated [data-action-trigger] click routing.
+        Alpine.data('panel', () => ({
+            sidebarOpen: false,
 
-        init() {
-          // Mark the current page's nav link as active.
-          const path   = window.location.pathname;
-          const prefix = document.body.dataset.panelPrefix;
-          document.querySelectorAll('[data-nav-link]').forEach(el => {
-            const href = el.getAttribute('href');
-            const isRoot = href === prefix + '/' || href === prefix;
-            const active = isRoot
-              ? (path === prefix + '/' || path === prefix)
-              : path.startsWith(href);
-            if (active) el.classList.add('nav-active');
-          });
-        },
-
-        toggleTheme() {
-          const html = document.documentElement;
-          if (html.classList.contains('dark')) {
-            html.classList.remove('dark');
-            localStorage.setItem('ap-theme', 'light');
-          } else {
-            html.classList.add('dark');
-            localStorage.setItem('ap-theme', 'dark');
-          }
-        },
-
-        // Delegated click handler for [data-action-trigger] buttons anywhere on
-        // the page, attached to window via @click.window on <body>.
-        async handleActionTriggerClick(e) {
-          const btn = e.target.closest('[data-action-trigger]');
-          if (!btn) return;
-          e.preventDefault();
-
-          const fields = JSON.parse(btn.dataset.actionFields || '[]');
-          const confirmMsg = btn.dataset.actionConfirm;
-
-          // No form fields — optionally confirm via styled dialog, then submit.
-          if (fields.length === 0) {
-            if (confirmMsg) {
-              const confirmed = await new Promise(resolve => {
-                window.dispatchEvent(new CustomEvent('ap-confirm-request', {
-                  detail: { message: confirmMsg, resolve, variant: btn.dataset.actionConfirmVariant || 'warning' },
-                }));
-              });
-              if (!confirmed) return;
-            }
-            const f = document.createElement('form');
-            f.method = 'POST';
-            f.action = btn.dataset.actionUrl;
-            document.body.appendChild(f);
-            f.submit();
-            document.body.removeChild(f);
-            return;
-          }
-
-          // Has fields — open the form dialog.
-          window.dispatchEvent(new CustomEvent('ap-action-trigger', {
-            detail: {
-              url: btn.dataset.actionUrl,
-              fields,
-              title: btn.dataset.actionTitle || btn.textContent.trim(),
-              submitLabel: btn.dataset.actionSubmit || btn.textContent.trim(),
+            init() {
+                // Mark the current page's nav link as active.
+                const path = window.location.pathname;
+                const prefix = document.body.dataset.panelPrefix;
+                document.querySelectorAll('[data-nav-link]').forEach(el => {
+                    const href = el.getAttribute('href');
+                    const isRoot = href === prefix + '/' || href === prefix;
+                    const active = isRoot
+                        ? (path === prefix + '/' || path === prefix)
+                        : path.startsWith(href);
+                    if (active) el.classList.add('nav-active');
+                });
             },
-          }));
-        },
-      }));
 
-      // ── Unified dialog component ───────────────────────────────────────
-      // Handles three modes:
-      //   'form'    — action form with dynamic fields
-      //   'confirm' — styled Yes/No prompt (promise-based)
-      //   'alert'   — informational notice   (promise-based)
-      //
-      // For confirm/alert the caller passes a `resolve` fn in the event detail.
-      // Global helpers window.apConfirm / window.apAlert are set up below.
-      Alpine.data('appDialog', () => ({
-        open: false,
-        mode: 'form',    // 'form' | 'confirm' | 'alert'
-        variant: 'default', // 'default' | 'warning' | 'danger' | 'success' | 'info'
-        title: '',
-        message: '',
-        formAction: '',
-        fields: [],
-        submitLabel: 'Submit',
-        confirmLabel: 'OK',
-        cancelLabel: 'Cancel',
-        _resolver: null,
+            toggleTheme() {
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    localStorage.setItem('ap-theme', 'light');
+                } else {
+                    html.classList.add('dark');
+                    localStorage.setItem('ap-theme', 'dark');
+                }
+            },
 
-        showForm(detail) {
-          this.mode = 'form';
-          this.variant = 'default';
-          this.title = detail.title;
-          this.formAction = detail.url;
-          this.fields = detail.fields;
-          this.submitLabel = detail.submitLabel || 'Submit';
-          this.confirmLabel = '';
-          this.cancelLabel = 'Cancel';
-          this.message = '';
-          this._resolver = null;
-          this.open = true;
-        },
+            // Delegated click handler for [data-action-trigger] buttons anywhere on
+            // the page, attached to window via @click.window on <body>.
+            async handleActionTriggerClick(e) {
+                const btn = e.target.closest('[data-action-trigger]');
+                if (!btn) return;
+                e.preventDefault();
 
-        openConfirm(detail) {
-          this.mode = 'confirm';
-          this.variant = detail.variant || 'warning';
-          this.title = detail.title || 'Confirm';
-          this.message = detail.message || '';
-          this.confirmLabel = detail.confirmLabel || 'Confirm';
-          this.cancelLabel = detail.cancelLabel || 'Cancel';
-          this.fields = [];
-          this.formAction = '';
-          this._resolver = detail.resolve || null;
-          this.open = true;
-        },
+                const fields = JSON.parse(btn.dataset.actionFields || '[]');
+                const confirmMsg = btn.dataset.actionConfirm;
 
-        openAlert(detail) {
-          this.mode = 'alert';
-          this.variant = detail.variant || 'info';
-          this.title = detail.title || 'Notice';
-          this.message = detail.message || '';
-          this.confirmLabel = detail.confirmLabel || 'OK';
-          this.cancelLabel = '';
-          this.fields = [];
-          this.formAction = '';
-          this._resolver = detail.resolve || null;
-          this.open = true;
-        },
+                // No form fields — optionally confirm via styled dialog, then submit.
+                if (fields.length === 0) {
+                    if (confirmMsg) {
+                        const confirmed = await new Promise(resolve => {
+                            window.dispatchEvent(new CustomEvent('ap-confirm-request', {
+                                detail: {
+                                    message: confirmMsg,
+                                    resolve,
+                                    variant: btn.dataset.actionConfirmVariant || 'warning'
+                                },
+                            }));
+                        });
+                        if (!confirmed) return;
+                    }
+                    const f = document.createElement('form');
+                    f.method = 'POST';
+                    f.action = btn.dataset.actionUrl;
+                    document.body.appendChild(f);
+                    f.submit();
+                    document.body.removeChild(f);
+                    return;
+                }
 
-        // User clicked the primary action button (Confirm / OK).
-        confirm() {
-          if (this._resolver) this._resolver(true);
-          this._resolver = null;
-          this.open = false;
-        },
+                // Has fields — open the form dialog.
+                window.dispatchEvent(new CustomEvent('ap-action-trigger', {
+                    detail: {
+                        url: btn.dataset.actionUrl,
+                        fields,
+                        title: btn.dataset.actionTitle || btn.textContent.trim(),
+                        submitLabel: btn.dataset.actionSubmit || btn.textContent.trim(),
+                    },
+                }));
+            },
+        }));
 
-        // User clicked Cancel or the × button.
-        dismiss() {
-          if (this._resolver) this._resolver(false);
-          this._resolver = null;
-          this.open = false;
-        },
+        // ── Unified dialog component ───────────────────────────────────────
+        // Handles three modes:
+        //   'form'    — action form with dynamic fields
+        //   'confirm' — styled Yes/No prompt (promise-based)
+        //   'alert'   — informational notice   (promise-based)
+        //
+        // For confirm/alert the caller passes a `resolve` fn in the event detail.
+        // Global helpers window.apConfirm / window.apAlert are set up below.
+        Alpine.data('appDialog', () => ({
+            open: false,
+            mode: 'form',    // 'form' | 'confirm' | 'alert'
+            variant: 'default', // 'default' | 'warning' | 'danger' | 'success' | 'info'
+            title: '',
+            message: '',
+            formAction: '',
+            fields: [],
+            submitLabel: 'Submit',
+            confirmLabel: 'OK',
+            cancelLabel: 'Cancel',
+            _resolver: null,
 
-        // Native <dialog> closed (e.g. Escape key).
-        onNativeClose() {
-          if (this._resolver) this._resolver(false);
-          this._resolver = null;
-          this.open = false;
-        },
+            showForm(detail) {
+                this.mode = 'form';
+                this.variant = 'default';
+                this.title = detail.title;
+                this.formAction = detail.url;
+                this.fields = detail.fields;
+                this.submitLabel = detail.submitLabel || 'Submit';
+                this.confirmLabel = '';
+                this.cancelLabel = 'Cancel';
+                this.message = '';
+                this._resolver = null;
+                this.open = true;
+            },
 
-        get confirmBtnClass() {
-          const base = 'px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-opacity';
-          if (this.variant === 'danger') return base + ' bg-danger';
-          if (this.variant === 'success') return base + ' bg-success';
-          return base + ' bg-primary';
-        },
-      }));
+            openConfirm(detail) {
+                this.mode = 'confirm';
+                this.variant = detail.variant || 'warning';
+                this.title = detail.title || 'Confirm';
+                this.message = detail.message || '';
+                this.confirmLabel = detail.confirmLabel || 'Confirm';
+                this.cancelLabel = detail.cancelLabel || 'Cancel';
+                this.fields = [];
+                this.formAction = '';
+                this._resolver = detail.resolve || null;
+                this.open = true;
+            },
 
-      // ── Global imperative helpers ──────────────────────────────────────
-      window.apConfirm = (message, opts = {}) => new Promise(resolve =>
-        window.dispatchEvent(new CustomEvent('ap-confirm-request', {
-          detail: { message, resolve, ...opts },
-        }))
-      );
-      window.apAlert = (message, opts = {}) => new Promise(resolve =>
-        window.dispatchEvent(new CustomEvent('ap-alert-request', {
-          detail: { message, resolve, ...opts },
-        }))
-      );
+            openAlert(detail) {
+                this.mode = 'alert';
+                this.variant = detail.variant || 'info';
+                this.title = detail.title || 'Notice';
+                this.message = detail.message || '';
+                this.confirmLabel = detail.confirmLabel || 'OK';
+                this.cancelLabel = '';
+                this.fields = [];
+                this.formAction = '';
+                this._resolver = detail.resolve || null;
+                this.open = true;
+            },
 
-      // ── Relationship combobox component ────────────────────────────────
-      // Registered here so Alpine resolves it before scanning x-data attrs.
-      // Used by Select fields with model= set; the field template uses:
-      //   x-data="nuruCombobox(currentValue, searchUrl)"
-      //
-      // The component fetches all options from `url` on init, filters them
-      // client-side as the user types, and stores the selected PK in `value`.
-      // A hidden <input> in the field template carries `value` on form submit.
-      Alpine.data('nuruCombobox', (initial, url, remote = false) => ({
-        options:     [],
-        filtered:    [],
-        value:       String(initial == null ? '' : initial),
-        label:       '',
-        query:       '',
-        open:        false,
-        initialising: true,  // hides the input until the first fetch completes
-        fetching:     false,  // shows the spinner during remote keypress fetches
-        _timer:        null,
-        _scrollHandler: null,
-        dropX: 0, dropY: 0, dropW: 0,
+            // User clicked the primary action button (Confirm / OK).
+            confirm() {
+                if (this._resolver) this._resolver(true);
+                this._resolver = null;
+                this.open = false;
+            },
 
-        init() {
-          // Always wire open-watcher first so dropdown is positioned for
-          // both inline-array and URL-based sources.
-          this.$watch('open', v => {
-            if (v) {
-              this._updateDropPos();
-              this._scrollHandler = () => this._updateDropPos();
-              window.addEventListener('scroll', this._scrollHandler, { passive: true, capture: true });
-              window.addEventListener('resize', this._scrollHandler, { passive: true });
-            } else {
-              if (this._scrollHandler) {
-                window.removeEventListener('scroll', this._scrollHandler, { capture: true });
-                window.removeEventListener('resize', this._scrollHandler);
-                this._scrollHandler = null;
-              }
-            }
-          });
+            // User clicked Cancel or the × button.
+            dismiss() {
+                if (this._resolver) this._resolver(false);
+                this._resolver = null;
+                this.open = false;
+            },
 
-          // Support two kinds of `url`: a URL (string) or an inline
-          // options array. If `url` is a string we fetch; otherwise
-          // treat it as the initial dataset.
-          const isUrl = typeof url === 'string';
-          if (!isUrl) {
-            const data = Array.isArray(url) ? url : [];
-            this.initialising = false;
-            this.remote = false;
-            this.options = data.slice();
-            this.filtered = data.slice();
-            if (this.value) {
-              const match = data.find(o => String(o.value) === this.value);
-              if (match) this.label = match.label;
-            }
-            this.$watch('query', () => this._filter());
-            return;
-          }
+            // Native <dialog> closed (e.g. Escape key).
+            onNativeClose() {
+                if (this._resolver) this._resolver(false);
+                this._resolver = null;
+                this.open = false;
+            },
 
-          // url is a string: fetch initial page and wire up remote behaviour.
-          fetch(url)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => [])
-            .then(data => {
-              this.initialising = false;
-              this.remote = remote;
-              if (this.value) {
-                const match = data.find(o => String(o.value) === this.value);
-                if (match) this.label = match.label;
-              }
-              if (remote) {
-                this.filtered = data;
-                this.$watch('query', () => this._remoteFilter());
-              } else {
-                this.options = data;
+            get confirmBtnClass() {
+                const base = 'px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-opacity';
+                if (this.variant === 'danger') return base + ' bg-danger';
+                if (this.variant === 'success') return base + ' bg-success';
+                return base + ' bg-primary';
+            },
+        }));
+
+        // ── Global imperative helpers ──────────────────────────────────────
+        window.apConfirm = (message, opts = {}) => new Promise(resolve =>
+            window.dispatchEvent(new CustomEvent('ap-confirm-request', {
+                detail: {message, resolve, ...opts},
+            }))
+        );
+        window.apAlert = (message, opts = {}) => new Promise(resolve =>
+            window.dispatchEvent(new CustomEvent('ap-alert-request', {
+                detail: {message, resolve, ...opts},
+            }))
+        );
+
+        // ── Relationship combobox component ────────────────────────────────
+        // Registered here so Alpine resolves it before scanning x-data attrs.
+        // Used by Select fields with model= set; the field template uses:
+        //   x-data="nuruCombobox(currentValue, searchUrl)"
+        //
+        // The component fetches all options from `url` on init, filters them
+        // client-side as the user types, and stores the selected PK in `value`.
+        // A hidden <input> in the field template carries `value` on form submit.
+        Alpine.data('nuruCombobox', (initial, url, remote = false) => ({
+            options: [],
+            filtered: [],
+            value: String(initial == null ? '' : initial),
+            label: '',
+            query: '',
+            open: false,
+            initialising: true,  // hides the input until the first fetch completes
+            fetching: false,  // shows the spinner during remote keypress fetches
+            _timer: null,
+            _scrollHandler: null,
+            dropX: 0, dropY: 0, dropW: 0,
+
+            init() {
+                // Always wire open-watcher first so dropdown is positioned for
+                // both inline-array and URL-based sources.
+                this.$watch('open', v => {
+                    if (v) {
+                        this._updateDropPos();
+                        this._scrollHandler = () => this._updateDropPos();
+                        window.addEventListener('scroll', this._scrollHandler, {passive: true, capture: true});
+                        window.addEventListener('resize', this._scrollHandler, {passive: true});
+                    } else {
+                        if (this._scrollHandler) {
+                            window.removeEventListener('scroll', this._scrollHandler, {capture: true});
+                            window.removeEventListener('resize', this._scrollHandler);
+                            this._scrollHandler = null;
+                        }
+                    }
+                });
+
+                // Support two kinds of `url`: a URL (string) or an inline
+                // options array. If `url` is a string we fetch; otherwise
+                // treat it as the initial dataset.
+                const isUrl = typeof url === 'string';
+                if (!isUrl) {
+                    const data = Array.isArray(url) ? url : [];
+                    this.initialising = false;
+                    this.remote = false;
+                    this.options = data.slice();
+                    this.filtered = data.slice();
+                    if (this.value) {
+                        const match = data.find(o => String(o.value) === this.value);
+                        if (match) this.label = match.label;
+                    }
+                    this.$watch('query', () => this._filter());
+                    return;
+                }
+
+                // url is a string: fetch initial page and wire up remote behaviour.
+                fetch(url)
+                    .then(r => r.ok ? r.json() : [])
+                    .catch(() => [])
+                    .then(data => {
+                        this.initialising = false;
+                        this.remote = remote;
+                        if (this.value) {
+                            const match = data.find(o => String(o.value) === this.value);
+                            if (match) this.label = match.label;
+                        }
+                        if (remote) {
+                            this.filtered = data;
+                            this.$watch('query', () => this._remoteFilter());
+                        } else {
+                            this.options = data;
+                            this._filter();
+                            this.$watch('query', () => this._filter());
+                        }
+                    });
+            },
+
+            // Client-side filter — used when remote=false.
+            _filter() {
+                const q = this.query.trim().toLowerCase();
+                this.filtered = q
+                    ? this.options.filter(o => o.label.toLowerCase().includes(q))
+                    : this.options.slice();
+            },
+
+            // Debounced server-side filter — used when remote=true.
+            _remoteFilter() {
+                clearTimeout(this._timer);
+                this._timer = setTimeout(() => {
+                    const q = this.query.trim();
+                    this.fetching = true;
+                    // Only perform remote fetches when `url` is a string.
+                    if (typeof url !== 'string') return;
+                    const sep = url.includes('?') ? '&' : '?';
+                    fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
+                        .then(r => r.ok ? r.json() : [])
+                        .catch(() => [])
+                        .then(data => {
+                            this.filtered = data;
+                            this.fetching = false;
+                        });
+                }, 300);
+            },
+
+            // Immediate server-side fetch — used when the user focuses the
+            // input and we want the first page of results without waiting for
+            // the debounce timer.
+            _remoteFetch() {
+                clearTimeout(this._timer);
+                const q = this.query.trim();
+                this.fetching = true;
+                // Only perform remote fetches when `url` is a string.
+                if (typeof url !== 'string') return;
+                const sep = url.includes('?') ? '&' : '?';
+                fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
+                    .then(r => r.ok ? r.json() : [])
+                    .catch(() => [])
+                    .then(data => {
+                        this.filtered = data;
+                        this.fetching = false;
+                    });
+            },
+
+            pick(opt) {
+                this.value = String(opt.value);
+                this.label = opt.label;
+                this.query = '';
+                this.open = false;
                 this._filter();
-                this.$watch('query', () => this._filter());
-              }
-            });
-        },
+            },
 
-        // Client-side filter — used when remote=false.
-        _filter() {
-          const q = this.query.trim().toLowerCase();
-          this.filtered = q
-            ? this.options.filter(o => o.label.toLowerCase().includes(q))
-            : this.options.slice();
-        },
+            clear() {
+                this.value = '';
+                this.label = '';
+                this.query = '';
+                this._filter();
+            },
 
-        // Debounced server-side filter — used when remote=true.
-        _remoteFilter() {
-          clearTimeout(this._timer);
-          this._timer = setTimeout(() => {
-            const q = this.query.trim();
-            this.fetching = true;
-            // Only perform remote fetches when `url` is a string.
-            if (typeof url !== 'string') return;
-            const sep = url.includes('?') ? '&' : '?';
-            fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
-              .then(r => r.ok ? r.json() : [])
-              .catch(() => [])
-              .then(data => { this.filtered = data; this.fetching = false; });
-          }, 300);
-        },
+            displayText() {
+                return this.open ? this.query : this.label;
+            },
 
-        // Immediate server-side fetch — used when the user focuses the
-        // input and we want the first page of results without waiting for
-        // the debounce timer.
-        _remoteFetch() {
-          clearTimeout(this._timer);
-          const q = this.query.trim();
-          this.fetching = true;
-          // Only perform remote fetches when `url` is a string.
-          if (typeof url !== 'string') return;
-          const sep = url.includes('?') ? '&' : '?';
-          fetch(url + (q ? sep + 'q=' + encodeURIComponent(q) : ''))
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => [])
-            .then(data => { this.filtered = data; this.fetching = false; });
-        },
+            onInput(e) {
+                this.query = e.target.value;
+                this.open = true;
+            },
 
-        pick(opt) {
-          this.value = String(opt.value);
-          this.label = opt.label;
-          this.query = '';
-          this.open  = false;
-          this._filter();
-        },
-
-        clear() {
-          this.value = '';
-          this.label = '';
-          this.query = '';
-          this._filter();
-        },
-
-        displayText() {
-          return this.open ? this.query : this.label;
-        },
-
-        onInput(e) {
-          this.query = e.target.value;
-          this.open  = true;
-        },
-
-        _updateDropPos() {
-          // Compute fixed viewport coords from the text input so the
-          // teleported dropdown renders directly below it regardless of
-          // any overflow:hidden ancestor.
-          this.$nextTick(() => {
-            const input = this.$refs.input;
-            if (!input) return;
-            const r = input.getBoundingClientRect();
-            this.dropX = Math.round(r.left);
-            this.dropY = Math.round(r.bottom + 4);
-            this.dropW = Math.round(r.width);
-          });
-        },
-      }));
+            _updateDropPos() {
+                // Compute fixed viewport coords from the text input so the
+                // teleported dropdown renders directly below it regardless of
+                // any overflow:hidden ancestor.
+                this.$nextTick(() => {
+                    const input = this.$refs.input;
+                    if (!input) return;
+                    const r = input.getBoundingClientRect();
+                    this.dropX = Math.round(r.left);
+                    this.dropY = Math.round(r.bottom + 4);
+                    this.dropW = Math.round(r.width);
+                });
+            },
+        }));
 
     });
-  </script>
+</script>
 </body>
 
 </html>
