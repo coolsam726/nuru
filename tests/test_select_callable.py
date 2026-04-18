@@ -1,9 +1,9 @@
 import pytest
 
 from typing import Any, Callable, List
-from nuru import AdminPanel
 import nuru.forms as fields
-from nuru.resource import Resource  # legacy resource (accepts panel= kwarg)
+from nuru.resources import Resource
+from nuru.panel import AdminPanel
 
 
 def test_callable_options_rendered_in_form():

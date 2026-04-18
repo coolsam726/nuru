@@ -1,104 +1,107 @@
 """nuru.resources.base — Resource base class (v0.4 API).
-Inherits from the legacy nuru.resource.Resource so all routing,
-CRUD, and template rendering machinery works without modification.
-New API adds:
-  - make() factory
-  - form() / table() / infolist() methods (return Form / Table / Infolist)
-  - _bridge_from_new_api() auto-populates legacy attributes from those methods
-App authors subclass Resource and override form(), table(), infolist():
+
+App authors subclass Resource and override form(), table(), infolist()::
+
     class AuthorResource(Resource):
         model = Author
         label = "Author"
-        def form(self):
-            return AuthorForm()
-        def table(self):
-            return AuthorTable()
-        def infolist(self):         # optional; falls back to auto-derived
-            return AuthorInfolist()
+        session_factory = get_session
+
+        def form(self) -> Form:
+            return Form().schema([...])
+
+        def table(self) -> Table:
+            return Table().schema([...])
+
+        def infolist(self) -> Infolist:   # optional; falls back to form fields
+            return Infolist().schema([...])
+
+The routing/CRUD machinery is inherited from nuru.resource.Resource (internal
+engine).  _bridge_from_new_api() is called automatically in __init__ to
+populate form_fields / table_columns / detail_fields from the methods above.
 """
 from __future__ import annotations
 from typing import Any
-class Resource:
-    """New-style Resource base.  Inherits legacy routing after _bridge."""
-    # Class attributes — override in subclasses (same as legacy)
-    model: Any = None
-    label: str = ""
-    label_plural: str = ""
-    slug: str = ""
-    nav_icon: str = ""
-    nav_sort: int = 100
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
+
+# The routing engine — kept as the internal implementation.
+# Users should subclass nuru.resources.Resource (this class), not the engine directly.
+from nuru.resource import Resource as _RoutingEngine
+
+
+class Resource(_RoutingEngine):
+    """New-style Resource base.  Subclass and override form() / table() / infolist()."""
+
     # ------------------------------------------------------------------ #
     # Factory                                                              #
     # ------------------------------------------------------------------ #
     @classmethod
     def make(cls, model: Any = None) -> "Resource":
-        """Inline factory.  Returns a class (not instance) pre-configured."""
-        # Dynamically create a subclass so make() can be used fluently:
-        #   r = Resource.make(Author).with_label("Author")
-        name = f"_Dynamic{cls.__name__}"
-        bases = (cls,)
+        """Inline factory — creates a dynamic subclass pre-configured with *model*."""
         attrs: dict = {}
         if model is not None:
             attrs["model"] = model
             attrs["label"] = model.__name__
-        klass = type(name, bases, attrs)
-        return klass
+        return type(f"_Dynamic{cls.__name__}", (cls,), attrs)  # type: ignore[return-value]
+
     # ------------------------------------------------------------------ #
     # Override in subclasses — return Form / Table / Infolist instances   #
     # ------------------------------------------------------------------ #
     def form(self):
-        """Return a Form instance for create/edit pages."""
+        """Return a Form instance for create/edit pages. Override in subclasses."""
         from nuru.forms.base import Form
         return Form()
+
     def table(self):
-        """Return a Table instance for the list page."""
+        """Return a Table instance for the list page. Override in subclasses."""
         from nuru.tables.base import Table
         return Table()
+
     def infolist(self):
-        """Return an Infolist instance for the view/detail page.
-        Return None to auto-derive entries from the form's fields."""
+        """Return an Infolist for the view/detail page, or None to auto-derive."""
         return None
+
     # ------------------------------------------------------------------ #
-    # Bridge: populate legacy attributes from new API                     #
+    # Bridge — called by _RoutingEngine.__init__ automatically            #
     # ------------------------------------------------------------------ #
     def _bridge_from_new_api(self) -> None:
-        """Populate legacy form_fields / table_columns / detail_fields
-        from form() / table() / infolist() if they are overridden and
-        return non-empty results."""
+        """Populate form_fields / table_columns / detail_fields from
+        form() / table() / infolist() overrides."""
         from nuru.forms.base import Form
         from nuru.tables.base import Table
         from nuru.infolists.base import Infolist
-        # Form fields
+
         try:
             form_obj = self.form()
             if isinstance(form_obj, Form):
                 fields = form_obj.fields()
                 if fields:
-                    self.form_fields = fields  # type: ignore[attr-defined]
+                    self.form_fields = fields
+                actions = form_obj.actions()
+                if actions:
+                    self.form_actions = actions
         except Exception:
             pass
-        # Table columns + row actions
+
         try:
             table_obj = self.table()
             if isinstance(table_obj, Table):
                 cols = table_obj.columns()
                 if cols:
-                    self.table_columns = cols  # type: ignore[attr-defined]
+                    self.table_columns = cols
                 actions = table_obj.row_actions()
                 if actions:
-                    self.row_actions = actions  # type: ignore[attr-defined]
+                    self.row_actions = actions
         except Exception:
             pass
-        # Detail fields (from infolist entries)
+
         try:
             il = self.infolist()
             if isinstance(il, Infolist):
                 entries = il.entries()
                 if entries:
-                    self.detail_fields = entries  # type: ignore[attr-defined]
+                    self.detail_fields = entries
         except Exception:
             pass
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}(slug={getattr(self, 'slug', '')})"

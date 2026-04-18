@@ -1,36 +1,11 @@
-"""nuru.panels.base — Panel base class.
-App authors subclass Panel::
-    class AdminPanel(Panel):
-        title = "My Admin"
-        prefix = "/admin"
-        primary_color = "var(--color-indigo-500)"
-    panel = AdminPanel()
-    panel.mount(app)
-Or use make() for inline creation::
-    panel = Panel.make().title("My Admin").prefix("/admin")
-    panel.mount(app)
-Auto-discovery
---------------
-On mount(), the Panel scans for:
-  - <panel_package>/resources/*.py  → collects Resource subclasses
-  - <panel_package>/pages/*.py      → collects Page subclasses
-The "panel package" is the Python package containing the Panel subclass file.
-For the base Panel class (no file), auto-discovery is skipped.
-"""
+"""nuru.panels.base — Panel base class."""
 from __future__ import annotations
-import importlib
 import importlib.util
 import inspect
-import pkgutil
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from fastapi import FastAPI
-
-
-def _make_legacy_compatible(new_cls: type, legacy_base: type) -> type:
-    """Return a merged class: new_cls + legacy_base for routing compatibility."""
-    return type(new_cls.__name__, (new_cls, legacy_base), {"__module__": new_cls.__module__})
 
 
 class Panel:
@@ -44,8 +19,10 @@ class Panel:
     per_page: int = 25
     upload_dir: str | Path | None = None
     upload_backend: Any = None
+
     def __init__(self) -> None:
         cls = self.__class__
+
         # Helper: read a class attribute only if a *subclass* explicitly declares it
         # as a non-callable value (i.e. not the fluent-setter method defined on Panel).
         def _cv(name: str, default: Any = None) -> Any:
@@ -69,17 +46,18 @@ class Panel:
         self._resource_classes: list[type] = []
         self._page_classes: list[type] = []
         self._extra_template_dirs: list[Path] = []
+        self._extra_js: list[str] = []
+        self._extra_css: list[str] = []
+
         # Auto-register any class-level resource/page lists defined on subclass
         for attr in ("resources", "resource_classes"):
             val = getattr(cls, attr, None)
             if val and isinstance(val, (list, tuple)):
-                for r in val:
-                    self._resource_classes.append(r)
+                self._resource_classes.extend(val)
         for attr in ("pages", "page_classes"):
             val = getattr(cls, attr, None)
             if val and isinstance(val, (list, tuple)):
-                for p in val:
-                    self._page_classes.append(p)
+                self._page_classes.extend(val)
     # ------------------------------------------------------------------ #
     # Factory                                                              #
     # ------------------------------------------------------------------ #
@@ -116,50 +94,32 @@ class Panel:
     def get_per_page(self) -> int: return self._per_page
     def get_upload_dir(self): return self._upload_dir
     def get_upload_backend(self): return self._upload_backend
-    def get_resource_classes(self) -> list[type]:
-        return list(self._resource_classes)
-    def get_page_classes(self) -> list[type]:
-        return list(self._page_classes)
+    def get_resource_classes(self) -> list[type]: return list(self._resource_classes)
+    def get_page_classes(self) -> list[type]: return list(self._page_classes)
     # ------------------------------------------------------------------ #
-    # Manual registration                                                  #
+    # Registration                                                         #
     # ------------------------------------------------------------------ #
     def register(self, resource_class: type) -> "Panel":
-        """Manually register a Resource class (new-style or legacy)."""
-        from nuru.resources.base import Resource as NewResource
-        from nuru.resource import Resource as LegacyResource
-        if (
-            issubclass(resource_class, NewResource)
-            and not issubclass(resource_class, LegacyResource)
-        ):
-            resource_class = _make_legacy_compatible(resource_class, LegacyResource)
+        """Register a Resource subclass."""
         if resource_class not in self._resource_classes:
             self._resource_classes.append(resource_class)
         return self
     def register_page(self, page_class: type) -> "Panel":
-        """Manually register a Page class."""
+        """Register a Page subclass."""
         if page_class not in self._page_classes:
             self._page_classes.append(page_class)
         return self
     def add_template_dir(self, path: str | Path) -> "Panel":
         """Register an additional template directory."""
-        self._extra_template_dirs.append(Path(path))
-        return self
-
+        self._extra_template_dirs.append(Path(path)); return self
     def add_extra_js(self, url: str) -> "Panel":
         """Register an additional JS URL to inject into every page."""
-        if not hasattr(self, "_extra_js"):
-            self._extra_js: list[str] = []
-        self._extra_js.append(url)
-        return self
-
+        self._extra_js.append(url); return self
     def add_extra_css(self, url: str) -> "Panel":
         """Register an additional CSS URL to inject into every page."""
-        if not hasattr(self, "_extra_css"):
-            self._extra_css: list[str] = []
-        self._extra_css.append(url)
-        return self
+        self._extra_css.append(url); return self
     # ------------------------------------------------------------------ #
-    # Auto-discovery                                                        #
+    # Auto-discovery                                                       #
     # ------------------------------------------------------------------ #
     def _discover(self) -> None:
         """Scan sibling resources/ and pages/ directories for subclasses."""
@@ -179,9 +139,6 @@ class Panel:
     @staticmethod
     def _discover_in(directory: Path, base_class: type, target: list) -> None:
         """Import all .py files in *directory* and collect subclasses of *base_class*."""
-        from nuru.resources.base import Resource as NewResource
-        from nuru.resource import Resource as LegacyResource
-
         if not directory.is_dir():
             return
         for py_file in sorted(directory.glob("*.py")):
@@ -197,33 +154,16 @@ class Panel:
             except Exception:
                 continue
             for _, obj in inspect.getmembers(module, inspect.isclass):
-                if not (issubclass(obj, base_class) and obj is not base_class):
-                    continue
-                if obj in target:
-                    continue
-                # If new-style Resource doesn't inherit from legacy Resource,
-                # create a combined class so routing machinery works.
-                if (
-                    issubclass(obj, NewResource)
-                    and not issubclass(obj, LegacyResource)
-                ):
-                    obj = _make_legacy_compatible(obj, LegacyResource)
-                target.append(obj)
+                if issubclass(obj, base_class) and obj is not base_class and obj not in target:
+                    target.append(obj)
     # ------------------------------------------------------------------ #
     # Mount                                                                #
     # ------------------------------------------------------------------ #
     def mount(self, app: "FastAPI") -> None:
-        """Discover resources/pages, wire up the Jinja2 environment, and
-        register all routes on *app*.
-        This delegates the actual FastAPI wiring to the legacy AdminPanel
-        machinery in nuru.panel, which is preserved for the routing/template
-        rendering engine.
-        """
-        # 1. Auto-discover
+        """Auto-discover resources/pages then wire all routes onto *app*."""
         self._discover()
-        # 2. Build a legacy-compatible AdminPanel and forward to it
-        from nuru.panel import AdminPanel as _LegacyPanel
-        legacy = _LegacyPanel(
+        from nuru.panel import AdminPanel as _AdminPanel
+        legacy = _AdminPanel(
             title=self._title,
             prefix=self._prefix,
             primary=self._primary_color,
@@ -232,14 +172,10 @@ class Panel:
             per_page=self._per_page,
             upload_dir=self._upload_dir,
             upload_backend=self._upload_backend,
-            extra_js=getattr(self, "_extra_js", []),
-            extra_css=getattr(self, "_extra_css", []),
+            extra_js=self._extra_js,
+            extra_css=self._extra_css,
         )
         # Register discovered resources and pages
-        from nuru.resource import Resource as _LegacyResource
-        from nuru.page import Page as _LegacyPage
-        from nuru.resources.base import Resource as NewResource
-        from nuru.pages.base import Page as NewPage
         for rc in self._resource_classes:
             legacy.register(rc)
         for pc in self._page_classes:
