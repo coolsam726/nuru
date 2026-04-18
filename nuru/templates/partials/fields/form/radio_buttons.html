@@ -26,23 +26,36 @@
             {% endif %}
 
             {% set input_id = field.get_key() ~ "-" ~ loop.index0 %}
-            <li class="w-full md:flex-1 md:min-w-[120px]">
+            {# `group` on <li> lets us use group-has-[input:checked] on any descendant,
+               bypassing the peer-sibling limitation of `peer-checked:`. #}
+            <li class="w-full md:flex-1 md:min-w-[120px] group">
                 <input type="radio" id="{{ input_id }}" name="{{ field.get_key() }}" value="{{ value }}"
                        class="hidden peer" {% if current == value %}checked{% endif %}
                        {% if field.is_required() %}required{% endif %}>
                 <label for="{{ input_id }}"
-                       class="flex flex-col h-full items-start justify-between w-full p-2 md:p-3 text-secondary-900 dark:text-secondary-100 bg-neutral-primary-soft dark:bg-secondary-800 border border-secondary-200 dark:border-secondary-700 rounded-base cursor-pointer
-                              hover:bg-neutral-secondary-medium dark:hover:bg-secondary-700
-                              peer-checked:hover:bg-brand-softer peer-checked:bg-brand-softer dark:peer-checked:bg-primary-600
+                       class="flex flex-col h-full items-start justify-between w-full p-2 md:p-3
+                        text-secondary-900 dark:text-secondary-100 bg-neutral-primary-soft
+                        dark:bg-secondary-900 border border-secondary-200 dark:border-secondary-700
+                         rounded-base cursor-pointer
+                              hover:bg-neutral-secondary-medium dark:hover:bg-secondary-950
+                              peer-checked:hover:bg-brand-subtle peer-checked:bg-brand-softer dark:peer-checked:bg-brand-softer
                               peer-checked:border-brand-subtle dark:peer-checked:border-primary-500
-                              peer-checked:text-fg-brand-strong dark:peer-checked:text-white">
+                              peer-checked:text-fg-brand-strong dark:peer-checked:text-secondary-100">
                     <div class="flex items-center gap-3 flex-wrap w-full">
                         {% if icon %}
-                            <div class="flex-shrink-0">
+                            {# group-has-[input:checked] on the <li> ancestor reaches into any depth
+                               of nesting — unlike peer-checked which only works on direct siblings.
+                               The SVG inherits currentColor so toggling text-color here changes the icon. #}
+                            <div class="shrink-0 text-secondary-400 dark:text-secondary-500
+                                        group-has-[input:checked]:text-primary
+                                        dark:group-has-[input:checked]:text-primary-400">
                                 {% if icon.strip().startswith("<svg") %}
                                     {{ icon|safe }}
                                 {% else %}
-                                    {{ render_icon(icon, "w-5 h-5 text-secondary-400 dark:text-secondary-500 peer-checked:text-primary-50 peer-checked:bg-primary-500")|safe }}
+                                    {# Let the SVG inherit the label's color (stroke=currentColor) so
+                                       peer-checked color on the label cascades to the icon. Avoid
+                                       setting explicit text color on the SVG here. #}
+                                    {{ render_icon(icon, "w-5 h-5")|safe }}
                                 {% endif %}
                             </div>
                         {% elif image %}
