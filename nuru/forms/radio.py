@@ -3,6 +3,18 @@ from __future__ import annotations
 from .field_base import Field
 
 
+def _normalise_options(opts: list) -> list[dict]:
+    out = []
+    for item in opts:
+        if isinstance(item, dict):
+            out.append(item)
+        elif isinstance(item, (tuple, list)) and len(item) == 2:
+            out.append({"value": item[0], "label": item[1]})
+        else:
+            out.append({"value": item, "label": item})
+    return out
+
+
 class Radio(Field):
     """Radio button group."""
 
@@ -15,7 +27,7 @@ class Radio(Field):
         self._inline: bool = True
 
     def get_options(self) -> list:
-        return list(self._options)
+        return _normalise_options(self._options)
 
     def is_inline(self) -> bool:
         return self._inline
@@ -27,4 +39,3 @@ class Radio(Field):
     def inline(self, on: bool = True) -> "Radio":
         self._inline = on
         return self
-

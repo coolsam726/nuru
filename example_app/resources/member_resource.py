@@ -62,7 +62,10 @@ class MemberResource(Resource):
             forms.Section(
                 [
                     forms.TextInput.make("member_number").label("Member number").required().placeholder("MBR-001").help_text("Unique ID printed on the member card."),
-                    forms.Select.make("membership").label("Membership type").options(["standard", "student", "senior", "staff"]).help_text("Determines checkout limits and fee waivers."),
+                    forms.Select.make("membership").label("Membership type")
+                    .options([("standard","Standard"), ("student","Student"), ("senior","Senior"), ("staff","Staff")])
+                    .native()
+                    .help_text("Determines checkout limits and fee waivers."),
                     forms.Checkbox.make("active").label("Active").help_text("Inactive members cannot borrow books."),
                 ],
                 title="Membership", cols=2, col_span="full",
