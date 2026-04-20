@@ -46,8 +46,36 @@ class Select(Field):
 
     # --- Getters ----------------------------------------------------------
 
+    @staticmethod
+    def _normalise(opts: list) -> list[dict]:
+        """Coerce every item in *opts* to ``{"value": ..., "label": ...}``.
+
+        Accepted item shapes:
+        - ``("value", "Label")``  / ``["value", "Label"]``  — 2-tuple/list
+        - ``{"value": ..., "label": ...}``                  — already a dict
+        - ``"bare_string"``                                  — value == label
+        """
+        out = []
+        for item in opts:
+            if isinstance(item, dict):
+                out.append(item)
+            elif isinstance(item, (tuple, list)) and len(item) == 2:
+                out.append({"value": item[0], "label": item[1]})
+            else:
+                out.append({"value": item, "label": item})
+        return out
+
     def get_options(self) -> list | Callable:
-        return self._options
+        opts = self._options
+        if callable(opts):
+            # Wrap so the caller gets a normalised list after resolution.
+            _norm = self._normalise
+
+            def _wrapped(*args, **kwargs):
+                return _norm(opts(*args, **kwargs))
+
+            return _wrapped
+        return self._normalise(opts)
 
     def is_multiple(self) -> bool:
         return self._multiple
